@@ -1,0 +1,8 @@
+{
+  "name": "@sanxing/learning-domain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "dependencies": { "@sanxing/contracts": "0.1.0", "ts-fsrs": "5.4.2", "zod": "4.6.5" }
+}

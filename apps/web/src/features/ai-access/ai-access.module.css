@@ -1,0 +1,88 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.page :global(.page-heading) { margin-bottom: 0; }
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--primary-faint);
+  color: var(--primary-dark);
+}
+.notice p { margin-top: 6px; font-size: 12px; }
+.notice > svg { margin-top: 3px; }
+.row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.environment, .provider, .heatmap { display: flex; flex-direction: column; gap: 15px; min-width: 0; }
+.environment > :global(.card-heading) { margin-bottom: 0; }
+.providers { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.providerTitle { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.providerTitle h3 { font-size: 16px; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.authorization, .flow, .test { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.authorization > button, .flow > button { align-self: flex-start; }
+.flow { padding: 16px; border: 1px solid var(--line); border-radius: 10px; }
+.testResult { padding: 10px 12px; border-radius: 8px; background: var(--subtle); }
+.testResult > p, .help > p { margin-top: 6px; }
+.help summary { cursor: pointer; font-size: 13px; }
+.page :global(.button) { max-width: 100%; white-space: normal; }
+.providerTitle > svg { flex-shrink: 0; }
+.session { padding: 17px; border: 1px solid var(--line); border-radius: 10px; background: var(--subtle); display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.instructions { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; }
+.inputForm { display: flex; flex-direction: column; gap: 9px; width: 100%; min-width: 0; }
+.inputForm > button { align-self: flex-start; }
+.modelFields { display: flex; flex-direction: column; gap: 9px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.modelFields > select { min-width: 0; max-width: 100%; }
+.acknowledgement { display: flex; align-items: flex-start; gap: 10px; padding: 13px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--warning-bg); font-size: 12px; }
+.acknowledgement > input { width: 17px; height: 17px; flex: 0 0 17px; margin-top: 2px; }
+.inputForm > input, .inputForm > select { min-width: 0; max-width: 100%; }
+.failure { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; background: var(--danger-bg); padding: 15px; border-radius: 10px; color: var(--danger); }
+.error { color: var(--danger); font-size: 12px; overflow-wrap: anywhere; }
+.authHint { display: grid; gap: 8px; justify-items: start; }
+.authHint p { margin: 0; }
+.mock { padding: 11px 13px; border-radius: 8px; background: var(--warning-bg); color: #744305; font-size: 12px; }
+.model { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; margin: 0; }
+.model dt, .totals dt { font-size: 11px; color: var(--muted); }
+.model dd { margin: 4px 0 0; font-size: 13px; overflow-wrap: anywhere; }
+.heatmap h2 { display: flex; align-items: center; gap: 8px; }
+.yearControls { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; font-size: 12px; }
+.yearControls > select { width: auto; min-width: 105px; padding: 7px 9px; }
+.totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); gap: 10px; margin: 0; }
+.totals > div { min-width: 0; background: var(--subtle); border: 1px solid var(--line); padding: 13px; border-radius: 9px; }
+.totals dd { margin: 6px 0 0; color: var(--primary-dark); font-size: 22px; line-height: 1.3; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.calendarFrame { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; min-width: 0; max-width: 100%; }
+.weekdays { display: grid; grid-template-rows: repeat(7, 14px); gap: 4px; padding-top: 29px; text-align: center; font-size: 10px; line-height: 14px; color: var(--muted); }
+.calendarScroll { overflow-x: auto; max-width: 100%; min-width: 0; padding: 4px 4px 12px; overscroll-behavior-x: contain; }
+.months { display: grid; column-gap: 4px; height: 25px; width: max-content; font-size: 10px; color: var(--muted); }
+.months > span { white-space: nowrap; }
+.calendar { display: grid; grid-template-rows: repeat(7, 14px); gap: 4px; width: max-content; }
+.cell { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; min-width: 14px; padding: 0; border: 1px solid #8796b340; border-radius: 3px; font-style: normal; font-size: 10px; line-height: 1; color: #172541; background-color: #edf1f7; }
+.cell[data-level='0'] { background-color: #edf1f7; }
+.cell[data-level='1'] { background-color: #d3e1f9; }
+.cell[data-level='2'] { background-color: #9dbbef; }
+.cell[data-level='3'] { background-color: #6089ce; }
+.cell[data-level='4'] { background-color: #2c4f93; color: white; }
+.cell:hover, .cell:focus-visible { outline: 2px solid var(--primary-dark); outline-offset: 1px; }
+.unknown { background-image: repeating-linear-gradient(135deg, transparent 0, transparent 3px, #a067234f 3px, #a067234f 5px); border-color: #8d611f; }
+.legend { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 10px; color: var(--muted); }
+.legendItem { display: inline-flex; align-items: center; gap: 4px; }
+.dayDetail { min-height: 60px; padding: 12px; background: var(--subtle); border-radius: 8px; font-size: 12px; font-variant-numeric: tabular-nums; }
+/* The fifth destination remains reachable without widening the mobile page. */
+@media (max-width: 768px) {
+  .navigation.navigation { overflow-x: auto; max-width: 100%; gap: 4px; }
+  .navigation > a { flex: 1 0 auto; }
+}
+@media (max-width: 440px) {
+  .navigation > a { padding-inline: 4px; gap: 4px; }
+  .notice, .session { padding: 13px; }
+  .totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .totals > div { padding: 10px; }
+  .totals dd { font-size: 20px; }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "@sanxing/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "dependencies": { "@sanxing/contracts": "0.1.0", "@sanxing/local-storage": "0.1.0", "@electric-sql/pglite": "0.5.8", "drizzle-orm": "0.45.3", "zod": "4.6.5" }
+}

@@ -1,0 +1,112 @@
+/* 每日三省 design tokens — 由 tools/generate.js 从 figma-plugin/code.js 生成，请勿手改 */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700&family=Inter:wght@500;600;700&display=swap');
+
+:root {
+  /* 底色与线条 */
+  --color-bg-canvas: #F4F6FB; /* 页面底色（冷灰） */
+  --color-bg-surface: #FFFFFF; /* 卡片 */
+  --color-bg-subtle: #F8FAFD; /* 表头、工具栏 */
+  --color-base-white: #FFFFFF; /* 深色底上的文字 */
+  --color-neutral-100: #EDF1F7; /* 分段控件、中性标签 */
+  --color-line-default: #E1E6EF; /* 描边、分隔线 */
+  --color-line-strong: #C3CBD9; /* 次要按钮描边、虚线框 */
+  /* 墨色文字 */
+  --color-ink-900: #1B2333; /* 标题、正文 */
+  --color-ink-700: #434E63; /* 次要正文 */
+  --color-ink-500: #5D687C; /* 说明文字（白底 5.6:1） */
+  --color-ink-300: #A0A9B8; /* 装饰、禁用 */
+  /* 雾蓝（主色 rgb 174, 197, 243） */
+  --color-primary-800: #26407A; /* 主色块上的文字和图标 */
+  --color-primary-700: #3A5BA0; /* 白底上的主色文字、链接 */
+  --color-primary-600: #5B7FD0; /* 图标、曲线、焦点描边 */
+  --color-primary-500: #AEC5F3; /* 主色：主按钮、选中导航、进度、圆环 */
+  --color-primary-300: #C9D8F7; /* 时间线、辅助线 */
+  --color-primary-100: #E3EBFC; /* 浅色选中底、气泡 */
+  --color-primary-50: #F3F7FE; /* 提示卡底色 */
+  /* 朱砂（强调）与状态 */
+  --color-accent-600: #B8452F; /* 印章、今日标记、复习节点 */
+  --color-accent-100: #F7E4DE; /* 强调底色 */
+  --color-success-600: #2F7A4B; /* 正确、已掌握 */
+  --color-success-100: #E2F1E7;
+  --color-warning-600: #9A5B07; /* 待巩固、逾期 */
+  --color-warning-100: #FBEFD9;
+  --color-danger-600: #B42318; /* 错误、有误解 */
+  --color-danger-100: #FBE4E1;
+  --color-info-600: #1F7A8C; /* 文件 */
+  --color-info-100: #DDF1F4;
+  /* 热力图 */
+  --color-heat-0: #E8ECF3; /* 无记录 */
+  --color-heat-1: #D5E1FA;
+  --color-heat-2: #AEC5F3;
+  --color-heat-3: #7397DE;
+  --color-heat-4: #3A5BA0; /* 最多 */
+
+  /* 字体 */
+  --font-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
+  --font-sans: 'Noto Sans SC', 'Source Han Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-num: 'Inter', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+  /* 圆角 */
+  --radius-sm: 6px; /* 标签、分段控件内项 */
+  --radius-md: 8px; /* 按钮、输入框、导航项、图标块 */
+  --radius-lg: 10px; /* 卡片内的子块：文件行、选项、提示框 */
+  --radius-xl: 12px; /* 卡片、气泡、分段控件外框 */
+  --radius-pill: 999px; /* 搜索框、头像、圆形图标按钮 */
+
+  /* 阴影 */
+  --shadow-card: 0 1px 2px rgba(27, 35, 51, 0.04), 0 4px 14px rgba(27, 35, 51, 0.04); /* 卡片、选中的分段 */
+  --shadow-pop: 0 2px 4px rgba(27, 35, 51, 0.06), 0 12px 32px rgba(27, 35, 51, 0.1); /* 浮层、下拉、弹窗 */
+
+  /* 间距 */
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-6: 6px;
+  --space-8: 8px;
+  --space-10: 10px;
+  --space-12: 12px;
+  --space-14: 14px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-28: 28px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --space-48: 48px;
+  --space-56: 56px;
+  --space-64: 64px;
+
+  /* 布局 */
+  --layout-frame-width: 1440px; /* 设计宽度 */
+  --layout-sidebar-width: 248px; /* 左侧导航宽度 */
+  --layout-content-padding-x: 40px; /* 主区域左右内边距 */
+  --layout-content-padding-top: 28px; /* 主区域上内边距 */
+  --layout-content-padding-bottom: 48px; /* 主区域下内边距 */
+  --layout-section-gap: 24px; /* 主区域内区块间距 / 两栏间距 */
+  --layout-card-padding: 20px; /* 卡片默认内边距（大卡片 24） */
+  --layout-side-column: 340px; /* 01 / 04 右栏宽度；02、06 为 360，03 为 320，05 为 380 */
+}
+
+/* 文字样式：与 Figma 文字样式同名（Title/Page → .text-title-page） */
+.text-brand { font-family: var(--font-serif); font-weight: 700; font-size: 20px; line-height: 1.2; }
+.text-brand-seal { font-family: var(--font-serif); font-weight: 700; font-size: 19px; line-height: 1; }
+.text-title-page { font-family: var(--font-serif); font-weight: 700; font-size: 28px; line-height: 1.3; }
+.text-title-section { font-family: var(--font-sans); font-weight: 700; font-size: 18px; line-height: 1.4; }
+.text-title-card { font-family: var(--font-sans); font-weight: 700; font-size: 15px; line-height: 1.4; }
+.text-body-large { font-family: var(--font-sans); font-weight: 400; font-size: 16px; line-height: 1.75; }
+.text-body { font-family: var(--font-sans); font-weight: 400; font-size: 14px; line-height: 1.6; }
+.text-body-small { font-family: var(--font-sans); font-weight: 400; font-size: 13px; line-height: 1.55; }
+.text-label { font-family: var(--font-sans); font-weight: 500; font-size: 13px; line-height: 1.4; }
+.text-tag { font-family: var(--font-sans); font-weight: 500; font-size: 12px; line-height: 1.5; }
+.text-caption { font-family: var(--font-sans); font-weight: 400; font-size: 12px; line-height: 1.5; }
+.text-button { font-family: var(--font-sans); font-weight: 500; font-size: 14px; line-height: 1.4; }
+.text-num-display { font-family: var(--font-num); font-weight: 700; font-size: 32px; line-height: 1.2; }
+.text-num-large { font-family: var(--font-num); font-weight: 700; font-size: 22px; line-height: 1.25; }
+.text-num-medium { font-family: var(--font-num); font-weight: 600; font-size: 15px; line-height: 1.3; }
+.text-num-small { font-family: var(--font-num); font-weight: 500; font-size: 12px; line-height: 1.4; }
+
+/* 数字类样式（Num/*）只放数字、百分号、斜杠和冒号；单位和中文用相邻的 .text-caption / .text-body */
+.text-num-display, .text-num-large, .text-num-medium, .text-num-small { font-variant-numeric: tabular-nums; }
+
+/* 全局基础 */
+body { margin: 0; background: var(--color-bg-canvas); color: var(--color-ink-900); font-family: var(--font-sans); }
+:focus-visible { outline: 2px solid var(--color-primary-600); outline-offset: 2px; }
