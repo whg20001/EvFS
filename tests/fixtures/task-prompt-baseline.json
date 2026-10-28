@@ -1,0 +1,230 @@
+{
+  "connection": {
+    "version": "connection-v1",
+    "hash": "393effac5cf9d77575c188cc6a7154d784322d8afefa917a9fab40195b5add29",
+    "inputBytes": 202,
+    "userChars": 66
+  },
+  "extract-legacy": {
+    "version": "learning-v8",
+    "hash": "b9313536f8fea196cb4ac0c22f85b01d82197d72b86536353fef93b24bbb0724",
+    "inputBytes": 2915,
+    "userChars": 199
+  },
+  "extract-skills": {
+    "version": "learning-v8",
+    "hash": "628c02f89fb4119811c89954bdf9e7b020f319a048d27499b1e32346e4df0958",
+    "inputBytes": 3548,
+    "userChars": 199
+  },
+  "followup-empty-skills": {
+    "version": "learning-v8",
+    "hash": "859f4354638073ceddcb17d71c98723dc97b838c515e64a93a305d76eec6607b",
+    "inputBytes": 8991,
+    "userChars": 512
+  },
+  "followup-skills": {
+    "version": "learning-v8",
+    "hash": "7ff8e5bb9b307eb5c62bca7a462534e62e408823c350546a372f8a75e72fd30d",
+    "inputBytes": 9624,
+    "userChars": 512
+  },
+  "quiz-context": {
+    "version": "learning-v8",
+    "hash": "995aa68f9032d81076fc37520f54a316a6392b843f88aaf8d7cddfb06d141218",
+    "inputBytes": 9817,
+    "userChars": 683
+  },
+  "grade-code": {
+    "version": "learning-v8",
+    "hash": "ce48ea93fdcdeb65c0b9bc7273af41bf99b1f54bae871caebc4784697202ed16",
+    "inputBytes": 4494,
+    "userChars": 605
+  },
+  "grade-legacy": {
+    "version": "learning-v8",
+    "hash": "ae1a269d3986c9ad81efcf8adb4ad57ea175df6f0a15bda7056b7de9a896239b",
+    "inputBytes": 3704,
+    "userChars": 442
+  },
+  "cache-extract": {
+    "version": "learning-v8",
+    "hash": "c932ea0add7d242a84ef460e66d822b90094426544ca14c366bd8d6d4a2c39f0",
+    "inputBytes": 3150,
+    "userChars": 286
+  },
+  "cache-followup": {
+    "version": "learning-v8",
+    "hash": "9288dc610e0ca4817be8e023da99411dddb3e34e52e6aa9dec7f361bf68234cd",
+    "inputBytes": 9004,
+    "userChars": 435
+  },
+  "cache-quiz": {
+    "version": "learning-v8",
+    "hash": "40560085605608d0bfdf2311c1f2d93afd8af0e2e90b510f580bbb015da3a5ea",
+    "inputBytes": 8815,
+    "userChars": 308
+  },
+  "cache-grade-correct": {
+    "version": "learning-v8",
+    "hash": "e1d87000bcdec8c87039fdf637481c7c4235f4a4b6ff18b825f0aff14912f06f",
+    "inputBytes": 3915,
+    "userChars": 427
+  },
+  "cache-grade-incomplete": {
+    "version": "learning-v8",
+    "hash": "017792a70226c88e6ad093374c5c3407618956a871b51951e202b6e2a9bda398",
+    "inputBytes": 3809,
+    "userChars": 389
+  },
+  "queue-extract": {
+    "version": "learning-v8",
+    "hash": "a3ef3ef597f3bb2822b3ce838eac685bc7008d71d7653c55e96e10ee50ee992d",
+    "inputBytes": 3069,
+    "userChars": 267
+  },
+  "queue-followup": {
+    "version": "learning-v8",
+    "hash": "826f929038844743100ad9af29d4097e3530f4284faf6d1a0cc0798f9a7a235f",
+    "inputBytes": 8954,
+    "userChars": 437
+  },
+  "queue-quiz": {
+    "version": "learning-v8",
+    "hash": "939d9b66f3a6dfaf10ba2294b5cfe42f2104c6e04ca90771c6778ecdcd501d02",
+    "inputBytes": 8741,
+    "userChars": 298
+  },
+  "queue-grade-correct": {
+    "version": "learning-v8",
+    "hash": "32262119fef6a13ecbb328219b2ff6bbb8b887ce04e889216e6e631e9886eafc",
+    "inputBytes": 3795,
+    "userChars": 389
+  },
+  "queue-grade-incomplete": {
+    "version": "learning-v8",
+    "hash": "1939fd9c8d9341d37d35356a550e2fc0684a976a25459af4f9f6ef16d74b77cc",
+    "inputBytes": 3750,
+    "userChars": 372
+  },
+  "search-extract": {
+    "version": "learning-v8",
+    "hash": "72061203d2014a92458c70394920339295fb72e445fbe60478702ec8ec5964d4",
+    "inputBytes": 3125,
+    "userChars": 285
+  },
+  "search-followup": {
+    "version": "learning-v8",
+    "hash": "25e6e8161c4cde212d83d23e05dc88132b2538471c13de85c54ab8693b00b10b",
+    "inputBytes": 9086,
+    "userChars": 471
+  },
+  "search-quiz": {
+    "version": "learning-v8",
+    "hash": "fe9be9bb08753bd4c89503254496b79a283f55944ba0b92e50e2ac741f9e97b3",
+    "inputBytes": 8858,
+    "userChars": 331
+  },
+  "search-grade-correct": {
+    "version": "learning-v8",
+    "hash": "2f06722ef7134852e5822ed1a69ef2078bcbb2032d153f141ffa9a4eb0c8e1ce",
+    "inputBytes": 3787,
+    "userChars": 395
+  },
+  "search-grade-incomplete": {
+    "version": "learning-v8",
+    "hash": "83a4588ef8c708c8a920bc4a7512f5b91bb8a8252b8518aa92acbaf89d061f76",
+    "inputBytes": 3760,
+    "userChars": 380
+  },
+  "probability-extract": {
+    "version": "learning-v8",
+    "hash": "09adbb4c8744cda51fd2445ab427df287bd612084f18fc3b637cdde81ce31182",
+    "inputBytes": 3114,
+    "userChars": 306
+  },
+  "probability-followup": {
+    "version": "learning-v8",
+    "hash": "12ce14047d69ffbf6eb1b57e530473d71302c301a50fa71ae3ae5a8baa9c587d",
+    "inputBytes": 8989,
+    "userChars": 508
+  },
+  "probability-quiz": {
+    "version": "learning-v8",
+    "hash": "d09e5d44885bf882be057ee87c7bdd3d57715451e5da044f7b45a833dfec5dbb",
+    "inputBytes": 8799,
+    "userChars": 364
+  },
+  "probability-grade-correct": {
+    "version": "learning-v8",
+    "hash": "da6d0ddb276bf16d06e110b3df6bac65c541dd7d30fa248ee70038091aafd8b6",
+    "inputBytes": 3836,
+    "userChars": 426
+  },
+  "probability-grade-incomplete": {
+    "version": "learning-v8",
+    "hash": "9b1df9683cbc791f9e65088fe448c59c96e1ce206a1a4bdf12e37bc88be99287",
+    "inputBytes": 3762,
+    "userChars": 398
+  },
+  "unique-extract": {
+    "version": "learning-v8",
+    "hash": "00f83187c835999864d9ba41d061cd1068896ba24e36ce3ee390ef024db48df8",
+    "inputBytes": 3053,
+    "userChars": 287
+  },
+  "unique-followup": {
+    "version": "learning-v8",
+    "hash": "563436942dfda7b90dbb9d8fe249f9afbefd2b1af361df931cd082bc59e2b215",
+    "inputBytes": 8919,
+    "userChars": 490
+  },
+  "unique-quiz": {
+    "version": "learning-v8",
+    "hash": "5453cdd479a4be22769c63a2763cb334177f7312a01135d474151fc3ded8f60d",
+    "inputBytes": 8756,
+    "userChars": 369
+  },
+  "unique-grade-correct": {
+    "version": "learning-v8",
+    "hash": "59637d17764e784b725737417bb7861d1593d4ec2d9e9a6dcad8f21a85d3b2ca",
+    "inputBytes": 3774,
+    "userChars": 412
+  },
+  "unique-grade-incomplete": {
+    "version": "learning-v8",
+    "hash": "7d2e2751f1c1b0f672e5a8a17e90c7702cbb222c8ff340a73ca5402d45c00893",
+    "inputBytes": 3733,
+    "userChars": 399
+  },
+  "mean-extract": {
+    "version": "learning-v8",
+    "hash": "76a257be8a604b8ed04fe85905912763e9501faf81949d8ac10c28e692f4591e",
+    "inputBytes": 3112,
+    "userChars": 280
+  },
+  "mean-followup": {
+    "version": "learning-v8",
+    "hash": "11b50824fc7fe20bbebe321ba71255ac2aa4334225356973ee76923dafbdc483",
+    "inputBytes": 9010,
+    "userChars": 451
+  },
+  "mean-quiz": {
+    "version": "learning-v8",
+    "hash": "934b5d13f1c3e8c6465c1e92463339242a335f259257ca702027a0dbf4b3fc96",
+    "inputBytes": 8826,
+    "userChars": 339
+  },
+  "mean-grade-correct": {
+    "version": "learning-v8",
+    "hash": "fe52c70464fad31d8e34d5a9181f302c2cf2ad5b08aa3847d5e499649c7354ea",
+    "inputBytes": 3830,
+    "userChars": 408
+  },
+  "mean-grade-incomplete": {
+    "version": "learning-v8",
+    "hash": "b971c2c3daac3eb5613fa407b3a76052a5f86dd6c2797452b8fb7307b1507b8a",
+    "inputBytes": 3770,
+    "userChars": 384
+  }
+}

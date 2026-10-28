@@ -186,6 +186,9 @@ describe('authorized task retrieval', () => {
     // A one-off review quiz may use its fixed recall.
     const review = prepareRetrieval({ ...quiz(text), points: base.points, recall: 'answerneedle' }, { maxChars: 4_000 });
     expect(review.task.sources[0]!.text).toContain('answerneedle 只在回答里出现');
+    const weakText = text.replace('lockneedle 第 7 节细节', 'weaknessneedle 唯一薄弱维度');
+    const weakness = prepareRetrieval({ ...quiz(weakText), points: base.points, recall: 'some unrelated recall', weaknesses: [{ question: 'old question', weakAreas: ['weaknessneedle 唯一薄弱维度'], score: 1, maxScore: 3, dimension: 'delayed' }] }, { maxChars: 4_000 });
+    expect(weakness.task.sources[0]!.text).toContain('weaknessneedle 唯一薄弱维度');
   });
 
   it('leaves the exact duplicate recitation source for H2, excluding it from both character counts', () => {
@@ -262,4 +265,38 @@ describe('old knowledge association', () => {
     expect(findRelatedKnowledge(input, '', new Set())).toEqual([]);
     expect(findRelatedKnowledge(input, '存', new Set())).toEqual([]);
   });
+});
+
+it('paginates a stable library without duplicates and rejects a changed revision', () => {
+  const input = data();
+  for (let index = 0; index < 25; index++) input.documents[String(index)] = document(String(index), 'needle');
+  const pages = [0, 10, 20].map(offset => searchLibrary(input, 'needle', undefined, { offset, expectedRevision: 0 }));
+  expect(pages.map(page => page.hits.length)).toEqual([10, 10, 5]);
+  expect(pages.map(page => page.nextOffset)).toEqual([10, 20, null]);
+  expect(new Set(pages.flatMap(page => page.hits.map(hit => hit.id))).size).toBe(25);
+  expect(pages.every(page => page.total === 25)).toBe(true);
+  input.revision++;
+  expect(() => searchLibrary(input, 'needle', undefined, { offset: 10, expectedRevision: 0 })).toThrow('资料库已更新');
+});
+it('searches personal understanding only when selected and labels it without claiming a frozen content version', () => {
+  const input = data(); input.knowledge.k = { ...knowledge('k', '队列', '先进先出'), contentVersion: 3, understanding: 'privateunique' };
+  expect(searchLibrary(input, 'privateunique').hits).toEqual([]);
+  expect(searchLibrary(input, 'privateunique', 'knowledge', { includeUnderstanding: true }).hits[0]).toMatchObject({ id: 'k', field: 'understanding', contentVersion: null, excerpt: 'privateunique', startLine: 1 });
+  input.knowledge.k.archivedAt = '2026-01-01';
+  expect(searchLibrary(input, 'privateunique', undefined, { includeUnderstanding: true }).hits).toEqual([]);
+});
+it.each([
+  ['FIFO', '先进先出'], ['lifo', '后进先出'], ['DP', '动态规划'], ['BFS', '广度优先搜索'], ['DFS', '深度优先搜索'],
+  ['binary search', '折半查找'], ['memoization', '记忆化搜索'], ['cache', '缓存'], ['hash table', '散列表'], ['standard deviation', '标准差'],
+])('lexical evaluation: %s matches %s through the explicit terminology table', (query, expected) => {
+  const input = data(); input.documents.match = document('match', expected); input.documents.other = document('other', 'unrelated geography');
+  expect(searchLibrary(input, query).hits).toHaveLength(0);
+  const result = searchLibrary(input, query, undefined, { expandTerms: true });
+  expect(result.hits.map(hit => hit.id)).toEqual(['match']); expect(result.expandedTerms).toContain(expected);
+});
+it('does not expand abbreviations inside larger words or change model retrieval inputs', () => {
+  const input = data(); input.documents.a = document('a', '动态规划');
+  expect(searchLibrary(input, 'dpreview', undefined, { expandTerms: true }).hits).toEqual([]);
+  expect(searchLibrary(input, 'DP', undefined, { expandTerms: true }).hits).toHaveLength(1);
+  expect(selectRelevantSources([{ id: 'a', name: 'a', text: 'unrelated' }, { id: 'b', name: 'b', text: '动态规划' }], 'DP', 1)[0]!.id).toBe('a');
 });

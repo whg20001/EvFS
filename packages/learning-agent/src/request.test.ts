@@ -54,13 +54,22 @@ describe('offline complete-request budget preparation and final rejection', () =
     const budget = { contextWindow: 128_000, maxOutputTokens: 4096 };
     const scope = { sources: extract.sources, points: [{ id: 'p', title: '标题', description: '描述', sourceIds: ['s1'], knowledgeVersion: 1 }] };
     const followup = inspectLearningRequest({ kind: 'followup', turns: [], ...scope }, budget);
-    const quiz = inspectLearningRequest({ kind: 'quiz', count: 3, ...scope }, budget);
+    const history = [{ id: 't1', question: '追问', answer: '回答', feedback: '订正', assisted: true, scopeVersion: 1 }];
+    const quiz = inspectLearningRequest({ kind: 'quiz', count: 3, turns: history, ...scope }, budget);
     expect(quiz.systemPrompt).toBe(followup.systemPrompt);
     expect(quiz.blocks[0]).toBe(followup.blocks[0]);
-    expect(JSON.parse(quiz.blocks[1]!)).toEqual({ kind: 'quiz', count: 3 });
+    expect(JSON.parse(quiz.blocks[1]!)).toEqual({ kind: 'quiz', count: 3, turns: history });
     expect(followup.systemPrompt).toContain('kind=followup');
     expect(followup.systemPrompt).toContain('kind=quiz');
     expect(inspectLearningRequest(extract, budget).systemPrompt).not.toBe(followup.systemPrompt);
+  });
+
+  it('keeps historical weakness cues in the quiz dynamic block, separate from the stable source prefix', () => {
+    const task: AiTask = { kind: 'quiz', points: [{ id: 'k1', title: '标题', description: '描述', sourceIds: ['s1'] }],
+      sources: extract.sources, count: 1, recall: '回忆', weaknesses: [{ question: '旧问题', weakAreas: ['旧答案缺少 TTL 影响'], score: 1, maxScore: 3, dimension: 'delayed' }] };
+    const prepared = inspectLearningRequest(task, { maxOutputTokens: 4096 });
+    expect(JSON.parse(prepared.blocks[1]!)).toMatchObject({ kind: 'quiz', recall: '回忆', weaknesses: task.weaknesses });
+    expect(prepared.blocks[0]).not.toContain('旧问题');
   });
 
   it('places source context before recitation and recall', () => {

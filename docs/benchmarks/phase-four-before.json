@@ -1,0 +1,57 @@
+{
+  "node": "v22.23.2",
+  "cpu": "Intel(R) Core(TM) i5-14600KF",
+  "workload": {
+    "knowledge": 1000,
+    "documents": 500,
+    "days": 365,
+    "quizzes": 1095,
+    "evidence": 3285,
+    "runs": 3285
+  },
+  "measurements": {
+    "restore": {
+      "medianMs": 1701,
+      "maxMs": 1701,
+      "samples": 1
+    },
+    "coldOpen": {
+      "medianMs": 478,
+      "maxMs": 478,
+      "samples": 1
+    },
+    "initialStateJson": {
+      "medianMs": 47,
+      "maxMs": 64,
+      "samples": 5
+    },
+    "draftSave": {
+      "medianMs": 365,
+      "maxMs": 433,
+      "samples": 5
+    },
+    "runCompletionWrite": {
+      "medianMs": 349,
+      "maxMs": 357,
+      "samples": 5
+    },
+    "search": {
+      "medianMs": 254,
+      "maxMs": 264,
+      "samples": 5
+    },
+    "export": {
+      "medianMs": 198,
+      "maxMs": 198,
+      "samples": 1
+    }
+  },
+  "bytes": {
+    "publicState": 21046816,
+    "export": 51339717,
+    "aggregateV3": 22253679,
+    "quizzes": 9767106,
+    "evidence": 5861806
+  },
+  "peakRssMiB": 1072
+}

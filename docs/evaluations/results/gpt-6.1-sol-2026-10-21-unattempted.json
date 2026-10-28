@@ -1,0 +1,2241 @@
+{
+  "batchId": "6efa020d-4b77-4bbc-947a-687524e378f7",
+  "inFlight": {
+    "caseId": "mean-grade-incomplete",
+    "key": "309c4ba6-dbf1-40de-a8bb-47523ed0b459",
+    "runId": "cabf9b6c-e499-4413-91e2-57eb3cfe57a7"
+  },
+  "suite": "learning-quality-v1",
+  "promptVersion": "learning-v6",
+  "mode": "live",
+  "auth": "oauth",
+  "provider": "openai-codex",
+  "model": "gpt-6.1-sol",
+  "createdAt": "2026-10-21T14:45:32.040Z",
+  "casesHash": "d2fbdf5bb8f2e1ff40ea4cf1259ebfc0ba087810a57910248aed6dcb878957c3",
+  "offset": 4,
+  "limit": 26,
+  "maxOutputTokens": 4096,
+  "allowUnboundedOAuthOutput": true,
+  "continueOnError": true,
+  "costStopThresholdUsd": null,
+  "knownCostUsd": 0.11508800000000002,
+  "unknownUsageAttempts": 2,
+  "stopped": null,
+  "results": [
+    {
+      "topic": "空值缓存",
+      "reference": "对不存在的键也缓存空结果，可以减少重复查询数据库。空结果必须设置有限 TTL；新增数据后若不失效旧空值，可能暂时读不到新数据。",
+      "id": "cache-grade-incomplete",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-cache",
+          "kind": "short",
+          "prompt": "空值缓存解决什么问题，有什么限制？",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "缓存不存在键的空结果，减少数据库查询；设置有限 TTL，新增数据时使旧空值失效，避免短期读取不到新数据。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "说明缓存不存在键的空结果",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "说明有限 TTL 和新增数据后的失效问题",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-cache"
+          ]
+        },
+        "answer": "缓存空结果能减少数据库查询。"
+      },
+      "checks": [
+        "不能给遗漏条件或错误答案满分",
+        "扣分对应原评分细则"
+      ],
+      "expectedScore": {
+        "min": 1,
+        "max": 1
+      },
+      "response": {
+        "output": {
+          "kind": "grade",
+          "status": "graded",
+          "scores": [
+            {
+              "rubricId": "r1",
+              "score": 1,
+              "evidence": "回答“缓存空结果能减少数据库查询”，表达了空结果缓存的作用。"
+            },
+            {
+              "rubricId": "r2",
+              "score": 0,
+              "evidence": "回答未提及有限 TTL，也未说明新增数据后需使旧空值失效。"
+            }
+          ],
+          "feedback": "作用说明正确。建议补充：缓存不存在键的空结果时，应设置有限 TTL；新增数据后需使旧空值失效，避免短期读不到新数据。本次仅评价回答中呈现的内容；AI 评价可能出错。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 910,
+          "outputTokens": 178,
+          "cost": 0.0036,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 910,
+        "outputTokens": 178,
+        "cost": 0.0036,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "691f0988b6bf16db709896d0cb0f50cd858e18f2f4d74d7d91ccec4f145f99a4",
+      "error": null,
+      "durationMs": 9061,
+      "scoreMatchesReference": true,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "先进先出队列",
+      "reference": "FIFO 队列从队尾入队，从队头出队。依次入队 A、B、C 后，第一次出队得到 A，剩余 B、C。栈是后进先出。",
+      "id": "queue-extract",
+      "task": {
+        "kind": "extract",
+        "recitation": {
+          "learned": "第一次得到 A，因为队列先进先出，从队头取最早入队的元素，剩余 B、C。",
+          "unclear": "适用条件是什么？",
+          "application": "用一个小例子检验",
+          "topic": "先进先出队列"
+        },
+        "sources": [
+          {
+            "id": "source-queue",
+            "name": "先进先出队列.txt",
+            "text": "FIFO 队列从队尾入队，从队头出队。依次入队 A、B、C 后，第一次出队得到 A，剩余 B、C。栈是后进先出。"
+          }
+        ]
+      },
+      "checks": [
+        "仅引用给定来源",
+        "提取结论及适用条件",
+        "不扩展未提供的考核范围"
+      ],
+      "response": {
+        "output": {
+          "kind": "extract",
+          "candidates": [
+            {
+              "title": "FIFO 队列的入队与出队规则",
+              "description": "资料说明：FIFO 队列从队尾入队、从队头出队，最早入队的元素先出队。用户复述与此一致。对于用户提出的“适用条件”，当前资料仅明确讨论 FIFO 队列，未提供更多条件，需待核对。",
+              "sourceIds": [
+                "source-queue"
+              ]
+            },
+            {
+              "title": "用 A、B、C 示例检验出队顺序",
+              "description": "资料给出的例子是依次入队 A、B、C，第一次出队得到 A，剩余 B、C。用户正确复述了这一结果及先进先出的理由，可作为其希望用小例子检验规则的候选知识点。",
+              "sourceIds": [
+                "source-queue"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 763,
+          "outputTokens": 188,
+          "cost": 0.003406,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 763,
+        "outputTokens": 188,
+        "cost": 0.003406,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "edd851bc15605d061d9c1d94c4a4cab153313f727bbca2c7bae4cd8741b0d2aa",
+      "error": null,
+      "durationMs": 8049,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "先进先出队列",
+      "reference": "FIFO 队列从队尾入队，从队头出队。依次入队 A、B、C 后，第一次出队得到 A，剩余 B、C。栈是后进先出。",
+      "id": "queue-followup",
+      "task": {
+        "kind": "followup",
+        "points": [
+          {
+            "id": "point-queue",
+            "title": "先进先出队列",
+            "description": "FIFO 队列从队尾入队，从队头出队。依次入队 A、B、C 后，第一次出队得到 A，剩余 B、C。栈是后进先出。",
+            "sourceIds": [
+              "source-queue"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "turns": [
+          {
+            "id": "turn-1",
+            "question": "A、B、C 依次入队后第一次出队是什么？为什么？",
+            "answer": "第一次得到 C，因为最后加入的先取出。",
+            "feedback": null,
+            "assisted": false,
+            "scopeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-queue",
+            "name": "先进先出队列.txt",
+            "text": "FIFO 队列从队尾入队，从队头出队。依次入队 A、B、C 后，第一次出队得到 A，剩余 B、C。栈是后进先出。"
+          }
+        ]
+      },
+      "checks": [
+        "针对回答中的遗漏或错误反馈",
+        "一次提出一个可回答的追问",
+        "不把未提及内容直接判为不会"
+      ],
+      "response": {
+        "output": {
+          "kind": "followup",
+          "question": "你刚才说“最后加入的先取出”，你认为这个规则对应队列还是栈？",
+          "feedback": "你回答第一次取出 C，并以“最后加入的先取出”解释；需要澄清你对队列与栈的取出规则的区分。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 2030,
+          "outputTokens": 76,
+          "cost": 0.0048200000000000005,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 2030,
+        "outputTokens": 76,
+        "cost": 0.0048200000000000005,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "d45b69342ca2bba2731db52d8f947002c286964534380c6b9fdff0a27ffad9a4",
+      "error": null,
+      "durationMs": 6040,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "先进先出队列",
+      "reference": "FIFO 队列从队尾入队，从队头出队。依次入队 A、B、C 后，第一次出队得到 A，剩余 B、C。栈是后进先出。",
+      "id": "queue-quiz",
+      "task": {
+        "kind": "quiz",
+        "points": [
+          {
+            "id": "point-queue",
+            "title": "先进先出队列",
+            "description": "FIFO 队列从队尾入队，从队头出队。依次入队 A、B、C 后，第一次出队得到 A，剩余 B、C。栈是后进先出。",
+            "sourceIds": [
+              "source-queue"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-queue",
+            "name": "先进先出队列.txt",
+            "text": "FIFO 队列从队尾入队，从队头出队。依次入队 A、B、C 后，第一次出队得到 A，剩余 B、C。栈是后进先出。"
+          }
+        ],
+        "count": 2
+      },
+      "checks": [
+        "两道题均在给定范围内",
+        "参考答案和评分细则正确",
+        "题目有明确可判定答案"
+      ],
+      "response": {
+        "output": {
+          "kind": "quiz",
+          "questions": [
+            {
+              "knowledgeId": "point-queue",
+              "kind": "single",
+              "prompt": "一个空的 FIFO 队列依次入队 X、Y、Z，然后连续出队两次。第二次出队得到什么？",
+              "options": [
+                "X",
+                "Y",
+                "Z"
+              ],
+              "correctIndex": 1,
+              "referenceAnswer": "Y。FIFO 按入队先后出队，前两次依次得到 X、Y。",
+              "rubric": [
+                {
+                  "id": "r1",
+                  "description": "选择 Y，正确应用先进先出规则。",
+                  "maxScore": 1
+                }
+              ],
+              "sourceIds": [
+                "source-queue"
+              ]
+            },
+            {
+              "knowledgeId": "point-queue",
+              "kind": "short",
+              "prompt": "FIFO 队列分别从哪一端入队、哪一端出队？它与栈的取出顺序有什么区别？",
+              "options": [],
+              "correctIndex": null,
+              "referenceAnswer": "FIFO 队列从队尾入队、从队头出队，先入队的先出队；栈是后进先出。",
+              "rubric": [
+                {
+                  "id": "r1",
+                  "description": "说明队列从队尾入队、从队头出队。",
+                  "maxScore": 2
+                },
+                {
+                  "id": "r2",
+                  "description": "正确区分队列的先进先出与栈的后进先出。",
+                  "maxScore": 2
+                }
+              ],
+              "sourceIds": [
+                "source-queue"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 1973,
+          "outputTokens": 293,
+          "cost": 0.006876,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 1973,
+        "outputTokens": 293,
+        "cost": 0.006876,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "bb81127107e4b9bf30d277452cc4e53ac13a69e4dafc395babd0443b8e16704b",
+      "error": null,
+      "durationMs": 12070,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "先进先出队列",
+      "reference": "FIFO 队列从队尾入队，从队头出队。依次入队 A、B、C 后，第一次出队得到 A，剩余 B、C。栈是后进先出。",
+      "id": "queue-grade-correct",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-queue",
+          "kind": "short",
+          "prompt": "A、B、C 依次入队后第一次出队是什么？为什么？",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "第一次得到 A，因为队列先进先出，从队头取最早入队的元素，剩余 B、C。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "结果为 A",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "理由是先进先出，而非后进先出",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-queue"
+          ]
+        },
+        "answer": "第一次得到 A，因为队列先进先出，从队头取最早入队的元素，剩余 B、C。"
+      },
+      "checks": [
+        "完整正确回答应得满分",
+        "每项依据来自答案内容"
+      ],
+      "expectedScore": {
+        "min": 2,
+        "max": 2
+      },
+      "response": {
+        "output": {
+          "kind": "grade",
+          "status": "graded",
+          "scores": [
+            {
+              "rubricId": "r1",
+              "score": 1,
+              "evidence": "回答明确指出“第一次得到 A”。"
+            },
+            {
+              "rubricId": "r2",
+              "score": 1,
+              "evidence": "回答说明“队列先进先出，从队头取最早入队的元素”。"
+            }
+          ],
+          "feedback": "结果与理由均符合参考答案：A 最早入队，因此最先出队。AI 评价可能出错。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 928,
+          "outputTokens": 103,
+          "cost": 0.002886,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 928,
+        "outputTokens": 103,
+        "cost": 0.002886,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "a947409b2ac938d1ca7bfdd1d9b03006505cf1796f03de3152368fe27fbdcb7f",
+      "error": null,
+      "durationMs": 7051,
+      "scoreMatchesReference": true,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "先进先出队列",
+      "reference": "FIFO 队列从队尾入队，从队头出队。依次入队 A、B、C 后，第一次出队得到 A，剩余 B、C。栈是后进先出。",
+      "id": "queue-grade-incomplete",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-queue",
+          "kind": "short",
+          "prompt": "A、B、C 依次入队后第一次出队是什么？为什么？",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "第一次得到 A，因为队列先进先出，从队头取最早入队的元素，剩余 B、C。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "结果为 A",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "理由是先进先出，而非后进先出",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-queue"
+          ]
+        },
+        "answer": "第一次得到 C，因为最后加入的先取出。"
+      },
+      "checks": [
+        "不能给遗漏条件或错误答案满分",
+        "扣分对应原评分细则"
+      ],
+      "expectedScore": {
+        "min": 0,
+        "max": 0
+      },
+      "response": {
+        "output": {
+          "kind": "grade",
+          "status": "graded",
+          "scores": [
+            {
+              "rubricId": "r1",
+              "score": 0,
+              "evidence": "回答“第一次得到 C”，与参考答案 A 不符。"
+            },
+            {
+              "rubricId": "r2",
+              "score": 0,
+              "evidence": "回答“最后加入的先取出”，是后进先出，而非队列的先进先出。"
+            }
+          ],
+          "feedback": "你把队列与栈的规则混淆了。队列先进先出：A 最早入队，所以第一次出队得到 A，剩余 B、C。AI 评价可能出错。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 913,
+          "outputTokens": 131,
+          "cost": 0.003136,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 913,
+        "outputTokens": 131,
+        "cost": 0.003136,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "fbc31e32723908787c67ad93a78b5bf7ce9958c973913756fff5657ec28f5c26",
+      "error": null,
+      "durationMs": 6043,
+      "scoreMatchesReference": true,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "二分查找",
+      "reference": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。",
+      "id": "search-extract",
+      "task": {
+        "kind": "extract",
+        "recitation": {
+          "learned": "数据需要有序，每次根据中间值的比较排除一半区间，所以查询时间 O(log n)。",
+          "unclear": "适用条件是什么？",
+          "application": "用一个小例子检验",
+          "topic": "二分查找"
+        },
+        "sources": [
+          {
+            "id": "source-search",
+            "name": "二分查找.txt",
+            "text": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。"
+          }
+        ]
+      },
+      "checks": [
+        "仅引用给定来源",
+        "提取结论及适用条件",
+        "不扩展未提供的考核范围"
+      ],
+      "response": {
+        "output": {
+          "kind": "extract",
+          "candidates": [
+            {
+              "title": "二分查找的适用条件",
+              "description": "资料指出，二分查找要求数据可按比较规则有序访问，对无序数组直接使用普通二分查找不能保证正确。你的复述已提到“数据需要有序”，但仍将适用条件列为疑问，具体理解待确认。",
+              "sourceIds": [
+                "source-search"
+              ]
+            },
+            {
+              "title": "二分查找如何缩小区间",
+              "description": "你的复述与资料一致：每次比较中间元素，根据比较结果排除一半区间。可用一个有序数组的小例子，逐步说明保留哪一半区间，以核对理解。",
+              "sourceIds": [
+                "source-search"
+              ]
+            },
+            {
+              "title": "二分查找的时间复杂度",
+              "description": "资料给出的时间复杂度为 O(log n)，你的复述也将其与每次排除一半区间联系起来；是否能解释这一联系，仍可通过小例子进一步核对。",
+              "sourceIds": [
+                "source-search"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 763,
+          "outputTokens": 230,
+          "cost": 0.0038260000000000004,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 763,
+        "outputTokens": 230,
+        "cost": 0.0038260000000000004,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "a03b737713200817e83424112193a66c7042935bee7d5b362d4b9d7b4efc754b",
+      "error": null,
+      "durationMs": 10056,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "二分查找",
+      "reference": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。",
+      "id": "search-followup",
+      "task": {
+        "kind": "followup",
+        "points": [
+          {
+            "id": "point-search",
+            "title": "二分查找",
+            "description": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。",
+            "sourceIds": [
+              "source-search"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "turns": [
+          {
+            "id": "turn-1",
+            "question": "二分查找为什么快，使用前需要什么条件？",
+            "answer": "任意无序数组都可以直接二分，因为每次随机去掉一半。",
+            "feedback": null,
+            "assisted": false,
+            "scopeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-search",
+            "name": "二分查找.txt",
+            "text": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。"
+          }
+        ]
+      },
+      "checks": [
+        "针对回答中的遗漏或错误反馈",
+        "一次提出一个可回答的追问",
+        "不把未提及内容直接判为不会"
+      ],
+      "response": {
+        "output": {
+          "kind": "followup",
+          "question": "你提到“每次随机去掉一半”：你依据什么判断被去掉的那一半不包含目标值？",
+          "feedback": "你认为无序数组也可以直接二分，并将缩小区间描述为随机去掉一半；尚需澄清你判断某个区间可以被排除的依据。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 2036,
+          "outputTokens": 86,
+          "cost": 0.004932000000000001,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 2036,
+        "outputTokens": 86,
+        "cost": 0.004932000000000001,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "da42865443471968951664ba75ad38ea16317dc9eb78cf9cd5d71b358ad6511c",
+      "error": null,
+      "durationMs": 9057,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "二分查找",
+      "reference": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。",
+      "id": "search-quiz",
+      "task": {
+        "kind": "quiz",
+        "points": [
+          {
+            "id": "point-search",
+            "title": "二分查找",
+            "description": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。",
+            "sourceIds": [
+              "source-search"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-search",
+            "name": "二分查找.txt",
+            "text": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。"
+          }
+        ],
+        "count": 2
+      },
+      "checks": [
+        "两道题均在给定范围内",
+        "参考答案和评分细则正确",
+        "题目有明确可判定答案"
+      ],
+      "response": {
+        "output": {
+          "kind": "quiz",
+          "questions": [
+            {
+              "knowledgeId": "point-search",
+              "kind": "single",
+              "prompt": "对一个未排序的数组直接使用普通二分查找，以下判断哪项正确？",
+              "options": [
+                "只要目标存在，就一定能找到",
+                "不能保证查找结果正确",
+                "仍能保证正确，但时间复杂度变为 O(n)"
+              ],
+              "correctIndex": 1,
+              "referenceAnswer": "不能保证查找结果正确。二分查找要求数据可按比较规则有序访问，否则无法依据中间元素的比较结果可靠地排除一半区间。",
+              "rubric": [
+                {
+                  "id": "r1",
+                  "description": "选择“不能保证查找结果正确”。",
+                  "maxScore": 1
+                }
+              ],
+              "sourceIds": [
+                "source-search"
+              ]
+            },
+            {
+              "knowledgeId": "point-search",
+              "kind": "short",
+              "prompt": "在满足使用条件时，普通二分查找每次如何缩小查找范围？其时间复杂度是什么，并简述原因。",
+              "options": [],
+              "correctIndex": null,
+              "referenceAnswer": "每次将目标与中间元素比较，并根据比较结果排除一半查找区间。由于查找范围不断减半，时间复杂度为 O(log n)。",
+              "rubric": [
+                {
+                  "id": "r1",
+                  "description": "说明将目标与中间元素进行比较。",
+                  "maxScore": 1
+                },
+                {
+                  "id": "r2",
+                  "description": "说明根据比较结果排除一半查找区间。",
+                  "maxScore": 1
+                },
+                {
+                  "id": "r3",
+                  "description": "指出时间复杂度为 O(log n)，并将其与区间反复减半联系起来。",
+                  "maxScore": 2
+                }
+              ],
+              "sourceIds": [
+                "source-search"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 1976,
+          "outputTokens": 349,
+          "cost": 0.007442000000000001,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 1976,
+        "outputTokens": 349,
+        "cost": 0.007442000000000001,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "b834c8d6e2ccd0cb3f339d9ae79cd689380ac7e87bd4b390538620366470b3c5",
+      "error": null,
+      "durationMs": 14090,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "二分查找",
+      "reference": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。",
+      "id": "search-grade-correct",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-search",
+          "kind": "short",
+          "prompt": "二分查找为什么快，使用前需要什么条件？",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "数据需要有序，每次根据中间值的比较排除一半区间，所以查询时间 O(log n)。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "明确有序条件",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "解释减半与 O(log n)",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-search"
+          ]
+        },
+        "answer": "数据需要有序，每次根据中间值的比较排除一半区间，所以查询时间 O(log n)。"
+      },
+      "checks": [
+        "完整正确回答应得满分",
+        "每项依据来自答案内容"
+      ],
+      "expectedScore": {
+        "min": 2,
+        "max": 2
+      },
+      "response": {
+        "output": {
+          "kind": "grade",
+          "status": "graded",
+          "scores": [
+            {
+              "rubricId": "r1",
+              "score": 1,
+              "evidence": "回答明确指出“数据需要有序”。"
+            },
+            {
+              "rubricId": "r2",
+              "score": 1,
+              "evidence": "回答说明“每次根据中间值的比较排除一半区间”，并指出查询时间为 O(log n)。"
+            }
+          ],
+          "feedback": "回答符合参考答案：明确了有序条件，并解释了区间减半与 O(log n) 时间复杂度。AI 评价可能出错。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 917,
+          "outputTokens": 119,
+          "cost": 0.0030239999999999998,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 917,
+        "outputTokens": 119,
+        "cost": 0.0030239999999999998,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "5f139386e9f3ffabd94b0b5e060f03aa4ee74b74fe0250607b1d3af88beea4cf",
+      "error": null,
+      "durationMs": 7058,
+      "scoreMatchesReference": true,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "二分查找",
+      "reference": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。",
+      "id": "search-grade-incomplete",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-search",
+          "kind": "short",
+          "prompt": "二分查找为什么快，使用前需要什么条件？",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "数据需要有序，每次根据中间值的比较排除一半区间，所以查询时间 O(log n)。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "明确有序条件",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "解释减半与 O(log n)",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-search"
+          ]
+        },
+        "answer": "任意无序数组都可以直接二分，因为每次随机去掉一半。"
+      },
+      "checks": [
+        "不能给遗漏条件或错误答案满分",
+        "扣分对应原评分细则"
+      ],
+      "expectedScore": {
+        "min": 0,
+        "max": 0
+      },
+      "response": {
+        "output": {
+          "kind": "grade",
+          "status": "graded",
+          "scores": [
+            {
+              "rubricId": "r1",
+              "score": 0,
+              "evidence": "回答称“任意无序数组都可以直接二分”，与需要数据有序的条件相反。"
+            },
+            {
+              "rubricId": "r2",
+              "score": 0,
+              "evidence": "回答称“每次随机去掉一半”，未说明根据中间值比较排除不可能包含目标的一半，也未指出时间复杂度 O(log n)。"
+            }
+          ],
+          "feedback": "二分查找要求数据有序；通过比较目标与中间值，每次排除不可能包含目标的一半区间，因此查询时间为 O(log n)。随机丢弃一半可能丢掉目标。AI 评价可能出错。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 911,
+          "outputTokens": 165,
+          "cost": 0.0034720000000000003,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 911,
+        "outputTokens": 165,
+        "cost": 0.0034720000000000003,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "c76bce8a8f92da3500593f3d2af931708aaad234864afa111328cea77822459e",
+      "error": null,
+      "durationMs": 12064,
+      "scoreMatchesReference": true,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "独立事件乘法规则",
+      "reference": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。",
+      "id": "probability-extract",
+      "task": {
+        "kind": "extract",
+        "recitation": {
+          "learned": "A 与 B 独立时相乘得到 0.2；没有独立性等条件，不能仅凭这两个边缘概率确定交集。",
+          "unclear": "适用条件是什么？",
+          "application": "用一个小例子检验",
+          "topic": "独立事件乘法规则"
+        },
+        "sources": [
+          {
+            "id": "source-probability",
+            "name": "独立事件乘法规则.txt",
+            "text": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。"
+          }
+        ]
+      },
+      "checks": [
+        "仅引用给定来源",
+        "提取结论及适用条件",
+        "不扩展未提供的考核范围"
+      ],
+      "response": {
+        "output": {
+          "kind": "extract",
+          "candidates": [
+            {
+              "title": "独立事件的交集概率乘法规则",
+              "description": "资料说明：当 A、B 独立时，P(A 且 B)=P(A)P(B)。例如 P(A)=0.5、P(B)=0.4，交集概率为 0.2。用户复述与资料一致，但自述对适用条件仍有疑问，需确认是否理解此处相乘的前提是事件独立。",
+              "sourceIds": [
+                "source-probability"
+              ]
+            },
+            {
+              "title": "仅凭边缘概率不能直接确定交集概率",
+              "description": "资料说明：不独立时，不能仅凭两个边缘概率相乘。用户也复述了没有独立性等条件时不能仅凭边缘概率确定交集；这一表述与资料方向一致，具体理解仍待用例子核对。",
+              "sourceIds": [
+                "source-probability"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 787,
+          "outputTokens": 205,
+          "cost": 0.003624,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 787,
+        "outputTokens": 205,
+        "cost": 0.003624,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "af607be635e7eec8247fa03b043a805f44cfabe209ea597f503b36e47d8d63d4",
+      "error": null,
+      "durationMs": 13077,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "独立事件乘法规则",
+      "reference": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。",
+      "id": "probability-followup",
+      "task": {
+        "kind": "followup",
+        "points": [
+          {
+            "id": "point-probability",
+            "title": "独立事件乘法规则",
+            "description": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。",
+            "sourceIds": [
+              "source-probability"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "turns": [
+          {
+            "id": "turn-1",
+            "question": "已知 P(A)=0.5、P(B)=0.4，什么时候交集为 0.2？",
+            "answer": "任何情况下交集都等于 0.2。",
+            "feedback": null,
+            "assisted": false,
+            "scopeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-probability",
+            "name": "独立事件乘法规则.txt",
+            "text": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。"
+          }
+        ]
+      },
+      "checks": [
+        "针对回答中的遗漏或错误反馈",
+        "一次提出一个可回答的追问",
+        "不把未提及内容直接判为不会"
+      ],
+      "response": {
+        "output": {
+          "kind": "followup",
+          "question": "你认为仅知道 P(A)=0.5、P(B)=0.4，就足以确定交集概率吗？请说明理由。",
+          "feedback": "你回答“任何情况下交集都等于 0.2”，但尚未说明这一判断的依据，需要进一步澄清你对公式适用条件的理解。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 2069,
+          "outputTokens": 83,
+          "cost": 0.004968,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 2069,
+        "outputTokens": 83,
+        "cost": 0.004968,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "2f2e5dbc147626326cf5ac5e9e9c18f855db792cffaf9c146f0ec0ae3ddf9f42",
+      "error": null,
+      "durationMs": 7052,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "独立事件乘法规则",
+      "reference": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。",
+      "id": "probability-quiz",
+      "task": {
+        "kind": "quiz",
+        "points": [
+          {
+            "id": "point-probability",
+            "title": "独立事件乘法规则",
+            "description": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。",
+            "sourceIds": [
+              "source-probability"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-probability",
+            "name": "独立事件乘法规则.txt",
+            "text": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。"
+          }
+        ],
+        "count": 2
+      },
+      "checks": [
+        "两道题均在给定范围内",
+        "参考答案和评分细则正确",
+        "题目有明确可判定答案"
+      ],
+      "response": {
+        "output": {
+          "kind": "quiz",
+          "questions": [
+            {
+              "knowledgeId": "point-probability",
+              "kind": "short",
+              "prompt": "已知事件 A、B 独立，P(A)=0.6，P(B)=0.5。求 P(A 且 B)，并写出计算依据。",
+              "options": [],
+              "correctIndex": null,
+              "referenceAnswer": "因 A、B 独立，P(A 且 B)=P(A)P(B)=0.6×0.5=0.3。",
+              "rubric": [
+                {
+                  "id": "r1",
+                  "description": "指出独立条件下交集概率等于两个事件概率的乘积。",
+                  "maxScore": 2
+                },
+                {
+                  "id": "r2",
+                  "description": "正确计算交集概率为 0.3。",
+                  "maxScore": 2
+                }
+              ],
+              "sourceIds": [
+                "source-probability"
+              ]
+            },
+            {
+              "knowledgeId": "point-probability",
+              "kind": "single",
+              "prompt": "已知 P(A)=0.5、P(B)=0.4，且 A、B 不独立。以下哪项判断正确？",
+              "options": [
+                "P(A 且 B)一定等于 0.2。",
+                "仅凭这两个边缘概率，不能确定 P(A 且 B)的具体值。",
+                "P(A 且 B)一定等于 0。"
+              ],
+              "correctIndex": 1,
+              "referenceAnswer": "应选第二项。不独立时，不能仅凭两个边缘概率相乘，也不能由这两个数确定交集概率的具体值。",
+              "rubric": [
+                {
+                  "id": "r1",
+                  "description": "选择第二项，识别不独立时不能仅凭两个边缘概率确定交集概率。",
+                  "maxScore": 3
+                }
+              ],
+              "sourceIds": [
+                "source-probability"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 2004,
+          "outputTokens": 364,
+          "cost": 0.007648,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 2004,
+        "outputTokens": 364,
+        "cost": 0.007648,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "c8a62efac313b1f21b746c845cadabe22c48002b6a5f3492997dcdbdc3972a4c",
+      "error": null,
+      "durationMs": 11063,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "独立事件乘法规则",
+      "reference": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。",
+      "id": "probability-grade-correct",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-probability",
+          "kind": "short",
+          "prompt": "已知 P(A)=0.5、P(B)=0.4，什么时候交集为 0.2？",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "A 与 B 独立时相乘得到 0.2；没有独立性等条件，不能仅凭这两个边缘概率确定交集。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "明确独立条件",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "不把边缘概率乘法推广到任意事件",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-probability"
+          ]
+        },
+        "answer": "A 与 B 独立时相乘得到 0.2；没有独立性等条件，不能仅凭这两个边缘概率确定交集。"
+      },
+      "checks": [
+        "完整正确回答应得满分",
+        "每项依据来自答案内容"
+      ],
+      "expectedScore": {
+        "min": 2,
+        "max": 2
+      },
+      "response": {
+        "output": {
+          "kind": "grade",
+          "status": "graded",
+          "scores": [
+            {
+              "rubricId": "r1",
+              "score": 1,
+              "evidence": "回答明确指出“A 与 B 独立时相乘得到 0.2”。"
+            },
+            {
+              "rubricId": "r2",
+              "score": 1,
+              "evidence": "回答指出“没有独立性等条件，不能仅凭这两个边缘概率确定交集”，未将乘法推广到任意事件。"
+            }
+          ],
+          "feedback": "回答符合参考答案，明确了独立条件及仅凭边缘概率无法确定交集的限制。AI 评价可能出错。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 955,
+          "outputTokens": 130,
+          "cost": 0.00321,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 955,
+        "outputTokens": 130,
+        "cost": 0.00321,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "4c976b5727ac187358ac23ec288d10344f4935d7c8362143fe770349f3c1a71e",
+      "error": null,
+      "durationMs": 7041,
+      "scoreMatchesReference": true,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "独立事件乘法规则",
+      "reference": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。",
+      "id": "probability-grade-incomplete",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-probability",
+          "kind": "short",
+          "prompt": "已知 P(A)=0.5、P(B)=0.4，什么时候交集为 0.2？",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "A 与 B 独立时相乘得到 0.2；没有独立性等条件，不能仅凭这两个边缘概率确定交集。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "明确独立条件",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "不把边缘概率乘法推广到任意事件",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-probability"
+          ]
+        },
+        "answer": "任何情况下交集都等于 0.2。"
+      },
+      "checks": [
+        "不能给遗漏条件或错误答案满分",
+        "扣分对应原评分细则"
+      ],
+      "expectedScore": {
+        "min": 0,
+        "max": 0
+      },
+      "response": {
+        "output": {
+          "kind": "grade",
+          "status": "graded",
+          "scores": [
+            {
+              "rubricId": "r1",
+              "score": 0,
+              "evidence": "回答“任何情况下”未明确 A 与 B 独立这一条件。"
+            },
+            {
+              "rubricId": "r2",
+              "score": 0,
+              "evidence": "回答“任何情况下交集都等于 0.2”，错误地将边缘概率乘法推广到任意事件。"
+            }
+          ],
+          "feedback": "A 与 B 独立时，P(A∩B)=0.5×0.4=0.2；仅凭这两个边缘概率，不能确定交集概率。建议补充独立条件，避免使用“任何情况下”。AI 评价可能出错。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 933,
+          "outputTokens": 154,
+          "cost": 0.003406,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 933,
+        "outputTokens": 154,
+        "cost": 0.003406,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "c7797e0bd73f255a17756f45f04faa74fda654909dcc484a81445e5ae6a2760b",
+      "error": null,
+      "durationMs": 7048,
+      "scoreMatchesReference": true,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "保持顺序的去重",
+      "reference": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。",
+      "id": "unique-extract",
+      "task": {
+        "kind": "extract",
+        "recitation": {
+          "learned": "结果是 [2,1,3]。Set 去掉重复值并保持首次插入顺序，不修改原数组。",
+          "unclear": "适用条件是什么？",
+          "application": "用一个小例子检验",
+          "topic": "保持顺序的去重"
+        },
+        "sources": [
+          {
+            "id": "source-unique",
+            "name": "保持顺序的去重.txt",
+            "text": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。"
+          }
+        ]
+      },
+      "checks": [
+        "仅引用给定来源",
+        "提取结论及适用条件",
+        "不扩展未提供的考核范围"
+      ],
+      "response": {
+        "output": {
+          "kind": "extract",
+          "candidates": [
+            {
+              "title": "Set 去重与首次插入顺序",
+              "description": "资料说明 JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 得到 [2,1,3]，保留各值首次出现的顺序。用户复述与此一致。",
+              "sourceIds": [
+                "source-unique"
+              ]
+            },
+            {
+              "title": "去重操作对原数组的影响及适用范围",
+              "description": "资料中的整数数组示例在展开 new Set 后，原数组不变；用户也复述了这一点。用户提出的适用条件尚待核对：当前资料只提供该整数数组示例，未说明其他数据类型或更一般的适用边界。可用此小例子检验结果及原数组是否变化。",
+              "sourceIds": [
+                "source-unique"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 767,
+          "outputTokens": 199,
+          "cost": 0.0035240000000000002,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 767,
+        "outputTokens": 199,
+        "cost": 0.0035240000000000002,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "8da62e01561746ee7b47402bdb83577b1c302e50d87ac76f194498b76fd030cb",
+      "error": null,
+      "durationMs": 10054,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "保持顺序的去重",
+      "reference": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。",
+      "id": "unique-followup",
+      "task": {
+        "kind": "followup",
+        "points": [
+          {
+            "id": "point-unique",
+            "title": "保持顺序的去重",
+            "description": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。",
+            "sourceIds": [
+              "source-unique"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "turns": [
+          {
+            "id": "turn-1",
+            "question": "解释 [...new Set([2,1,2,3,1])] 的结果和顺序。",
+            "answer": "结果是 [1,2,3]，因为 Set 会自动排序。",
+            "feedback": null,
+            "assisted": false,
+            "scopeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-unique",
+            "name": "保持顺序的去重.txt",
+            "text": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。"
+          }
+        ]
+      },
+      "checks": [
+        "针对回答中的遗漏或错误反馈",
+        "一次提出一个可回答的追问",
+        "不把未提及内容直接判为不会"
+      ],
+      "response": {
+        "output": {
+          "kind": "followup",
+          "question": "若输入改为 [3,1,3,2,1]，你认为 [...new Set(输入数组)] 会得到什么？请说明你判断输出顺序的依据。",
+          "feedback": "你给出了 [1,2,3]，并解释为“Set 会自动排序”；这一顺序判断与当前资料不一致，需要进一步澄清。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 2042,
+          "outputTokens": 90,
+          "cost": 0.004984,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 2042,
+        "outputTokens": 90,
+        "cost": 0.004984,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "e1fe1171de6de00dcdbc73e8ec8fafced7012b4dd18f3f1130b5d2849ad54cd1",
+      "error": null,
+      "durationMs": 7042,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "保持顺序的去重",
+      "reference": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。",
+      "id": "unique-quiz",
+      "task": {
+        "kind": "quiz",
+        "points": [
+          {
+            "id": "point-unique",
+            "title": "保持顺序的去重",
+            "description": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。",
+            "sourceIds": [
+              "source-unique"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-unique",
+            "name": "保持顺序的去重.txt",
+            "text": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。"
+          }
+        ],
+        "count": 2,
+        "code": {
+          "languages": [
+            "javascript"
+          ]
+        }
+      },
+      "checks": [
+        "两道题均在给定范围内",
+        "参考答案和评分细则正确",
+        "检查骨架不泄露答案、测试可执行且预期正确；代码题是否生成单独记录"
+      ],
+      "response": {
+        "output": {
+          "kind": "quiz",
+          "questions": [
+            {
+              "knowledgeId": "point-unique",
+              "kind": "code",
+              "prompt": "实现 uniqueInOrder(values)：对整数数组去重，按各整数首次出现的顺序返回一个新数组，不修改输入数组。请使用 JavaScript 的 Set。",
+              "options": [],
+              "correctIndex": null,
+              "referenceAnswer": "function uniqueInOrder(values) {\n  return [...new Set(values)];\n}\nSet 去除重复值并按插入顺序迭代；展开运算生成新数组，不修改输入数组。",
+              "rubric": [
+                {
+                  "id": "set",
+                  "description": "使用 Set 完成去重。",
+                  "maxScore": 3
+                },
+                {
+                  "id": "order",
+                  "description": "结果保留各整数首次出现的顺序，不排序。",
+                  "maxScore": 3
+                },
+                {
+                  "id": "boundary",
+                  "description": "返回新数组且不修改输入，正确处理空数组与重复元素。",
+                  "maxScore": 3
+                }
+              ],
+              "sourceIds": [
+                "source-unique"
+              ],
+              "code": {
+                "language": "javascript",
+                "starter": "// 目标：使用 Set 对整数数组去重，保持首次出现的顺序。\n// 输入：整数数组 values；输出：去重后的新数组。\n// 关键步骤：构造去重集合，再生成结果数组。\n// 边界：空数组、重复元素；不得修改输入数组。\nfunction uniqueInOrder(values) {\n  // TODO：实现去重并返回新数组。\n  throw new Error('TODO');\n}",
+                "tests": [
+                  {
+                    "name": "保持首次出现顺序",
+                    "code": "const input1 = [3, 1, 3, 2, 1];\nconst output1 = uniqueInOrder(input1);\nassertEqual(JSON.stringify(output1), '[3,1,2]');\nassertEqual(JSON.stringify(input1), '[3,1,3,2,1]');\nassert(output1 !== input1, '必须返回新数组');"
+                  },
+                  {
+                    "name": "空数组",
+                    "code": "const input2 = [];\nconst output2 = uniqueInOrder(input2);\nassertEqual(JSON.stringify(output2), '[]');\nassert(output2 !== input2, '空数组也应返回新数组');"
+                  },
+                  {
+                    "name": "全部重复",
+                    "code": "assertEqual(JSON.stringify(uniqueInOrder([5, 5, 5])), '[5]');"
+                  }
+                ]
+              }
+            },
+            {
+              "knowledgeId": "point-unique",
+              "kind": "single",
+              "prompt": "执行以下代码后，a 的内容是什么？\nconst a = [2, 1, 2, 3, 1];\nconst b = [...new Set(a)];",
+              "options": [
+                "[2, 1, 3]",
+                "[2, 1, 2, 3, 1]",
+                "[1, 2, 3]"
+              ],
+              "correctIndex": 1,
+              "referenceAnswer": "a 仍为 [2, 1, 2, 3, 1]。构造 Set 并展开不会修改原数组。",
+              "rubric": [
+                {
+                  "id": "original",
+                  "description": "识别原数组 a 保持不变，选择第二项。",
+                  "maxScore": 2
+                }
+              ],
+              "sourceIds": [
+                "source-unique"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 1984,
+          "outputTokens": 773,
+          "cost": 0.011698,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 1984,
+        "outputTokens": 773,
+        "cost": 0.011698,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "a4e13fcd17f0521211f1991dd6f7a452bf33e93068348015590c63ecae84be6d",
+      "error": null,
+      "durationMs": 27113,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "保持顺序的去重",
+      "reference": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。",
+      "id": "unique-grade-correct",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-unique",
+          "kind": "short",
+          "prompt": "解释 [...new Set([2,1,2,3,1])] 的结果和顺序。",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "结果是 [2,1,3]。Set 去掉重复值并保持首次插入顺序，不修改原数组。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "结果为 [2,1,3]",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "顺序来自首次插入而不是排序",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-unique"
+          ]
+        },
+        "answer": "结果是 [2,1,3]。Set 去掉重复值并保持首次插入顺序，不修改原数组。"
+      },
+      "checks": [
+        "完整正确回答应得满分",
+        "每项依据来自答案内容"
+      ],
+      "expectedScore": {
+        "min": 2,
+        "max": 2
+      },
+      "response": {
+        "output": {
+          "kind": "grade",
+          "status": "graded",
+          "scores": [
+            {
+              "rubricId": "r1",
+              "score": 1,
+              "evidence": "回答明确指出“结果是 [2,1,3]”。"
+            },
+            {
+              "rubricId": "r2",
+              "score": 1,
+              "evidence": "回答指出 Set“保持首次插入顺序”，正确说明顺序依据，而非排序。"
+            }
+          ],
+          "feedback": "回答符合参考答案，结果和顺序解释均正确。AI 评价可能出错。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 937,
+          "outputTokens": 104,
+          "cost": 0.002914,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 937,
+        "outputTokens": 104,
+        "cost": 0.002914,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "0cfa58dbc3ce553b312e901d2128bb437689e39a33b03cb364e1dd2ee1596dfc",
+      "error": null,
+      "durationMs": 6042,
+      "scoreMatchesReference": true,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "保持顺序的去重",
+      "reference": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。",
+      "id": "unique-grade-incomplete",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-unique",
+          "kind": "short",
+          "prompt": "解释 [...new Set([2,1,2,3,1])] 的结果和顺序。",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "结果是 [2,1,3]。Set 去掉重复值并保持首次插入顺序，不修改原数组。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "结果为 [2,1,3]",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "顺序来自首次插入而不是排序",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-unique"
+          ]
+        },
+        "answer": "结果是 [1,2,3]，因为 Set 会自动排序。"
+      },
+      "checks": [
+        "不能给遗漏条件或错误答案满分",
+        "扣分对应原评分细则"
+      ],
+      "expectedScore": {
+        "min": 0,
+        "max": 0
+      },
+      "response": {
+        "output": {
+          "kind": "grade",
+          "status": "graded",
+          "scores": [
+            {
+              "rubricId": "r1",
+              "score": 0,
+              "evidence": "回答“结果是 [1,2,3]”，与正确结果 [2,1,3] 不符。"
+            },
+            {
+              "rubricId": "r2",
+              "score": 0,
+              "evidence": "回答“Set 会自动排序”，但 Set 保持首次插入顺序，不会自动排序。"
+            }
+          ],
+          "feedback": "Set 去重但不排序：依次保留首次出现的 2、1、3，所以结果是 [2,1,3]。建议区分去重与排序。AI 评价可能出错。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 926,
+          "outputTokens": 142,
+          "cost": 0.0032719999999999997,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 926,
+        "outputTokens": 142,
+        "cost": 0.0032719999999999997,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "775ed0ca0eaaa222927c7f1804072f3c1c14f82dc17318137c434ad51f2507b2",
+      "error": null,
+      "durationMs": 8053,
+      "scoreMatchesReference": true,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "算术平均值",
+      "reference": "非空数值列表的算术平均值为总和除以元素个数。[2,4,9] 的平均值为 5。空列表没有这里定义的平均值，函数应显式拒绝空输入。",
+      "id": "mean-extract",
+      "task": {
+        "kind": "extract",
+        "recitation": {
+          "learned": "总和 15 除以个数 3 得到 5。空列表应抛出明确错误，而不是直接除以零或假设均值为零。",
+          "unclear": "适用条件是什么？",
+          "application": "用一个小例子检验",
+          "topic": "算术平均值"
+        },
+        "sources": [
+          {
+            "id": "source-mean",
+            "name": "算术平均值.txt",
+            "text": "非空数值列表的算术平均值为总和除以元素个数。[2,4,9] 的平均值为 5。空列表没有这里定义的平均值，函数应显式拒绝空输入。"
+          }
+        ]
+      },
+      "checks": [
+        "仅引用给定来源",
+        "提取结论及适用条件",
+        "不扩展未提供的考核范围"
+      ],
+      "response": {
+        "output": {
+          "kind": "extract",
+          "candidates": [
+            {
+              "title": "算术平均值的计算与适用条件",
+              "description": "依据资料，算术平均值适用于非空数值列表，计算方法是总和除以元素个数。用户复述“15÷3=5”与资料示例 [2,4,9] 一致；用户提问的适用条件可据此明确为“列表非空且元素为数值”。以上语义待用户确认。",
+              "sourceIds": [
+                "source-mean"
+              ]
+            },
+            {
+              "title": "空列表的显式拒绝",
+              "description": "资料指出空列表没有这里定义的平均值，函数应显式拒绝空输入。用户将其复述为抛出明确错误，而不是直接除以零或假设均值为零；该理解与资料方向一致，但资料未指定具体拒绝方式，是否采用抛出错误待用户确认。",
+              "sourceIds": [
+                "source-mean"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 777,
+          "outputTokens": 208,
+          "cost": 0.003634,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 777,
+        "outputTokens": 208,
+        "cost": 0.003634,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "d45d6fa70b36cf7f74e8163cce83207052254b41ab6da2de8926cdea3242291c",
+      "error": null,
+      "durationMs": 11061,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "算术平均值",
+      "reference": "非空数值列表的算术平均值为总和除以元素个数。[2,4,9] 的平均值为 5。空列表没有这里定义的平均值，函数应显式拒绝空输入。",
+      "id": "mean-followup",
+      "task": {
+        "kind": "followup",
+        "points": [
+          {
+            "id": "point-mean",
+            "title": "算术平均值",
+            "description": "非空数值列表的算术平均值为总和除以元素个数。[2,4,9] 的平均值为 5。空列表没有这里定义的平均值，函数应显式拒绝空输入。",
+            "sourceIds": [
+              "source-mean"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "turns": [
+          {
+            "id": "turn-1",
+            "question": "如何计算 [2,4,9] 的平均值，空列表应如何处理？",
+            "answer": "取中间元素 4 就是平均值，空列表返回零。",
+            "feedback": null,
+            "assisted": false,
+            "scopeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-mean",
+            "name": "算术平均值.txt",
+            "text": "非空数值列表的算术平均值为总和除以元素个数。[2,4,9] 的平均值为 5。空列表没有这里定义的平均值，函数应显式拒绝空输入。"
+          }
+        ]
+      },
+      "checks": [
+        "针对回答中的遗漏或错误反馈",
+        "一次提出一个可回答的追问",
+        "不把未提及内容直接判为不会"
+      ],
+      "response": {
+        "output": {
+          "kind": "followup",
+          "question": "你是依据什么规则选择中间元素作为平均值，并决定空列表返回零的？请对照资料检查这两处处理是否一致。",
+          "feedback": "你将中间元素 4 作为平均值，并提出空列表返回零；这两处均与当前资料不一致，待澄清你的计算依据与空输入处理依据。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 2042,
+          "outputTokens": 89,
+          "cost": 0.004974,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 2042,
+        "outputTokens": 89,
+        "cost": 0.004974,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "c4a434e20bd4e589bb05349e4d03a5071674714ff34889b5d11798ce69ff6bc3",
+      "error": null,
+      "durationMs": 6039,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "算术平均值",
+      "reference": "非空数值列表的算术平均值为总和除以元素个数。[2,4,9] 的平均值为 5。空列表没有这里定义的平均值，函数应显式拒绝空输入。",
+      "id": "mean-quiz",
+      "task": {
+        "kind": "quiz",
+        "points": [
+          {
+            "id": "point-mean",
+            "title": "算术平均值",
+            "description": "非空数值列表的算术平均值为总和除以元素个数。[2,4,9] 的平均值为 5。空列表没有这里定义的平均值，函数应显式拒绝空输入。",
+            "sourceIds": [
+              "source-mean"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-mean",
+            "name": "算术平均值.txt",
+            "text": "非空数值列表的算术平均值为总和除以元素个数。[2,4,9] 的平均值为 5。空列表没有这里定义的平均值，函数应显式拒绝空输入。"
+          }
+        ],
+        "count": 2,
+        "code": {
+          "languages": [
+            "python"
+          ]
+        }
+      },
+      "checks": [
+        "两道题均在给定范围内",
+        "参考答案和评分细则正确",
+        "检查骨架不泄露答案、测试可执行且预期正确；代码题是否生成单独记录"
+      ],
+      "response": {
+        "output": {
+          "kind": "quiz",
+          "questions": [
+            {
+              "knowledgeId": "point-mean",
+              "kind": "code",
+              "prompt": "用 Python 实现 mean(values)：输入为数值列表，返回其算术平均值；空列表须抛出 ValueError。",
+              "options": [],
+              "correctIndex": null,
+              "referenceAnswer": "def mean(values):\n    if len(values) == 0:\n        raise ValueError('空列表没有这里定义的平均值')\n    return sum(values) / len(values)\n\n要点：非空列表用总和除以元素个数；空列表显式拒绝。",
+              "rubric": [
+                {
+                  "id": "calculation",
+                  "description": "正确计算非空列表的总和并除以元素个数。",
+                  "maxScore": 5
+                },
+                {
+                  "id": "empty",
+                  "description": "对空列表显式抛出 ValueError。",
+                  "maxScore": 3
+                }
+              ],
+              "sourceIds": [
+                "source-mean"
+              ],
+              "code": {
+                "language": "python",
+                "starter": "def mean(values):\n    # 目标：计算数值列表的算术平均值。\n    # 输入：数值列表 values；输出：平均值。\n    # 关键步骤：检查输入边界，再按算术平均值定义计算。\n    # 边界：空列表必须抛出 ValueError。\n    # TODO：完成实现。\n    raise NotImplementedError\n",
+                "tests": [
+                  {
+                    "name": "非空列表",
+                    "code": "assert mean([2, 4, 9]) == 5\nassert mean([1, 2]) == 1.5"
+                  },
+                  {
+                    "name": "单元素与含负数列表",
+                    "code": "assert mean([7]) == 7\nassert mean([-3, 0, 6]) == 1"
+                  },
+                  {
+                    "name": "显式拒绝空列表",
+                    "code": "try:\n    mean([])\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('空列表必须抛出 ValueError')"
+                  }
+                ]
+              }
+            },
+            {
+              "knowledgeId": "point-mean",
+              "kind": "short",
+              "prompt": "有人计算 [2, 4, 9] 的平均值时，先得到总和 15，再除以 2，得到 7.5。请指出错误，并给出正确结果及理由。",
+              "options": [],
+              "correctIndex": null,
+              "referenceAnswer": "错误在于除数用了 2。列表有 3 个元素，应以总和 15 除以 3，得到平均值 5。",
+              "rubric": [
+                {
+                  "id": "divisor",
+                  "description": "指出应除以元素个数 3，而不是 2。",
+                  "maxScore": 3
+                },
+                {
+                  "id": "result",
+                  "description": "给出 15÷3=5 的正确计算。",
+                  "maxScore": 2
+                }
+              ],
+              "sourceIds": [
+                "source-mean"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 1986,
+          "outputTokens": 584,
+          "cost": 0.009812000000000001,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 1986,
+        "outputTokens": 584,
+        "cost": 0.009812000000000001,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "7b7a331ebc61754b80692f815d3a170acc44160ca1846adc5ad2bd6c51c9f05e",
+      "error": null,
+      "durationMs": 21095,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "算术平均值",
+      "reference": "非空数值列表的算术平均值为总和除以元素个数。[2,4,9] 的平均值为 5。空列表没有这里定义的平均值，函数应显式拒绝空输入。",
+      "id": "mean-grade-correct",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-mean",
+          "kind": "short",
+          "prompt": "如何计算 [2,4,9] 的平均值，空列表应如何处理？",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "总和 15 除以个数 3 得到 5。空列表应抛出明确错误，而不是直接除以零或假设均值为零。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "计算总和除以个数得到 5",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "明确拒绝空输入",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-mean"
+          ]
+        },
+        "answer": "总和 15 除以个数 3 得到 5。空列表应抛出明确错误，而不是直接除以零或假设均值为零。"
+      },
+      "checks": [
+        "完整正确回答应得满分",
+        "每项依据来自答案内容"
+      ],
+      "expectedScore": {
+        "min": 2,
+        "max": 2
+      },
+      "response": null,
+      "usage": null,
+      "promptHash": "dba7f85b734fd763b365d01cb9e69b713fd1df7707900db3924cee9a765d4140",
+      "error": "MODEL_FAILED",
+      "durationMs": 1027,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "算术平均值",
+      "reference": "非空数值列表的算术平均值为总和除以元素个数。[2,4,9] 的平均值为 5。空列表没有这里定义的平均值，函数应显式拒绝空输入。",
+      "id": "mean-grade-incomplete",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-mean",
+          "kind": "short",
+          "prompt": "如何计算 [2,4,9] 的平均值，空列表应如何处理？",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "总和 15 除以个数 3 得到 5。空列表应抛出明确错误，而不是直接除以零或假设均值为零。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "计算总和除以个数得到 5",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "明确拒绝空输入",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-mean"
+          ]
+        },
+        "answer": "取中间元素 4 就是平均值，空列表返回零。"
+      },
+      "checks": [
+        "不能给遗漏条件或错误答案满分",
+        "扣分对应原评分细则"
+      ],
+      "expectedScore": {
+        "min": 0,
+        "max": 0
+      },
+      "response": null,
+      "usage": null,
+      "promptHash": "3b38897ba18f0e508ab6dbe991ed2345ac872377b9eb7cc773e5d6e677bc406b",
+      "error": "MODEL_FAILED",
+      "durationMs": 2031,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    }
+  ]
+}

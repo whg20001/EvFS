@@ -155,3 +155,15 @@ describe('local library and explicit learning preferences', () => {
     expect(task.points[0]!.knowledgeVersion).toBe(1); expect(task.sources.some(source => source.id === 'knowledge:old:v1')).toBe(true);
   });
 });
+
+it('exposes authenticated read-only statistics and validates search pagination parameters', async () => {
+  const f = await fixture(); const before = await f.repository.read();
+  expect((await f.app.inject({ url: '/api/learning/statistics' })).statusCode).toBe(401);
+  const response = await f.app.inject({ url: '/api/learning/statistics?days=7', headers: f.headers });
+  expect(response.statusCode).toBe(200); expect(response.json()).toMatchObject({ revision: before.revision, total: 0, simulated: true, throughDate: '2026-01-03' });
+  expect((await f.app.inject({ url: '/api/learning/statistics?days=500', headers: f.headers })).statusCode).toBe(400);
+  for (const options of [{ offset: -1 }, { limit: 51 }, { includeUnderstanding: 'true' }]) expect((await f.app.inject({ method: 'POST', url: '/api/library/search', headers: f.headers, payload: { query: 'needle', ...options } })).statusCode).toBe(400);
+  const stale = await f.app.inject({ method: 'POST', url: '/api/library/search', headers: f.headers, payload: { query: 'needle', offset: 10, expectedRevision: before.revision + 1 } });
+  expect(stale.statusCode).toBe(409); expect(stale.json().error.code).toBe('SEARCH_CHANGED');
+  expect(await f.repository.read()).toEqual(before); expect(f.execute).not.toHaveBeenCalled();
+});

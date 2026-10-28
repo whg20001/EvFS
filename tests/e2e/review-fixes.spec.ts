@@ -1,3 +1,5 @@
+import { learningStatistics } from '../../packages/learning-domain/src/statistics.ts';
+import { emptyData } from '@sanxing/database';
 import { expect, test, type Page } from '@playwright/test';
 import { LIMITS, type TaskInputPreview, type Answer, type PublicState } from '@sanxing/contracts';
 
@@ -39,6 +41,7 @@ async function offline(page: Page, data: PublicState) {
     const json = (body: unknown) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
     if (path === '/api/auth/status') return json({ authenticated: true });
     if (path === '/api/state') return json(data);
+    if (path === '/api/learning/statistics') return json(learningStatistics(emptyData(data.mode), new Date(), data.timezone));
     if (path === '/api/learning/preferences') return json({ revision: 0, source: 'environment', schedulingEnabled: data.capabilities.schedulingEnabled, promptCacheRetention: 'none', associationEnabled: false, codeExercisesEnabled: false, codeLanguages: ['python'] });
     if (path === '/api/recitations/recitation-fixture/input-preview') return json({
       kind: 'extract', revision: data.revision, canSubmit: true, reason: null, model: null, documentCount: 1,
@@ -92,12 +95,7 @@ test('server budget fixture includes sources and retains full long drafts', asyn
   await expect(page.getByLabel('今日主题')).toHaveAttribute('maxlength', String(LIMITS.topicChars));
   // Tests the UI contract only; real JSON/token accounting is covered by host API regressions.
   const budget = page.getByRole('note').filter({ hasText: 'AI 输入预算' });
-  await expect(budget).toContainText(`实际 JSON 已用 47,000 / ${LIMITS.modelInputChars.toLocaleString('zh-CN')}`);
-  await expect(budget).toContainText('包含 1 份资料原文及元数据');
-  await expect(budget).toContainText('本次会节选发送');
-  await expect(budget).toContainText('不是全文评估');
-  await expect(budget).toContainText('原文 80,000 字符 → 发送片段 12,000 字符（含节选标记）');
-  await expect(budget).toContainText('不是 token');
+  await expect(budget).toHaveCount(0);
   await expect(page.getByText('原文 80,000 个字符 · AI 可能仅使用节选')).toBeVisible();
   await expect(page.getByRole('button', { name: '提交复述', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: '保存草稿', exact: true }).click();

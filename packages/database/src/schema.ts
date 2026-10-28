@@ -1,8 +1,10 @@
 import type { AgentRun, AppData, DocumentRecord } from '@sanxing/contracts';
-import { integer, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { integer, jsonb, pgTable, primaryKey, text, timestamp } from 'drizzle-orm/pg-core';
 
-// Physical schema v3 only. Exported AppData remains schemaVersion 1.
-export type StoredData = Omit<AppData, 'documents' | 'runs'> & {
+// Physical schema v4 only. Exported AppData remains schemaVersion 1.
+export type StoredData = Omit<AppData, 'documents' | 'runs' | 'quizzes' | 'evidence'> & {
+  quizzes: Record<string, { id: string }>;
+  evidence: Record<string, { id: string }>;
   documents: Record<string, Omit<DocumentRecord, 'text' | 'originalBase64'>>;
   runs: Record<string, Omit<AgentRun, 'task'>>;
 };
@@ -25,3 +27,10 @@ export const runTasks = pgTable('app_run_tasks', {
   id: text('id').primaryKey(),
   task: jsonb('task').$type<AgentRun['task']>().notNull(),
 });
+
+// Fast-growing assessment payloads are updated per record; the aggregate retains identity indexes.
+export const learningRecords = pgTable('app_learning_records', {
+  kind: text('kind').$type<'quizzes' | 'evidence'>().notNull(),
+  id: text('id').notNull(),
+  value: jsonb('value').$type<AppData['quizzes'][string] | AppData['evidence'][string]>().notNull(),
+}, table => [primaryKey({ columns: [table.kind, table.id] })]);

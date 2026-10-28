@@ -1,5 +1,6 @@
 'use client';
 
+import { Feedback } from '../../components/feedback';
 import { useEffect, useState } from 'react';
 import { CalendarDays } from 'lucide-react';
 import type { Mode, TokenUsageDay, TokenUsageHeatmap } from '@sanxing/contracts';
@@ -27,7 +28,7 @@ function Calendar({ data }: { data: TokenUsageHeatmap }) {
   const weeks = Math.ceil((count + offset) / 7);
   const days = new Map(data.days.map(day => [day.date, day]));
   const dates = Array.from({ length: count }, (_, index) => new Date(start + index * 86400000).toISOString().slice(0, 10));
-  const columns = `repeat(${weeks}, 14px)`;
+  const columns = `repeat(${weeks}, var(--usage-cell-size))`;
   return <>
     <div className={styles.calendarFrame}>
       <div className={styles.weekdays} aria-hidden="true">{['一', '二', '三', '四', '五', '六', '日'].map(day => <span key={day}>{day}</span>)}</div>
@@ -41,7 +42,7 @@ function Calendar({ data }: { data: TokenUsageHeatmap }) {
             const unknown = !day || day.unknownUsageAttempts > 0;
             const text = detail(date, day);
             return <button key={date} type="button" className={`${styles.cell} ${unknown ? styles.unknown : ''}`}
-              data-level={day?.level ?? 0} style={{ gridColumn: Math.floor((offset + index) / 7) + 1, gridRow: (offset + index) % 7 + 1 }}
+              data-level={day?.level ?? 0} data-selected={selected === date} aria-pressed={selected === date} style={{ gridColumn: Math.floor((offset + index) / 7) + 1, gridRow: (offset + index) % 7 + 1 }}
               title={text} aria-label={text} onMouseEnter={() => setSelected(date)} onFocus={() => setSelected(date)} onClick={() => setSelected(date)}>
               {unknown && <span aria-hidden="true">?</span>}
             </button>;
@@ -85,8 +86,8 @@ export function TokenHeatmap({ api, mode, refreshKey = 0 }: { api: ApiClient; mo
   const visible = data?.mode === mode && (year === undefined || data.year === year) ? data : null;
   const selectedYear = year ?? visible?.year ?? '';
   return <Card className={styles.heatmap}>
-    <div className={styles.row}>
-      <h2><CalendarDays size={18} /> Token 使用热力图</h2>
+    <div className={styles.sectionHeading}>
+      <div><h2><CalendarDays size={19} />Token 使用热力图</h2><p>按日查看本应用的模型用量</p></div>
       <div className={styles.yearControls}>
         <label htmlFor="ai-usage-year">年份</label>
         <select id="ai-usage-year" value={selectedYear} disabled={loading || !years.length} onChange={event => setYear(Number(event.target.value))}>
@@ -96,11 +97,10 @@ export function TokenHeatmap({ api, mode, refreshKey = 0 }: { api: ApiClient; mo
         <button type="button" className="button subtle" disabled={loading} onClick={() => setRevision(value => value + 1)}>刷新</button>
       </div>
     </div>
-    <p className="small muted">仅统计本应用的模型执行，不是厂商账号全局用量、订阅剩余额度，也不统计 OAuth access token 字符串。</p>
-    <p className="small muted">包含失败或取消执行中已报告的 token；旧记录缺失用量显示未知。已知总数不包含未知部分，不是厂商账单。执行次数指已开始的任务尝试，不保证已发出厂商请求。</p>
+    <details className={styles.help}><summary>统计口径</summary><p className="small muted">仅统计本应用的模型执行，不是厂商账号全局用量、订阅剩余额度，也不统计 OAuth access token 字符串。</p><p className="small muted">包含失败或取消执行中已报告的 token；旧记录缺失用量显示未知。已知总数不包含未知部分，不是厂商账单。执行次数指已开始的任务尝试，不保证已发出厂商请求。</p></details>
     {mode === 'mock' && <p className={styles.mock}><strong>MOCK · 以下仅为估计 / 演示用量，不是真实模型消耗。</strong></p>}
     {loading && <p role="status" className="muted">正在读取用量记录…</p>}
-    {error && <div role="alert" className={styles.failure}><p>{error}</p><button type="button" className="button" onClick={() => setRevision(value => value + 1)}>重试读取用量</button></div>}
+    {error && <Feedback title="操作提示" tone="error" className={styles.failure}><p>{error}</p><button type="button" className="button" onClick={() => setRevision(value => value + 1)}>重试读取用量</button></Feedback>}
     {visible && <>
       <p className="small muted">仅显示 {visible.mode} 模式 · 时区 {visible.timezone} · 按请求开始日归属统计。</p>
       <dl className={styles.totals}>
@@ -110,7 +110,7 @@ export function TokenHeatmap({ api, mode, refreshKey = 0 }: { api: ApiClient; mo
           ['已知用量次数', visible.totals.knownUsageAttempts], ['未知用量次数', visible.totals.unknownUsageAttempts],
         ] as const).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{number(value)}</dd></div>)}
       </dl>
-      {visible.cache && <><dl className={styles.totals}>{([
+      {visible.cache && <><dl className={`${styles.totals} ${styles.cacheTotals}`}>{([
         ['年度缓存读取 token', visible.cache.readTokens], ['年度缓存写入 token', visible.cache.writeTokens], ['缓存用量未知次数', visible.cache.unknownAttempts],
       ] as const).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{number(value)}</dd></div>)}</dl><p className="small muted">缓存读写已含在总输入中，不重复相加；未知不代表零，缓存不保证免费或命中。</p></>}
       {visible.totals.unknownUsageAttempts > 0 && <p className={styles.mock}>存在 {number(visible.totals.unknownUsageAttempts)} 次未知用量，不能将年度或对应日期的已知总数视为完整消耗。</p>}

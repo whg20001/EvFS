@@ -97,6 +97,12 @@ describe('OAuth learning requests with explicit fake Provider and real Pi resolu
     expect(f.refresh).not.toHaveBeenCalled();
     expect(f.handle.state.callCount).toBe(0);
   });
+  it('rejects an obsolete queued prompt before OAuth read, refresh or provider transport', async () => {
+    const f = await fixture(output, Date.now() - 1000);
+    const read = vi.spyOn(f.credentials, 'read');
+    await expect(f.engine.execute(task, { signal: new AbortController().signal, expectedPrompt: { version: 'learning-v5', hash: 'a'.repeat(64) } })).rejects.toMatchObject({ code: 'PROMPT_CHANGED', usage: null });
+    expect(read).not.toHaveBeenCalled(); expect(f.refresh).not.toHaveBeenCalled(); expect(f.handle.state.callCount).toBe(0);
+  });
   it('uses the application store instead of a static key and rejects calls after disconnect', async () => {
     const f = await fixture(); const observed = vi.fn(async () => {});
     const result = await f.engine.execute(task, { signal: new AbortController().signal, onUsage: observed });
@@ -110,6 +116,21 @@ describe('OAuth learning requests with explicit fake Provider and real Pi resolu
     await f.engine.execute(task, { signal: new AbortController().signal });
     expect(f.refresh).toHaveBeenCalledTimes(1); expect(f.key()).toBe('test-refreshed');
     expect(await f.credentials.read('openai')).toMatchObject({ refresh: 'test-rotated', clientId: 'test-client' });
+  });
+  it('keeps OAuth refresh failures distinct after Pi converts them into an assistant error', async () => {
+    const f = await fixture(output, Date.now() - 1000);
+    f.refresh.mockRejectedValueOnce(new Error('PRIVATE_REFRESH_TOKEN_AND_BODY'));
+    const result = f.engine.execute(task, { signal: new AbortController().signal });
+    await expect(result).rejects.toMatchObject({ code: 'MODEL_AUTH_FAILED', usage: null });
+    await expect(result).rejects.not.toThrow('PRIVATE_');
+    expect(f.refresh).toHaveBeenCalledTimes(1); expect(f.handle.state.callCount).toBe(0);
+    expect(await f.credentials.read('openai')).toMatchObject({ access: 'test-access', refresh: 'test-refresh' });
+  });
+
+  it('reports a credential read failure without sending or refreshing a request', async () => {
+    const f = await fixture(); vi.spyOn(f.credentials, 'read').mockRejectedValueOnce(new Error('PRIVATE_VAULT_PATH'));
+    await expect(f.engine.execute(task, { signal: new AbortController().signal })).rejects.toMatchObject({ code: 'MODEL_AUTH_FAILED', usage: null });
+    expect(f.refresh).not.toHaveBeenCalled(); expect(f.handle.state.callCount).toBe(0);
   });
   it.each(['openai', 'openai-codex'] as const)('requires explicit acceptance of the %s OAuth output-limit restriction', provider => {
     expect(() => createLearningEngine({ mode: 'live', provider, model: 'unused', authMethod: 'oauth' }, { credentials: new InMemoryCredentialStore() })).toThrow(/上游输出/);
@@ -252,10 +273,18 @@ describe('OAuth learning requests with explicit fake Provider and real Pi resolu
     const f = await fixture(output, undefined, {}, message => { message.stopReason = stopReason; });
     const observed = vi.fn(async () => {});
     await expect(f.engine.execute(task, { signal: new AbortController().signal, onUsage: observed })).rejects.toMatchObject({
-      code: stopReason === 'aborted' ? 'CANCELLED' : 'MODEL_FAILED', usage: { provider: 'openai' },
+      code: stopReason === 'aborted' ? 'CANCELLED' : stopReason === 'length' ? 'OUTPUT_LIMIT' : 'MODEL_FAILED', usage: { provider: 'openai' },
     });
     expect(observed).toHaveBeenCalledTimes(1);
     expect(f.handle.state.callCount).toBe(1);
+  });
+  it('exposes only the upstream HTTP status when a provider rejects a request', async () => {
+    const f = await fixture();
+    f.handle.setResponses([async (_context, options) => {
+      await options?.onResponse?.({ status: 403, headers: {} }, f.handle.getModel());
+      const message = fauxAssistantMessage(''); message.stopReason = 'error'; message.errorMessage = 'PRIVATE_UPSTREAM_TOKEN'; return message;
+    }]);
+    await expect(f.engine.execute(task, { signal: new AbortController().signal })).rejects.toMatchObject({ code: 'MODEL_HTTP_403' });
   });
   it('does not let missing usage bypass JSON validation', async () => {
     const f = await fixture('not JSON', undefined, {}, message => { Reflect.deleteProperty(message, 'usage'); });

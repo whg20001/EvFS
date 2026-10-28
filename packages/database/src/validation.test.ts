@@ -20,6 +20,43 @@ function fixture(): AppData {
   return data;
 }
 const check = (data: unknown) => validateData(data, 'mock', 'local');
+
+describe('quiz context validation', () => {
+  const turn = { id: 't1', question: 'Why?', answer: 'Practice', feedback: 'Feedback', assisted: false, scopeVersion: 1 };
+  const cue = { question: 'Old question', weakAreas: ['Missed TTL'], score: 1, maxScore: 2, dimension: 'delayed' as const };
+  it('roundtrips new fields and keeps legacy absence and archived text unchanged', () => {
+    for (const context of [{}, { turns: [], weaknesses: [] }, { turns: [turn, { ...turn, id: 't2', answer: null, feedback: null }], weaknesses: [cue] }, { weaknesses: [{ ...cue, weakAreas: ['x'.repeat(801)] }] }]) {
+      const data = fixture(); Object.assign(data.runs.run1!.task, context);
+      const restored = JSON.parse(JSON.stringify(data)); const before = structuredClone(restored);
+      expect(() => check(restored)).not.toThrow(); expect(restored).toEqual(before);
+    }
+  });
+  it.each([
+    { turns: 'not-an-array' }, { turns: null }, { turns: [null] }, { turns: [{ ...turn, answer: 42 }] },
+    { turns: [{ ...turn, feedback: [] }] }, { turns: [{ ...turn, assisted: 'false' }] },
+    { turns: [{ ...turn, scopeVersion: 0 }] }, { turns: Array(6).fill(turn) },
+    { weaknesses: 'not-an-array' }, { weaknesses: null }, { weaknesses: [null] },
+    { weaknesses: [{ ...cue, question: 42 }] }, { weaknesses: [{ ...cue, weakAreas: 'bad' }] },
+    { weaknesses: [{ ...cue, weakAreas: [] }] }, { weaknesses: [{ ...cue, weakAreas: [42] }] },
+    { weaknesses: [{ ...cue, weakAreas: ['a', 'b', 'c', 'd'] }] },
+    { weaknesses: [{ ...cue, score: -1 }] }, { weaknesses: [{ ...cue, score: 3 }] },
+    { weaknesses: [{ ...cue, maxScore: 0 }] }, { weaknesses: [{ ...cue, dimension: 'unknown' }] },
+    { weaknesses: Array(4).fill(cue) },
+  ])('rejects malformed context %j without mutating it', context => {
+    const data = fixture(); Object.assign(data.runs.run1!.task, context); const before = structuredClone(data);
+    expect(() => check(data)).toThrow('Invalid aggregate'); expect(data).toEqual(before);
+  });
+});
+
+it('keeps legacy runs readable and rejects unsafe diagnostic codes or invalid prompt hashes', () => {
+  expect(() => check(fixture())).not.toThrow();
+  const valid = fixture(); Object.assign(valid.runs.run1!, { promptHash: 'a'.repeat(64), errorCode: 'MODEL_HTTP_429' });
+  expect(() => check(valid)).not.toThrow();
+  for (const fields of [{ errorCode: 'MODEL_HTTP_429_private' }, { errorCode: 'private-provider-error' }, { promptHash: 'private-prompt' }]) {
+    const invalid = fixture(); Object.assign(invalid.runs.run1!, fields);
+    expect(() => check(invalid)).toThrow();
+  }
+});
 function historyFixture(): AppData {
   const data = emptyData('mock');
   data.knowledge.k1 = { ...fixture().knowledge.k1!, sourceIds: ['s1', 's2'], contentVersion: 7, contentHistory: [
@@ -139,4 +176,34 @@ describe('compatible content version validation', () => {
       (data: AppData) => Object.assign(data.runs.run1!.task, { recall: 42 }),
     ]) { const data = fixture(); mutate(data); expect(() => check(data)).toThrow('Invalid aggregate'); }
   });
+});
+
+it('roundtrips content-free progress and new timeout codes while retaining legacy absence', () => {
+  check(fixture());
+  for (const errorCode of ['FIRST_RESPONSE_TIMEOUT', 'STREAM_IDLE_TIMEOUT']) {
+    const data = fixture();
+    Object.assign(data.runs.run1!, { errorCode, progress: { phase: 'generating', queuedMs: 5, elapsedMs: 100, totalTimeoutMs: 120000,
+      requestStartedMs: 1, firstResponseMs: 2, firstTextMs: 4, lastContentMs: 80, completedMs: 100 } });
+    const restored = JSON.parse(JSON.stringify(data)); const before = structuredClone(restored);
+    check(restored); expect(restored).toEqual(before);
+  }
+  for (const invalid of [{ phase: 'unknown' }, { elapsedMs: -1 }, { completedMs: 101 }, { firstResponseMs: Infinity },
+    { firstTextMs: 1.5 }, { rawText: 'PRIVATE_CONTENT' }, { totalTimeoutMs: 0 }, { queuedMs: Number.MAX_SAFE_INTEGER + 1 }]) {
+    const data = fixture();
+    Object.assign(data.runs.run1!, { progress: { phase: 'waiting', queuedMs: 0, elapsedMs: 100, totalTimeoutMs: 1000, ...invalid } });
+    expect(() => check(data)).toThrow('Invalid aggregate');
+  }
+});
+
+it('roundtrips safe transport diagnostics and refuses raw network data or malformed counters', () => {
+  const transport = { policy: 'pooled', phase: 'awaiting_headers', requestCount: 1, reusedSocket: true,
+    bytesWritten: 200, bytesRead: 0, errorCode: 'ECONNRESET', syscall: 'read' };
+  const data = fixture(); Object.assign(data.runs.run1!, { transport });
+  const copy = JSON.parse(JSON.stringify(data)); check(copy); expect(copy).toEqual(data);
+  for (const patch of [{ errorCode: 'PRIVATE' }, { syscall: 'PRIVATE' }, { address: '127.0.0.1' }, { message: 'PRIVATE' },
+    { url: 'PRIVATE' }, { headers: {} }, { bytesRead: -1 }, { bytesWritten: Infinity }, { requestCount: 1.5 },
+    { reusedSocket: 'unknown' }, { policy: 'auto' }, { httpStatus: 600 }]) {
+    const invalid = fixture(); Object.assign(invalid.runs.run1!, { transport: { ...transport, ...patch } });
+    expect(() => check(invalid)).toThrow('Invalid aggregate');
+  }
 });

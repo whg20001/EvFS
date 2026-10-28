@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Mode, RunStatus, Usage } from './index.ts';
+import type { Mode, RunStatus, Usage, RunErrorCode } from './index.ts';
 
 /** Browser-safe views only. OAuth credentials and submitted codes never belong here. */
 export type OAuthSessionStatus = 'starting' | 'waiting' | 'working' | 'succeeded' | 'failed' | 'cancelled' | 'expired';
@@ -19,15 +19,17 @@ export interface AiAccessOverview {
 }
 export const aiModelSelectionSchema = z.strictObject({
   providerId: z.string().min(1).max(100), modelId: z.string().min(1).max(200),
-  authMethod: z.enum(['oauth', 'api_key']), allowUnboundedOutput: z.boolean(),
+  authMethod: z.enum(['oauth', 'api_key', 'platform']), allowUnboundedOutput: z.boolean(),
 });
 export type AiModelSelection = z.infer<typeof aiModelSelectionSchema>;
 export interface AiModelProvider {
+  platformAvailable?: boolean;
   id: string; name: string; oauthConnected: boolean; apiKeyAvailable: boolean;
   requiresOAuthOutputAcknowledgement: boolean;
-  models: { id: string; name: string }[];
+  models: { id: string; name: string; contextWindow?: number; maxTokens?: number }[];
 }
 export interface AiModelConfiguration {
+  platform?: import('./admin.ts').PlatformAiPublic;
   mode: Mode; revision: number; selection: AiModelSelection | null;
   source: 'saved' | 'environment' | 'none'; ready: boolean; problem: string | null;
   budget: { enabled: boolean; dailyUsd: number | null; reservationUsd: number | null };
@@ -36,7 +38,7 @@ export interface AiModelConfiguration {
 export interface AiConnectionTestView {
   id: string; providerId: string; modelId: string; mode: Mode; status: RunStatus;
   createdAt: string; startedAt: string | null; finishedAt: string | null;
-  durationMs: number | null; usage: Usage | null; error: string | null;
+  durationMs: number | null; usage: Usage | null; error: string | null; errorCode?: RunErrorCode;
 }
 export interface TokenUsageTotals {
   /** Input already includes cache read/write tokens; do not add cache again. */

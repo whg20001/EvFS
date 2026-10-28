@@ -12,8 +12,8 @@ const allowed = {
   '@sanxing/ai-usage': ['@sanxing/contracts'],
   '@sanxing/learning-domain': ['@sanxing/contracts'],
   '@sanxing/learning-agent': ['@sanxing/contracts', '@sanxing/ai-access'],
-  '@sanxing/api': ['@sanxing/contracts', '@sanxing/database', '@sanxing/ai-access', '@sanxing/ai-usage', '@sanxing/learning-domain', '@sanxing/learning-agent'],
-  '@sanxing/web': ['@sanxing/contracts'],
+  '@sanxing/api': ['@sanxing/local-storage', '@sanxing/contracts', '@sanxing/database', '@sanxing/ai-access', '@sanxing/ai-usage', '@sanxing/learning-domain', '@sanxing/learning-agent'],
+  '@sanxing/web': ['@sanxing/contracts', '@sanxing/database', '@sanxing/learning-domain', '@sanxing/learning-agent', '@sanxing/ai-usage'],
 };
 const manifests = [];
 for (const parent of ['apps', 'packages']) for (const entry of await readdir(join(root, parent), { withFileTypes: true })) {
@@ -52,6 +52,7 @@ for (const { directory, manifest } of manifests) for (const path of [...await fi
       } else if (specifier.startsWith('@sanxing/')) {
         const dependency = specifier.split('/').slice(0, 2).join('/');
         if (!allowed[manifest.name].includes(dependency)) violations.push(`${label}: forbidden layer dependency`);
+        if (manifest.name === '@sanxing/web' && ((dependency === '@sanxing/database' && !['@sanxing/database/browser', '@sanxing/database/empty', '@sanxing/database/validation'].includes(specifier)) || (dependency === '@sanxing/learning-agent' && specifier !== '@sanxing/learning-agent/browser'))) violations.push(`${label}: Node-only entrypoint is forbidden in browser source`);
         if (!manifest.dependencies?.[dependency]) violations.push(`${label}: undeclared workspace dependency`);
       }
       if (manifest.name === '@sanxing/web' && ((!webServerEntry && specifier.startsWith('node:')) || specifier.startsWith('@earendil-works/'))) violations.push(`${label}: server-only dependency in browser source`);

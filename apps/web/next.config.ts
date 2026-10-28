@@ -5,6 +5,7 @@ import { networkInterfaces } from 'node:os';
 const profile = process.env.SANXING_NEXT_PROFILE;
 const isolated = profile === 'e2e' || profile === 'validation';
 const config: NextConfig = {
+  experimental: { agentUpgrade: 'security' },
   distDir: isolated ? `.next-${profile}` : '.next',
   typescript: { tsconfigPath: isolated ? 'tsconfig.verification.json' : 'tsconfig.json' },
   // Permit this machine's concrete addresses for WSL/LAN dev assets, not arbitrary hosts.

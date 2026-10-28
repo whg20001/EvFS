@@ -38,7 +38,12 @@ async function fixture(patch: Partial<ApiConfig> = {}) {
   return { ...instance, repository, execute, headers, post, put, id, preview };
 }
 // Extract is sent as two JSON blocks ({sources}\n{kind, recitation}): +2 braces +1 newline −1 comma.
-const blockChars = (task: AiTask) => JSON.stringify(task).length + 2;
+const blockChars = (task: AiTask) => {
+  if (task.kind !== 'extract') throw new Error('Expected extract fixture');
+  // Skill snapshots contribute to the system prompt, not these user JSON blocks.
+  const { skills: _skills, ...payload } = task;
+  return JSON.stringify(payload).length + 2;
+};
 const input = (learned = '合法复述'): RecitationInput => ({ learned, unclear: '', application: '', topic: '' });
 const smallModel: Partial<ApiConfig> = { mode: 'live', provider: 'openai', model: 'gpt-4', apiKey: 'synthetic-no-network-key', modelAuthMethod: 'api_key', maxOutputTokens: 4096 };
 
@@ -87,7 +92,7 @@ describe('read-only complete input preflight', () => {
     const submitted = await f.post(`/api/recitations/${f.id}/submit`, { version: (await f.repository.read()).recitations[f.id]!.version });
     expect(submitted.statusCode).toBe(202);
     const run = (await f.repository.read()).runs[submitted.json().runId]!;
-    expect(run.promptVersion).toBe('learning-v6');
+    expect(run.promptVersion).toBe('learning-v8');
     expect(run.task.kind).toBe('extract');
     if (run.task.kind !== 'extract') throw new Error('expected extract');
     expect(run.task.recitation.learned).toBe(body.learned);

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { LIMITS } from '@sanxing/contracts';
 import { effectiveLearningPreferences, fingerprint, newSchedule } from '../src/policy.ts';
 import { emptyData } from '@sanxing/database';
+import { describeLearningPrompt } from '@sanxing/learning-agent';
 import type { AiModelSelection, AiOutput, AiTask, AppData, CommandResult } from '@sanxing/contracts';
 import { DomainError, LearningService, RunWorker, projectState } from '../src/index.ts';
 import type { DomainConfig, StateRepository } from '../src/index.ts';
@@ -51,6 +52,91 @@ async function answerAndSubmit(f: ReturnType<typeof fixture>, quizId: string) {
   quiz = (await f.repository.read()).quizzes[quizId]!;
   await f.command(data => f.service.submitQuiz(data, quizId, { version: quiz.version, confirmSkip: true }));
 }
+
+it('keeps a formal answer and rubric intact when an obsolete grading task is rejected, then retries at the updated quiz version', async () => {
+  const f = fixture(); const { quizId } = await quizReady(f);
+  const service = new LearningService(f.repository, f.service.config, f.service.now, undefined, describeLearningPrompt);
+  let quiz = (await f.repository.read()).quizzes[quizId]!;
+  await f.command(data => service.answerQuestion(data, quiz.questions[0]!.id, { version: quiz.version, action: 'skip' }));
+  quiz = (await f.repository.read()).quizzes[quizId]!;
+  const question = quiz.questions[1]!;
+  const submitted = await f.command(data => service.answerQuestion(data, question.id, { version: quiz.version, action: 'answer', text: '正式回答必须保留', assisted: false }));
+  const original = (await f.repository.read()).runs[submitted.runId!]!;
+  await f.repository.transact(data => { data.runs[original.id]!.promptVersion = 'learning-v5'; });
+  expect(await service.claimRun()).toBeNull();
+  quiz = (await f.repository.read()).quizzes[quizId]!;
+  expect(quiz.answers[question.id]).toMatchObject({ text: '正式回答必须保留', assessment: { status: 'needs_verification', score: null } });
+  expect(quiz.questions[1]).toEqual(question);
+  const retry = await f.command(data => service.retryRun(data, original.id));
+  const run = (await service.claimRun())!;
+  expect(run.id).toBe(retry.runId); expect(run.task).toEqual(original.task);
+  await service.finishRun(run.id, run.attemptId!, { output: scripted(run.task), usage: null });
+  expect((await f.repository.read()).runs[run.id]!.status).toBe('succeeded');
+  expect((await f.repository.read()).quizzes[quizId]!.answers[question.id]!.text).toBe('正式回答必须保留');
+});
+
+describe('post-submission assessment isolation', () => {
+  async function submittedShort(f: ReturnType<typeof fixture>) {
+    const { quizId } = await quizReady(f);
+    let quiz = (await f.repository.read()).quizzes[quizId]!;
+    await f.command(data => f.service.answerQuestion(data, quiz.questions[0]!.id, { version: quiz.version, action: 'skip' }));
+    quiz = (await f.repository.read()).quizzes[quizId]!;
+    const questionId = quiz.questions[1]!.id;
+    await f.command(data => f.service.answerQuestion(data, questionId, { version: quiz.version, action: 'answer', text: '缓存空值，同时限制 TTL', selectedIndex: null, assisted: false })); await f.flush();
+    quiz = (await f.repository.read()).quizzes[quizId]!;
+    await f.command(data => f.service.submitQuiz(data, quizId, { version: quiz.version, confirmSkip: true }));
+    quiz = (await f.repository.read()).quizzes[quizId]!;
+    return { quizId, questionId, body: { version: quiz.version, assessmentVersion: quiz.answers[questionId]!.assessment.version, method: 'model', reason: '核对遗漏' } };
+  }
+  it.each(['cancel', 'fail', 'restart'] as const)('preserves the original assessment and fences late results after %s', async action => {
+    const f = fixture(); const { quizId, questionId, body } = await submittedShort(f);
+    const before = await f.repository.read();
+    await f.command(data => f.service.reviseAssessment(data, questionId, body));
+    const run = (await f.service.claimRun())!;
+    if (action === 'cancel') await f.command(data => f.service.cancelRun(data, run.id));
+    if (action === 'fail') await f.service.failRun(run.id, run.attemptId!);
+    if (action === 'restart') await f.service.recoverRuns();
+    await f.service.finishRun(run.id, run.attemptId!, { output: { kind: 'grade', status: 'graded', scores: [{ rubricId: 'r1', score: 2, evidence: '晚到的结果' }], feedback: '晚到的评价' }, usage: null });
+    const after = await f.repository.read();
+    expect(after.quizzes[quizId]).toEqual(before.quizzes[quizId]); expect(after.evidence).toEqual(before.evidence); expect(after.cards).toEqual(before.cards);
+  });
+  it('does not replace a previous grade when a correction is refused before execution', async () => {
+    const f = fixture({ mode: 'live', dailyBudgetUsd: null }); const { quizId, questionId, body } = await submittedShort(f);
+    // Explicit manual correction gives a fully graded assessment before failed admission.
+    await f.command(data => f.service.reviseAssessment(data, questionId, { ...body, method: 'manual', feedback: '核对后正确', scores: [{ rubricId: 'r1', score: 2, evidence: '答案中包含定义与条件' }] }));
+    const before = await f.repository.read(); const quiz = before.quizzes[quizId]!;
+    const capped = new LearningService(f.repository, { ...f.service.config, dailyBudgetUsd: 0.01, requestReservationUsd: 0.1 }, f.service.now);
+    const result = await f.command(data => capped.reviseAssessment(data, questionId, { ...body, version: quiz.version, assessmentVersion: quiz.answers[questionId]!.assessment.version }));
+    const after = await f.repository.read(); expect(after.runs[result.runId!]!.status).toBe('failed');
+    expect(after.quizzes[quizId]).toEqual(before.quizzes[quizId]); expect(after.evidence).toEqual(before.evidence);
+  });
+});
+
+it.each(['manual', 'dispute', 'archived'] as const)('does not advance a review schedule with %s evidence', async mode => {
+  const f = fixture(); const { quizId } = await quizReady(f); await answerAndSubmit(f, quizId);
+  const card = Object.values((await f.repository.read()).cards)[0]!;
+  const started = await f.command(data => f.service.startReview(data, card.id)); const reviewId = started.reviewSessionId!;
+  await f.command(data => f.service.reviewRecall(data, reviewId, { version: 1, action: 'submitted', text: '有限 TTL，新增数据时失效空值缓存' })); await f.flush();
+  const reviewQuizId = (await f.repository.read()).reviewSessions[reviewId]!.quizId!;
+  await answerAndSubmit(f, reviewQuizId);
+  let state = await f.repository.read(); const quiz = state.quizzes[reviewQuizId]!; const question = quiz.questions[0]!;
+  const body = { version: quiz.version, assessmentVersion: quiz.answers[question.id]!.assessment.version, reason: '本次证据需核对' };
+  if (mode === 'manual') await f.command(data => f.service.reviseAssessment(data, question.id, { ...body, method: 'manual', feedback: '自评通过', scores: [{ rubricId: 'r1', score: 2, evidence: '人工核对依据' }] }));
+  if (mode === 'dispute') await f.command(data => f.service.disputeAssessment(data, question.id, body));
+  if (mode === 'archived') await f.command(data => f.service.archiveKnowledge(data, card.knowledgeId, { version: state.knowledge[card.knowledgeId]!.version, archived: true }));
+  state = await f.repository.read(); const review = state.reviewSessions[reviewId]!;
+  await f.command(data => f.service.completeReview(data, reviewId, { version: review.version, expectedCardVersion: card.version, rating: 3 }));
+  state = await f.repository.read(); expect(state.cards[card.id]).toEqual(card); expect(Object.values(state.reviewEvents)).toHaveLength(0); expect(state.reviewSessions[reviewId]!.status).toBe('COMPLETED');
+});
+
+it('does not replay a queued synthetic evaluation after restart', async () => {
+  const f = fixture({ mode: 'live', dailyBudgetUsd: null });
+  const task: AiTask = { kind: 'extract', recitation: { learned: '人工样例', unclear: '', application: '', topic: '' }, sources: [{ id: 'synthetic', name: '人工样例', text: '人工样例' }] };
+  const result = await f.command(data => f.service.evaluate(data, task, { suite: 'test-v1', caseId: 'case-1', batchId: '00000000-0000-4000-8000-000000000001', selection }));
+  await f.service.recoverRuns(); expect(await f.service.claimRun()).toBeNull();
+  expect((await f.repository.read()).runs[result.runId!]!.status).toBe('failed');
+  await expect(f.command(data => f.service.retryRun(data, result.runId!))).rejects.toMatchObject({ code: 'EVALUATION_CONFIRMATION_REQUIRED' });
+});
 
 const selection: AiModelSelection = { providerId: 'offline-provider', modelId: 'offline-model', authMethod: 'oauth', allowUnboundedOutput: false };
 const probeUsage = { provider: 'offline-provider', model: 'offline-model', inputTokens: 8, outputTokens: 3, cost: 0.1 };
@@ -341,7 +427,7 @@ describe('learning domain invariants', () => {
     const f = fixture(); const result = await f.command(data => f.service.createRecitation(data, {}));
     await f.command(data => f.service.addDocument(data, { recitationId: result.id, name: '笔记.md', text: '# 缓存\r\n原理' }));
     expect(Object.values((await f.repository.read()).documents)[0]!.lineCount).toBe(2);
-    await expect(f.command(data => f.service.addDocument(data, { recitationId: result.id, name: 'x.pdf', text: 'x' }))).rejects.toMatchObject({ code: 'UNSUPPORTED_FILE' });
+    await expect(f.command(data => f.service.addDocument(data, { recitationId: result.id, name: 'x.pdf', text: 'x' }))).rejects.toMatchObject({ code: 'PDF_FILE_REQUIRED' });
     await expect(f.command(data => f.service.addDocument(data, { recitationId: result.id, name: 'x.txt', text: '' }, new Uint8Array([255, 254, 0])))).rejects.toBeInstanceOf(DomainError);
   });
   it('reuses cards across days and updates one review event exactly once', async () => {
@@ -538,6 +624,8 @@ describe('explicit library reuse and mode-local preferences', () => {
     const quizTask = (await f.repository.read()).runs[quiz.runId!]!.task;
     if (quizTask.kind !== 'quiz') throw new Error('expected quiz');
     expect(quizTask.related).toEqual(task.related);
+    const completedScope = (await f.repository.read()).sessions[session.id]!;
+    expect(quizTask.turns).toEqual(completedScope.turns.filter(turn => turn.scopeVersion === completedScope.scopeVersion));
     expect(JSON.stringify(quizTask)).not.toContain('LATEST_MUST_NOT_REPLACE_REFERENCE');
     // A combined question stays assessed under the current point; unknown or assessed-alone related ids are rejected.
     const run = (await f.service.claimRun())!; const output = scripted(run.task);
@@ -635,6 +723,23 @@ describe('explicit library reuse and mode-local preferences', () => {
     state = await f.repository.read();
     expect(state.quizzes[state.reviewSessions[started.reviewSessionId!]!.quizId!]!.questions.every(question => question.knowledgeVersion === 1)).toBe(true);
   });
+  it('adds only eligible historical weak dimensions to review quiz context', async () => {
+    const f = fixture(); const { quizId } = await quizReady(f); await answerAndSubmit(f, quizId);
+    await f.repository.transact(data => {
+      const evidence = Object.values(data.evidence).find(item => item.quizId === quizId)!;
+      evidence.answer.assessment.score = 0;
+      evidence.answer.assessment.scores = [{ rubricId: 'r1', description: '失效策略', maxScore: 2, score: 0, evidence: '没有说明 TTL 的影响' }];
+    });
+    const state = await f.repository.read(); const card = Object.values(state.cards)[0]!;
+    const started = await f.command(data => f.service.startReview(data, card.id));
+    const submitted = await f.command(data => f.service.reviewRecall(data, started.reviewSessionId!, { version: 1, text: '先找回空值缓存的含义', action: 'submitted' }));
+    const task = (await f.repository.read()).runs[submitted.runId!]!.task;
+    if (task.kind !== 'quiz') throw new Error('expected quiz');
+    expect(task.weaknesses).toHaveLength(1);
+    expect(task.weaknesses![0]!.dimension).toBe('immediate');
+    expect(task.weaknesses![0]!.weakAreas.join(' ')).toContain('没有说明 TTL 的影响');
+    expect(JSON.stringify(task.weaknesses)).not.toContain('selectedIndex');
+  });
   it('caps resolved review originals at documentsMaximum while keeping the description fallback', async () => {
     const f = fixture({ maxDocuments: LIMITS.documentsMaximum }); const { quizId, draftId, sessionId } = await quizReady(f); await answerAndSubmit(f, quizId);
     const ids: string[] = [];
@@ -653,7 +758,7 @@ describe('explicit library reuse and mode-local preferences', () => {
   it('uses mode-local preference defaults/CAS, rejects active tasks, and does not backfill cards on enable', async () => {
     const f = fixture({ schedulingEnabled: false }); const { quizId } = await quizReady(f); await answerAndSubmit(f, quizId);
     let state = await f.repository.read(); const point = Object.values(state.knowledge)[0]!;
-    expect(effectiveLearningPreferences(state, f.service.config)).toEqual({ schedulingEnabled: false, promptCacheRetention: 'none', associationEnabled: false, codeExercisesEnabled: false, codeLanguages: ['python'] });
+    expect(effectiveLearningPreferences(state, f.service.config)).toEqual({ schedulingEnabled: false, promptCacheRetention: 'none', associationEnabled: false, codeExercisesEnabled: false, codeLanguages: ['python'], reviewOrder: 'due', reviewBatchSize: null });
     await expect(f.command(data => f.service.addReviewCard(data, point.id, { version: point.version, confirm: true }))).rejects.toMatchObject({ code: 'SCHEDULING_NOT_ENABLED' });
     const preferences = { expectedRevision: state.revision, schedulingEnabled: true, promptCacheRetention: 'short', confirm: true };
     await expect(f.command(data => f.service.saveLearningPreferences(data, { ...preferences, expectedRevision: state.revision - 1 }))).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
@@ -662,7 +767,7 @@ describe('explicit library reuse and mode-local preferences', () => {
     state = await f.repository.read();
     expect(state.cards).toEqual({}); expect(state.reviewEvents).toEqual({});
     expect(state.mode).toBe('mock'); expect(f.service.config.schedulingEnabled).toBe(false);
-    expect(effectiveLearningPreferences(state, f.service.config)).toEqual({ schedulingEnabled: true, promptCacheRetention: 'short', associationEnabled: false, codeExercisesEnabled: false, codeLanguages: ['python'] });
+    expect(effectiveLearningPreferences(state, f.service.config)).toEqual({ schedulingEnabled: true, promptCacheRetention: 'short', associationEnabled: false, codeExercisesEnabled: false, codeLanguages: ['python'], reviewOrder: 'due', reviewBatchSize: null });
     expect(projectState(state, f.service.config, 'csrf').capabilities.schedulingEnabled).toBe(true);
     const runCount = Object.keys(state.runs).length;
     await expect(f.command(data => f.service.addReviewCard(data, point.id, { version: point.version + 1, confirm: true }))).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
@@ -1031,5 +1136,21 @@ describe('代码题领域链路', () => {
     await save({ associationEnabled: true });
     expect((await f.repository.read()).learningPreferences).toMatchObject({ codeExercisesEnabled: true, codeLanguages: ['javascript', 'typescript'], associationEnabled: true });
     await expect(save({ codeLanguages: [] })).rejects.toThrow();
+  });
+});
+
+describe('review card participation', () => {
+  it('pauses and restores with CAS without rewriting a schedule or historical events', async () => {
+    const f = fixture(); const { quizId } = await quizReady(f); await answerAndSubmit(f, quizId);
+    const before = await f.repository.read(); const card = Object.values(before.cards)[0]!;
+    await f.command(data => f.service.pauseReviewCard(data, card.id, { version: card.version, paused: true }));
+    expect((await f.repository.read()).cards[card.id]!.schedule).toEqual(card.schedule);
+    await expect(f.command(data => f.service.startReview(data, card.id))).rejects.toMatchObject({ code: 'CARD_PAUSED' });
+    await expect(f.command(data => f.service.pauseReviewCard(data, card.id, { version: card.version, paused: false }))).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+    await f.command(data => f.service.pauseReviewCard(data, card.id, { version: card.version + 1, paused: false }));
+    const review = await f.command(data => f.service.startReview(data, card.id));
+    expect((await f.command(data => f.service.startReview(data, card.id))).reviewSessionId).toBe(review.reviewSessionId);
+    await expect(f.command(data => f.service.pauseReviewCard(data, card.id, { version: card.version + 2, paused: true }))).rejects.toMatchObject({ code: 'REVIEW_IN_PROGRESS' });
+    const after = await f.repository.read(); expect(after.cards[card.id]!.schedule).toEqual(card.schedule); expect(after.reviewEvents).toEqual(before.reviewEvents);
   });
 });

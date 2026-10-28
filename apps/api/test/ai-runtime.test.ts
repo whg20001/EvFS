@@ -7,7 +7,7 @@ import type { CredentialStore } from '@sanxing/ai-access';
 import { createExplicitProvider, LIVE_PROVIDER_IDS, type LiveProviderId } from '@sanxing/ai-access/providers';
 import type { AgentRun, AiModelSelection, AiResponse, AiTask, LearningEngine } from '@sanxing/contracts';
 import { emptyData, openRepository, type Repository } from '@sanxing/database';
-import type { createLearningEngine } from '@sanxing/learning-agent';
+import { describeLearningPrompt, type createLearningEngine } from '@sanxing/learning-agent';
 import { DomainError } from '@sanxing/learning-domain';
 import { AiModelRuntime } from '../src/ai-runtime.ts';
 import { readConfig, type ApiConfig } from '../src/config.ts';
@@ -59,6 +59,43 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
+it('rejects an obsolete queued prompt before reading credentials or constructing an engine', async () => {
+  const read = vi.spyOn(credentials, 'read');
+  const expectedPrompt = { ...describeLearningPrompt(task), version: 'learning-v5' };
+  await expect(runtime().execute(task, { ...options(), expectedPrompt })).rejects.toMatchObject({ code: 'PROMPT_CHANGED' });
+  expect(read).not.toHaveBeenCalled(); expect(engineFactory).not.toHaveBeenCalled();
+});
+
+it('reads only the selected OAuth credential on each execution and uses narrow settings', async () => {
+  await connect(); const subject = runtime(); await save(subject);
+  const originalRead = credentials.read.bind(credentials);
+  const read = vi.spyOn(credentials, 'read').mockImplementation(async id => {
+    if (id !== 'openai') throw new Error('Unrelated vault unavailable');
+    return originalRead(id);
+  });
+  const fullRead = vi.spyOn(repository, 'read').mockRejectedValue(new Error('Full read forbidden'));
+  const opts = { ...options(), onRequest: vi.fn() };
+  await subject.execute(task, opts); await subject.execute(task, options());
+  expect(read.mock.calls).toEqual([['openai'], ['openai']]); expect(fullRead).not.toHaveBeenCalled();
+  expect(engineExecute.mock.calls[0]![1]).toBe(opts);
+  await credentials.delete('openai');
+  await expect(subject.execute(task, options())).rejects.toMatchObject({ code: 'AI_MODEL_UNAUTHORIZED' });
+  expect(engineExecute).toHaveBeenCalledTimes(2);
+});
+
+it('does not consult OAuth for API keys and protects the cached catalog from returned-view mutations', async () => {
+  const choice = { ...selection(), authMethod: 'api_key' as const };
+  const subject = runtime({ provider: 'openai', model: choice.modelId, apiKey: 'test-only-key', modelAuthMethod: 'api_key' });
+  const first = await subject.configuration();
+  first.providers.find(provider => provider.id === 'openai')!.models.length = 0;
+  const read = vi.spyOn(credentials, 'read').mockRejectedValue(new Error('OAuth vault unavailable'));
+  const fullRead = vi.spyOn(repository, 'read').mockRejectedValue(new Error('Full read forbidden'));
+  await subject.execute(task, options());
+  expect(read).not.toHaveBeenCalled(); expect(fullRead).not.toHaveBeenCalled(); expect(engineExecute).toHaveBeenCalledTimes(1);
+  read.mockRestore();
+  expect((await subject.configuration()).providers.find(provider => provider.id === 'openai')!.models.some(model => model.id === choice.modelId)).toBe(true);
+});
+
 it('uses an explicit cache preference and purpose-scoped opaque affinity without caching connection probes', async () => {
   await connect(); const subject = runtime(); await save(subject);
   await subject.execute(task, { ...options(), cacheScope: 'private-session-identifier' });
@@ -100,7 +137,7 @@ it('lists only explicit local text chat models, without choosing an authorized p
   expect(view.source).toBe('none');
   for (const provider of view.providers) {
     expect(provider.models).toEqual(createExplicitProvider(provider.id as LiveProviderId).getModels()
-      .filter(model => model.input.includes('text')).map(({ id, name }) => ({ id, name })));
+      .filter(model => model.input.includes('text')).map(({ id, name, contextWindow, maxTokens }) => ({ id, name, contextWindow, maxTokens })));
     expect(provider.models.length).toBeGreaterThan(0);
   }
   expect(view.providers[0]).toMatchObject({ oauthConnected: true, apiKeyAvailable: true, requiresOAuthOutputAcknowledgement: true });
@@ -192,7 +229,7 @@ it('allows only the explicitly configured provider API key and passes it only to
   await expect(save(subject, { ...selection('anthropic'), authMethod: 'api_key' })).rejects.toMatchObject({ code: 'AI_API_KEY_UNAVAILABLE' });
   expect((await save(subject, candidate)).ready).toBe(true);
   await subject.execute(task, options());
-  expect(engineFactory).toHaveBeenLastCalledWith(expect.objectContaining({ provider: 'openai', model: candidate.modelId, authMethod: 'api_key', apiKey: 'secret-test-config-key' }), { credentials });
+  expect(engineFactory).toHaveBeenLastCalledWith(expect.objectContaining({ provider: 'openai', model: candidate.modelId, authMethod: 'api_key', apiKey: 'secret-test-config-key' }), expect.objectContaining({ credentials }));
   await connect();
   await save(subject);
   await subject.execute(task, options());
@@ -256,13 +293,13 @@ it('captures each task selection anew and forwards signal/onUsage without creati
   await connect();
   const subject = runtime();
   await save(subject);
-  const firstOptions = { ...options(), onUsage: vi.fn(async () => undefined) };
+  const firstOptions = { ...options(), onProgress: vi.fn(), onUsage: vi.fn(async () => undefined) };
   expect(await subject.execute(task, firstOptions)).toEqual(response);
   expect(engineExecute).toHaveBeenLastCalledWith(task, firstOptions);
   expect(engineExecute.mock.calls[0]?.[1]).toBe(firstOptions);
   expect(firstOptions.onUsage).toHaveBeenCalledExactlyOnceWith(response.usage);
   expect(engineFactory).toHaveBeenLastCalledWith({ mode: 'live', provider: 'openai', model: selection().modelId,
-    authMethod: 'oauth', allowUnboundedOAuthOutput: true, maxOutputTokens: config().maxOutputTokens, timeoutMs: config().runTimeoutMs, cacheRetention: 'none' }, { credentials });
+    connectionPolicy: 'pooled', authMethod: 'oauth', allowUnboundedOAuthOutput: true, maxOutputTokens: config().maxOutputTokens, timeoutMs: config().runTimeoutMs, firstResponseTimeoutMs: config().firstResponseTimeoutMs, streamIdleTimeoutMs: config().streamIdleTimeoutMs, cacheRetention: 'none' }, expect.objectContaining({ credentials }));
   await save(subject, selection('openai', 1));
   await subject.execute(task, options());
   expect(engineFactory.mock.calls.map(([input]) => input?.model)).toEqual([selection().modelId, selection('openai', 1).modelId]);
@@ -347,7 +384,7 @@ it('keeps mock independent and faux-only, while candidate saving still requires 
   await subject.assertCanQueue(await repository.read());
   await subject.execute(task, options());
   for (const args of engineFactory.mock.calls) {
-    expect(args).toEqual([{ mode: 'mock', maxOutputTokens: config().maxOutputTokens, timeoutMs: config().runTimeoutMs }]);
+    expect(args).toEqual([{ mode: 'mock', maxOutputTokens: config().maxOutputTokens, timeoutMs: config().runTimeoutMs, firstResponseTimeoutMs: config().firstResponseTimeoutMs, streamIdleTimeoutMs: config().streamIdleTimeoutMs }]);
   }
   const liveRepository = await openRepository(':memory:', 'live');
   try { expect((await runtime({}, credentials, liveRepository).configuration()).selection).toBeNull(); }
@@ -403,5 +440,17 @@ it('persists the non-secret selection across a temporary database reopen and bac
   } finally {
     await disk?.close();
     await rm(directory, { recursive: true, force: true });
+  }
+});
+
+it('passes task-specific deadlines and stream limits to each engine', async () => {
+  await connect(); const subject = runtime(); await save(subject);
+  for (const [input, deadline] of [
+    [task, 60_000],
+    [{ kind: 'quiz', points: [], sources: [], count: 1 }, 120_000],
+    [{ kind: 'connection_test', selection: selection() }, 30_000],
+  ] as [AiTask, number][]) {
+    await subject.execute(input, options());
+    expect(engineFactory.mock.calls.at(-1)?.[0]).toMatchObject({ timeoutMs: deadline, firstResponseTimeoutMs: 60_000, streamIdleTimeoutMs: 45_000 });
   }
 });

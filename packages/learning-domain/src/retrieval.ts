@@ -1,4 +1,6 @@
 import { LIMITS, RECITATION_DUPLICATE as DUPLICATE, recitationSourceText } from '@sanxing/contracts';
+import { expandSearchTerms } from './search-terms.ts';
+import { DomainError } from './policy.ts';
 import type { AiTask, AppData, KnowledgePoint, LibraryHit, LibrarySearchResult, RetrievalSummary, SourceInput } from '@sanxing/contracts';
 
 const STOP = new Set('a an and are as at be been but by for from in is it of on or that the this to was were with you your 的 了 是 在 和 与 及 或 我 你 他 她 它 们 这 那 有 也 就 都 而'.split(' '));
@@ -86,31 +88,38 @@ const bm25 = (texts: string[], query: string | string[]) => bm25Detailed(texts, 
 const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
 
 /** Search all archived documents and confirmed knowledge, not just the active session. */
-export function searchLibrary(data: AppData, query: string, kind?: 'document' | 'knowledge'): LibrarySearchResult {
+export function searchLibrary(data: Pick<AppData, 'revision' | 'documents' | 'knowledge'>, query: string, kind?: 'document' | 'knowledge', options: { offset?: number; limit?: number; includeUnderstanding?: boolean; expandTerms?: boolean; expectedRevision?: number } = {}): LibrarySearchResult {
+  const offset = options.offset ?? 0; const limit = options.limit ?? LIMITS.libraryPageSize;
+  if (!Number.isSafeInteger(offset) || offset < 0 || !Number.isInteger(limit) || limit < 1 || limit > LIMITS.libraryPageSizeMaximum) throw new RangeError('Invalid search page');
+  if (options.expectedRevision !== undefined && options.expectedRevision !== data.revision) throw new DomainError('SEARCH_CHANGED', '资料库已更新，请重新搜索后翻页', 409);
   if (query.length > LIMITS.libraryQueryChars) throw new RangeError(`Library query exceeds ${LIMITS.libraryQueryChars} characters`);
   const normalized = query.normalize('NFKC').toLowerCase().trim();
-  const response: LibrarySearchResult = { hits: [], strategy: 'local-bm25-v1', query: normalized };
+  const expandedTerms = options.expandTerms ? expandSearchTerms(normalized) : [];
+  const response: LibrarySearchResult = { hits: [], strategy: options.expandTerms ? 'local-bm25-terms-v1' : 'local-bm25-v1', query: normalized, total: 0, offset, nextOffset: null, revision: data.revision, expandedTerms };
   if (!tokens(normalized).length) return response;
-  const entities: { kind: LibraryHit['kind']; id: string; title: string; text: string; contentVersion: number | null }[] = [];
+  const entities: { kind: LibraryHit['kind']; id: string; title: string; text: string; contentVersion: number | null; field: 'content' | 'understanding' }[] = [];
   if (kind !== 'knowledge') for (const document of Object.values(data.documents)) {
-    entities.push({ kind: 'document', id: document.id, title: document.name, text: document.text, contentVersion: null });
+    entities.push({ kind: 'document', id: document.id, title: document.name, text: document.text, contentVersion: null, field: 'content' });
   }
-  if (kind !== 'document') for (const point of Object.values(data.knowledge)) {
+  if (kind !== 'document') for (const point of Object.values(data.knowledge).filter(point => !point.archivedAt)) {
     // Legacy scheduling/version counters are not content versions.
-    entities.push({ kind: 'knowledge', id: point.id, title: point.title, text: `${point.title}\n${point.description}`, contentVersion: point.contentVersion ?? null });
+    entities.push({ kind: 'knowledge', id: point.id, title: point.title, text: `${point.title}\n${point.description}`, contentVersion: point.contentVersion ?? null, field: 'content' });
+    if (options.includeUnderstanding && point.understanding.trim()) entities.push({ kind: 'knowledge', id: point.id, title: point.title, text: point.understanding, contentVersion: null, field: 'understanding' });
   }
   entities.sort((a, b) => compare(a.kind, b.kind) || compare(a.id, b.id));
   const candidates = entities.flatMap(entity => chunks(entity.text).map(chunk => ({ entity, chunk })));
-  const scores = bm25(candidates.map(({ entity, chunk }) => `${entity.title}\n${chunk.text}`), normalized);
+  const scores = bm25(candidates.map(({ entity, chunk }) => `${entity.title}\n${chunk.text}`), [normalized, ...expandedTerms].join(' '));
   const best = new Map<string, LibraryHit>();
   candidates.forEach(({ entity, chunk }, index) => {
     const score = scores[index]!;
     if (score <= 0) return;
     const key = `${entity.kind}:${entity.id}`;
     if ((best.get(key)?.score ?? 0) >= score) return;
-    best.set(key, { kind: entity.kind, id: entity.id, title: entity.title, excerpt: chunk.text, score, startLine: chunk.startLine, endLine: chunk.endLine, contentVersion: entity.contentVersion });
+    best.set(key, { kind: entity.kind, id: entity.id, title: entity.title, excerpt: chunk.text, score, startLine: chunk.startLine, endLine: chunk.endLine, contentVersion: entity.contentVersion, field: entity.field, ...(entity.kind === 'document' && data.documents[entity.id]?.import?.format === 'pdf' ? { pages: (data.documents[entity.id]!.import as import('@sanxing/contracts').PdfImport).pages.filter(page => page.startLine <= chunk.endLine && page.endLine >= chunk.startLine).map(page => page.page) } : {}) });
   });
-  response.hits = [...best.values()].sort((a, b) => b.score - a.score || compare(a.kind, b.kind) || compare(a.id, b.id) || a.startLine - b.startLine).slice(0, 10);
+  response.total = best.size;
+  response.nextOffset = offset + limit < best.size ? offset + limit : null;
+  response.hits = [...best.values()].sort((a, b) => b.score - a.score || compare(a.kind, b.kind) || compare(a.id, b.id) || a.startLine - b.startLine).slice(offset, offset + limit);
   return response;
 }
 
@@ -129,7 +138,7 @@ export function selectRelevantSources(sources: SourceInput[], query: string, lim
 /** Serialized cost of a string value inside the JSON payload (escapes included, quotes excluded). */
 function cost(text: string): { chars: number; bytes: number } {
   const json = JSON.stringify(text);
-  return { chars: json.length - 2, bytes: Buffer.byteLength(json) - 2 };
+  return { chars: json.length - 2, bytes: new TextEncoder().encode(json).byteLength - 2 };
 }
 
 /** Room for all source `text` values, measured as escaped JSON. Bytes are optional (mock has no window). */
@@ -143,7 +152,7 @@ function retrievalQuery(task: Extract<AiTask, { kind: 'extract' | 'followup' | '
   if (task.kind === 'extract') return [task.recitation.topic, task.recitation.learned, task.recitation.unclear, task.recitation.application].join('\n');
   const points = task.points.map(point => `${point.title}\n${point.description}`).join('\n');
   // A review quiz is a one-off request: its recall is a fixed input, not a moving conversation turn.
-  return task.kind === 'quiz' && task.recall !== undefined ? `${points}\n${task.recall}` : points;
+  return task.kind === 'quiz' ? [points, task.recall, ...(task.weaknesses ?? []).flatMap(item => [item.question, ...item.weakAreas])].filter(Boolean).join('\n') : points;
 }
 
 /**
@@ -157,7 +166,7 @@ export function prepareRetrieval<T extends AiTask>(input: T, budget: RetrievalBu
   const task = structuredClone(input);
   const summary: RetrievalSummary = { mode: 'full', sourceCount: 0, originalChars: 0, selectedChars: 0, originalTurns: 0, selectedTurns: 0 };
   if (task.kind === 'grade' || task.kind === 'connection_test') return { task, summary };
-  if (task.kind === 'followup') summary.originalTurns = summary.selectedTurns = task.turns.length;
+  if (task.kind === 'followup' || (task.kind === 'quiz' && task.turns !== undefined)) summary.originalTurns = summary.selectedTurns = task.turns?.length ?? 0;
   const recitationText = task.kind === 'extract' ? recitationSourceText(task.recitation) : null;
   const sources = task.sources.filter(source => !(recitationText !== null && source.id.startsWith('recitation:') && (source.text === recitationText || source.text === DUPLICATE)));
   summary.sourceCount = sources.length;
@@ -233,7 +242,7 @@ export function prepareRetrieval<T extends AiTask>(input: T, budget: RetrievalBu
 export function findRelatedKnowledge(data: AppData, query: string, exclude: ReadonlySet<string>, limit: number = LIMITS.relatedKnowledgeMaximum): KnowledgePoint[] {
   const terms = [...new Set(tokens(query.slice(0, LIMITS.modelInputChars)))].filter(term => Array.from(term).length >= 2);
   if (!terms.length || limit < 1) return [];
-  const candidates = Object.values(data.knowledge).filter(point => !exclude.has(point.id)).sort((a, b) => compare(a.id, b.id));
+  const candidates = Object.values(data.knowledge).filter(point => !point.archivedAt && !exclude.has(point.id)).sort((a, b) => compare(a.id, b.id));
   const scores = bm25Detailed(candidates.map(point => `${point.title}\n${point.description}`), terms);
   return candidates.map((point, index) => ({ point, ...scores[index]! }))
     .filter(item => item.matched >= 3 && item.score > 0)

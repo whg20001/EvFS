@@ -1,0 +1,33 @@
+import type { AppData, CommandResult } from '@sanxing/contracts';
+import type { LearningService } from './service.ts';
+export type LearningMutation = { method: 'POST' | 'PUT' | 'DELETE'; path: string; apply: (service: LearningService, data: AppData, params: Record<string, string>, body: unknown) => CommandResult };
+export const learningMutations: LearningMutation[] = [
+  { method: 'PUT', path: '/api/learning/preferences', apply: (service, data, params, body) => service.saveLearningPreferences(data, body) },
+  { method: 'POST', path: '/api/recitations/:id/references', apply: (service, data, params, body) => service.attachDocument(data, params.id!, body) },
+  { method: 'POST', path: '/api/knowledge-points/:id/review-card', apply: (service, data, params, body) => service.addReviewCard(data, params.id!, body) },
+  { method: 'POST', path: '/api/recitations', apply: (service, data, params, body) => service.createRecitation(data, body) },
+  { method: 'PUT', path: '/api/recitations/:id/draft', apply: (service, data, params, body) => service.saveDraft(data, params.id!, body) },
+  { method: 'POST', path: '/api/recitations/:id/submit', apply: (service, data, params, body) => service.submitRecitation(data, params.id!, body) },
+  { method: 'DELETE', path: '/api/recitations/:id/documents/:documentId', apply: (service, data, params, body) => service.removeDocument(data, params.id!, params.documentId!, body) },
+  { method: 'POST', path: '/api/sessions/:id/confirmations', apply: (service, data, params, body) => service.confirm(data, params.id!, body) },
+  { method: 'POST', path: '/api/sessions/:id/scope-revisions', apply: (service, data, params, body) => service.changeScope(data, params.id!, body) },
+  { method: 'POST', path: '/api/sessions/:id/answers', apply: (service, data, params, body) => service.followupAnswer(data, params.id!, body) },
+  { method: 'POST', path: '/api/sessions/:id/finish-followup', apply: (service, data, params, body) => service.finishFollowup(data, params.id!, body) },
+  { method: 'POST', path: '/api/sessions/:id/finish', apply: (service, data, params, body) => service.endSession(data, params.id!, body) },
+  { method: 'PUT', path: '/api/questions/:id/draft', apply: (service, data, params, body) => service.saveAnswerDraft(data, params.id!, body) },
+  { method: 'POST', path: '/api/questions/:id/answers', apply: (service, data, params, body) => service.answerQuestion(data, params.id!, body) },
+  { method: 'POST', path: '/api/quizzes/:id/submit', apply: (service, data, params, body) => service.submitQuiz(data, params.id!, body) },
+  { method: 'PUT', path: '/api/reviews/:id/pause', apply: (service, data, params, body) => service.pauseReviewCard(data, params.id!, body) },
+  { method: 'POST', path: '/api/reviews/:id/start', apply: (service, data, params, body) => service.startReview(data, params.id!) },
+  { method: 'PUT', path: '/api/review-sessions/:id/recall', apply: (service, data, params, body) => service.reviewRecall(data, params.id!, body) },
+  { method: 'POST', path: '/api/review-sessions/:id/complete', apply: (service, data, params, body) => service.completeReview(data, params.id!, body) },
+  { method: 'POST', path: '/api/review-sessions/:id/abandon', apply: (service, data, params, body) => service.abandonReview(data, params.id!, body) },
+  { method: 'POST', path: '/api/knowledge-points/:id/merge', apply: (service, data, params, body) => service.mergeKnowledge(data, params.id!, body) },
+  { method: 'PUT', path: '/api/knowledge-points/:id/content', apply: (service, data, params, body) => service.saveKnowledge(data, params.id!, body) },
+  { method: 'PUT', path: '/api/knowledge-points/:id/archive', apply: (service, data, params, body) => service.archiveKnowledge(data, params.id!, body) },
+  { method: 'POST', path: '/api/questions/:id/disputes', apply: (service, data, params, body) => service.disputeAssessment(data, params.id!, body) },
+  { method: 'POST', path: '/api/questions/:id/assessment-revisions', apply: (service, data, params, body) => service.reviseAssessment(data, params.id!, body) },
+  { method: 'PUT', path: '/api/knowledge-points/:id/understanding', apply: (service, data, params, body) => service.saveUnderstanding(data, params.id!, body) },
+  { method: 'POST', path: '/api/runs/:id/cancel', apply: (service, data, params, body) => service.cancelRun(data, params.id!) },
+  { method: 'POST', path: '/api/runs/:id/retry', apply: (service, data, params, body) => service.retryRun(data, params.id!) },
+];

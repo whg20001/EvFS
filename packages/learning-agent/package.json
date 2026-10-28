@@ -3,6 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": "./src/index.ts",
-  "dependencies": { "@sanxing/contracts": "0.1.0", "@sanxing/ai-access": "0.1.0", "@earendil-works/pi-agent-core": "1.0.4", "@earendil-works/pi-ai": "1.0.4", "zod": "4.6.5" }
+  "exports": {
+    ".": "./src/index.ts",
+    "./evaluations": "./evaluations/cases.ts",
+    "./browser": "./src/request-core.ts",
+    "./request": "./src/request.ts"
+  },
+  "dependencies": {
+    "@earendil-works/pi-agent-core": "1.0.4",
+    "@earendil-works/pi-ai": "1.0.4",
+    "@sanxing/ai-access": "0.1.0",
+    "@sanxing/contracts": "0.1.0",
+    "undici": "6.29.1",
+    "zod": "4.6.5"
+  }
 }

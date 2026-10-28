@@ -4,5 +4,10 @@
   "private": true,
   "type": "module",
   "exports": "./src/index.ts",
-  "dependencies": { "@sanxing/contracts": "0.1.0", "ts-fsrs": "5.4.2", "zod": "4.6.5" }
+  "dependencies": {
+    "@sanxing/contracts": "0.1.0",
+    "ts-fsrs": "5.4.2",
+    "zod": "4.6.5",
+    "yaml": "2.9.1"
+  }
 }

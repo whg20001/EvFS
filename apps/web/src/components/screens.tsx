@@ -2,7 +2,9 @@
 
 import { useRef } from 'react';
 import { usePathname } from 'next/navigation';
+import { parseLearningRoute } from '../lib/routes';
 import { RecitePage } from './recite';
+import { DraftsPage } from './drafts';
 import { LibraryPage } from './library';
 import { SessionPage } from './session';
 import { QuizPage } from './quiz';
@@ -10,6 +12,9 @@ import { ReviewPage, ReviewSessionPage } from './review';
 import { HistoryPage, KnowledgeDetail, KnowledgePage } from './knowledge';
 import { Empty, Go } from './ui';
 import { AiAccessPage } from '../features/ai-access/page';
+import { WeeklyPage, WeakPointsPage } from './weekly';
+import { LocalDataPage } from './local-data';
+import { AdminPage } from '../features/admin/page';
 
 export function RouteScreen() {
   const pathname = usePathname();
@@ -17,15 +22,25 @@ export function RouteScreen() {
   if (pathname !== '/login') retainedPath.current = pathname;
   // Authentication expiry overlays login without clearing the mounted editor.
   const path = pathname === '/login' ? retainedPath.current : pathname;
-  const parts = path.split('/').filter(Boolean);
-  if (!parts.length || parts[0] === 'recite') return <RecitePage />;
-  if (parts[0] === 'sessions' && parts[1] && parts[2] === 'ask') return <SessionPage key={parts[1]} id={parts[1]} />;
-  if (parts[0] === 'quizzes' && parts[1]) return <QuizPage key={parts[1]} id={parts[1]} result={parts[2] === 'result'} />;
-  if (parts[0] === 'review') return <ReviewPage />;
-  if (parts[0] === 'review-sessions' && parts[1]) return <ReviewSessionPage key={parts[1]} id={parts[1]} />;
-  if (parts[0] === 'knowledge') return parts[1] ? <KnowledgeDetail key={parts[1]} id={parts[1]} /> : <KnowledgePage />;
-  if (parts[0] === 'history') return <HistoryPage />;
-  if (parts[0] === 'library') return <LibraryPage />;
-  if (parts[0] === 'ai-access') return <AiAccessPage />;
-  return <Empty title="这条小路，暂时还没有页面" action={<Go href="/recite">回到今日复述</Go>}>试试左侧的学习导航。</Empty>;
+  const route = parseLearningRoute(path);
+  switch (route.page) {
+    case 'admin': return <AdminPage />;
+    case 'home': return null;
+    case 'week': return <WeeklyPage />;
+    case 'weak': return <WeakPointsPage />;
+    case 'recite': return <RecitePage />;
+    case 'recitation': return <RecitePage key={route.id} id={route.id} />;
+    case 'drafts': return <DraftsPage />;
+    case 'session': return <SessionPage key={route.id} id={route.id} />;
+    case 'quiz': return <QuizPage key={route.id} id={route.id} result={route.result} />;
+    case 'review': return <ReviewPage />;
+    case 'review-session': return <ReviewSessionPage key={route.id} id={route.id} />;
+    case 'knowledge': return <KnowledgePage />;
+    case 'knowledge-detail': return <KnowledgeDetail key={route.id} id={route.id} />;
+    case 'history': return <HistoryPage />;
+    case 'library': return <LibraryPage />;
+    case 'ai-access': return <AiAccessPage />;
+    case 'local-data': return <LocalDataPage />;
+  }
+  return <Empty title="这条小路，暂时还没有页面" action={<Go href="/">回到今日三省</Go>}>从「全部模块」找到要去的地方。</Empty>;
 }

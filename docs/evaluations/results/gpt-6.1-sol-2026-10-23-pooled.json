@@ -1,0 +1,1081 @@
+{
+  "reportVersion": 3,
+  "connectionPolicy": "pooled",
+  "performance": {
+    "attempted": 3,
+    "succeeded": 3,
+    "failed": 0,
+    "failureRate": 0,
+    "timeoutCount": 0,
+    "errors": {},
+    "failurePhases": {},
+    "totalDuration": {
+      "samples": 3,
+      "missing": 0,
+      "p50Ms": 11049,
+      "p95Ms": 14061,
+      "maxMs": 14061
+    },
+    "successfulDuration": {
+      "samples": 3,
+      "missing": 0,
+      "p50Ms": 11049,
+      "p95Ms": 14061,
+      "maxMs": 14061
+    },
+    "stages": {
+      "queueMs": {
+        "samples": 3,
+        "missing": 0,
+        "p50Ms": 21,
+        "p95Ms": 28,
+        "maxMs": 28
+      },
+      "preparationMs": {
+        "samples": 3,
+        "missing": 0,
+        "p50Ms": 1,
+        "p95Ms": 4,
+        "maxMs": 4
+      },
+      "firstResponseWaitMs": {
+        "samples": 3,
+        "missing": 0,
+        "p50Ms": 4188,
+        "p95Ms": 6938,
+        "maxMs": 6938
+      },
+      "firstTextWaitMs": {
+        "samples": 3,
+        "missing": 0,
+        "p50Ms": 5554,
+        "p95Ms": 7673,
+        "maxMs": 7673
+      },
+      "generationMs": {
+        "samples": 3,
+        "missing": 0,
+        "p50Ms": 4398,
+        "p95Ms": 8269,
+        "maxMs": 8269
+      },
+      "validationMs": {
+        "samples": 3,
+        "missing": 0,
+        "p50Ms": 4,
+        "p95Ms": 6,
+        "maxMs": 6
+      },
+      "savingMs": {
+        "samples": 3,
+        "missing": 0,
+        "p50Ms": 15,
+        "p95Ms": 16,
+        "maxMs": 16
+      },
+      "executionMs": {
+        "samples": 3,
+        "missing": 0,
+        "p50Ms": 10379,
+        "p95Ms": 13843,
+        "maxMs": 13843
+      },
+      "observedElapsedMs": {
+        "samples": 3,
+        "missing": 0,
+        "p50Ms": 10379,
+        "p95Ms": 13843,
+        "maxMs": 13843
+      }
+    },
+    "usage": {
+      "inputTokens": {
+        "observedTotal": 3970,
+        "knownSamples": 3,
+        "unknownSamples": 0
+      },
+      "outputTokens": {
+        "observedTotal": 676,
+        "knownSamples": 3,
+        "unknownSamples": 0
+      },
+      "cacheReadTokens": {
+        "observedTotal": 0,
+        "knownSamples": 3,
+        "unknownSamples": 0
+      },
+      "cacheWriteTokens": {
+        "observedTotal": 0,
+        "knownSamples": 3,
+        "unknownSamples": 0
+      },
+      "cost": {
+        "observedTotal": 0.014700000000000001,
+        "knownSamples": 3,
+        "unknownSamples": 0
+      }
+    },
+    "transport": {
+      "observed": 3,
+      "missing": 0,
+      "policies": {
+        "pooled": 3
+      },
+      "rawErrors": {},
+      "failurePhases": {},
+      "socketReuse": {
+        "new": 3
+      }
+    },
+    "requestsWithMetadata": 3,
+    "byTask": {
+      "extract": {
+        "attempted": 1,
+        "succeeded": 1,
+        "failed": 0,
+        "failureRate": 0,
+        "timeoutCount": 0,
+        "errors": {},
+        "failurePhases": {},
+        "totalDuration": {
+          "samples": 1,
+          "missing": 0,
+          "p50Ms": 8098,
+          "p95Ms": 8098,
+          "maxMs": 8098
+        },
+        "successfulDuration": {
+          "samples": 1,
+          "missing": 0,
+          "p50Ms": 8098,
+          "p95Ms": 8098,
+          "maxMs": 8098
+        },
+        "stages": {
+          "queueMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 28,
+            "p95Ms": 28,
+            "maxMs": 28
+          },
+          "preparationMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 4,
+            "p95Ms": 4,
+            "maxMs": 4
+          },
+          "firstResponseWaitMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 2015,
+            "p95Ms": 2015,
+            "maxMs": 2015
+          },
+          "firstTextWaitMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 2856,
+            "p95Ms": 2856,
+            "maxMs": 2856
+          },
+          "generationMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 4398,
+            "p95Ms": 4398,
+            "maxMs": 4398
+          },
+          "validationMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 6,
+            "p95Ms": 6,
+            "maxMs": 6
+          },
+          "savingMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 16,
+            "p95Ms": 16,
+            "maxMs": 16
+          },
+          "executionMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 7280,
+            "p95Ms": 7280,
+            "maxMs": 7280
+          },
+          "observedElapsedMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 7280,
+            "p95Ms": 7280,
+            "maxMs": 7280
+          }
+        },
+        "usage": {
+          "inputTokens": {
+            "observedTotal": 775,
+            "knownSamples": 1,
+            "unknownSamples": 0
+          },
+          "outputTokens": {
+            "observedTotal": 169,
+            "knownSamples": 1,
+            "unknownSamples": 0
+          },
+          "cacheReadTokens": {
+            "observedTotal": 0,
+            "knownSamples": 1,
+            "unknownSamples": 0
+          },
+          "cacheWriteTokens": {
+            "observedTotal": 0,
+            "knownSamples": 1,
+            "unknownSamples": 0
+          },
+          "cost": {
+            "observedTotal": 0.00324,
+            "knownSamples": 1,
+            "unknownSamples": 0
+          }
+        },
+        "transport": {
+          "observed": 1,
+          "missing": 0,
+          "policies": {
+            "pooled": 1
+          },
+          "rawErrors": {},
+          "failurePhases": {},
+          "socketReuse": {
+            "new": 1
+          }
+        },
+        "requestsWithMetadata": 1
+      },
+      "grade": {
+        "attempted": 1,
+        "succeeded": 1,
+        "failed": 0,
+        "failureRate": 0,
+        "timeoutCount": 0,
+        "errors": {},
+        "failurePhases": {},
+        "totalDuration": {
+          "samples": 1,
+          "missing": 0,
+          "p50Ms": 11049,
+          "p95Ms": 11049,
+          "maxMs": 11049
+        },
+        "successfulDuration": {
+          "samples": 1,
+          "missing": 0,
+          "p50Ms": 11049,
+          "p95Ms": 11049,
+          "maxMs": 11049
+        },
+        "stages": {
+          "queueMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 19,
+            "p95Ms": 19,
+            "maxMs": 19
+          },
+          "preparationMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 0,
+            "p95Ms": 0,
+            "maxMs": 0
+          },
+          "firstResponseWaitMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 6938,
+            "p95Ms": 6938,
+            "maxMs": 6938
+          },
+          "firstTextWaitMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 7673,
+            "p95Ms": 7673,
+            "maxMs": 7673
+          },
+          "generationMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 2688,
+            "p95Ms": 2688,
+            "maxMs": 2688
+          },
+          "validationMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 4,
+            "p95Ms": 4,
+            "maxMs": 4
+          },
+          "savingMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 14,
+            "p95Ms": 14,
+            "maxMs": 14
+          },
+          "executionMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 10379,
+            "p95Ms": 10379,
+            "maxMs": 10379
+          },
+          "observedElapsedMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 10379,
+            "p95Ms": 10379,
+            "maxMs": 10379
+          }
+        },
+        "usage": {
+          "inputTokens": {
+            "observedTotal": 949,
+            "knownSamples": 1,
+            "unknownSamples": 0
+          },
+          "outputTokens": {
+            "observedTotal": 101,
+            "knownSamples": 1,
+            "unknownSamples": 0
+          },
+          "cacheReadTokens": {
+            "observedTotal": 0,
+            "knownSamples": 1,
+            "unknownSamples": 0
+          },
+          "cacheWriteTokens": {
+            "observedTotal": 0,
+            "knownSamples": 1,
+            "unknownSamples": 0
+          },
+          "cost": {
+            "observedTotal": 0.002908,
+            "knownSamples": 1,
+            "unknownSamples": 0
+          }
+        },
+        "transport": {
+          "observed": 1,
+          "missing": 0,
+          "policies": {
+            "pooled": 1
+          },
+          "rawErrors": {},
+          "failurePhases": {},
+          "socketReuse": {
+            "new": 1
+          }
+        },
+        "requestsWithMetadata": 1
+      },
+      "quiz": {
+        "attempted": 1,
+        "succeeded": 1,
+        "failed": 0,
+        "failureRate": 0,
+        "timeoutCount": 0,
+        "errors": {},
+        "failurePhases": {},
+        "totalDuration": {
+          "samples": 1,
+          "missing": 0,
+          "p50Ms": 14061,
+          "p95Ms": 14061,
+          "maxMs": 14061
+        },
+        "successfulDuration": {
+          "samples": 1,
+          "missing": 0,
+          "p50Ms": 14061,
+          "p95Ms": 14061,
+          "maxMs": 14061
+        },
+        "stages": {
+          "queueMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 21,
+            "p95Ms": 21,
+            "maxMs": 21
+          },
+          "preparationMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 1,
+            "p95Ms": 1,
+            "maxMs": 1
+          },
+          "firstResponseWaitMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 4188,
+            "p95Ms": 4188,
+            "maxMs": 4188
+          },
+          "firstTextWaitMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 5554,
+            "p95Ms": 5554,
+            "maxMs": 5554
+          },
+          "generationMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 8269,
+            "p95Ms": 8269,
+            "maxMs": 8269
+          },
+          "validationMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 4,
+            "p95Ms": 4,
+            "maxMs": 4
+          },
+          "savingMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 15,
+            "p95Ms": 15,
+            "maxMs": 15
+          },
+          "executionMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 13843,
+            "p95Ms": 13843,
+            "maxMs": 13843
+          },
+          "observedElapsedMs": {
+            "samples": 1,
+            "missing": 0,
+            "p50Ms": 13843,
+            "p95Ms": 13843,
+            "maxMs": 13843
+          }
+        },
+        "usage": {
+          "inputTokens": {
+            "observedTotal": 2246,
+            "knownSamples": 1,
+            "unknownSamples": 0
+          },
+          "outputTokens": {
+            "observedTotal": 406,
+            "knownSamples": 1,
+            "unknownSamples": 0
+          },
+          "cacheReadTokens": {
+            "observedTotal": 0,
+            "knownSamples": 1,
+            "unknownSamples": 0
+          },
+          "cacheWriteTokens": {
+            "observedTotal": 0,
+            "knownSamples": 1,
+            "unknownSamples": 0
+          },
+          "cost": {
+            "observedTotal": 0.008552,
+            "knownSamples": 1,
+            "unknownSamples": 0
+          }
+        },
+        "transport": {
+          "observed": 1,
+          "missing": 0,
+          "policies": {
+            "pooled": 1
+          },
+          "rawErrors": {},
+          "failurePhases": {},
+          "socketReuse": {
+            "new": 1
+          }
+        },
+        "requestsWithMetadata": 1
+      }
+    },
+    "byModel": {
+      "{\"provider\":\"openai-codex\",\"model\":\"gpt-6.1-sol\",\"authMethod\":\"oauth\"}": {
+        "attempted": 3,
+        "succeeded": 3,
+        "failed": 0,
+        "failureRate": 0,
+        "timeoutCount": 0,
+        "errors": {},
+        "failurePhases": {},
+        "totalDuration": {
+          "samples": 3,
+          "missing": 0,
+          "p50Ms": 11049,
+          "p95Ms": 14061,
+          "maxMs": 14061
+        },
+        "successfulDuration": {
+          "samples": 3,
+          "missing": 0,
+          "p50Ms": 11049,
+          "p95Ms": 14061,
+          "maxMs": 14061
+        },
+        "stages": {
+          "queueMs": {
+            "samples": 3,
+            "missing": 0,
+            "p50Ms": 21,
+            "p95Ms": 28,
+            "maxMs": 28
+          },
+          "preparationMs": {
+            "samples": 3,
+            "missing": 0,
+            "p50Ms": 1,
+            "p95Ms": 4,
+            "maxMs": 4
+          },
+          "firstResponseWaitMs": {
+            "samples": 3,
+            "missing": 0,
+            "p50Ms": 4188,
+            "p95Ms": 6938,
+            "maxMs": 6938
+          },
+          "firstTextWaitMs": {
+            "samples": 3,
+            "missing": 0,
+            "p50Ms": 5554,
+            "p95Ms": 7673,
+            "maxMs": 7673
+          },
+          "generationMs": {
+            "samples": 3,
+            "missing": 0,
+            "p50Ms": 4398,
+            "p95Ms": 8269,
+            "maxMs": 8269
+          },
+          "validationMs": {
+            "samples": 3,
+            "missing": 0,
+            "p50Ms": 4,
+            "p95Ms": 6,
+            "maxMs": 6
+          },
+          "savingMs": {
+            "samples": 3,
+            "missing": 0,
+            "p50Ms": 15,
+            "p95Ms": 16,
+            "maxMs": 16
+          },
+          "executionMs": {
+            "samples": 3,
+            "missing": 0,
+            "p50Ms": 10379,
+            "p95Ms": 13843,
+            "maxMs": 13843
+          },
+          "observedElapsedMs": {
+            "samples": 3,
+            "missing": 0,
+            "p50Ms": 10379,
+            "p95Ms": 13843,
+            "maxMs": 13843
+          }
+        },
+        "usage": {
+          "inputTokens": {
+            "observedTotal": 3970,
+            "knownSamples": 3,
+            "unknownSamples": 0
+          },
+          "outputTokens": {
+            "observedTotal": 676,
+            "knownSamples": 3,
+            "unknownSamples": 0
+          },
+          "cacheReadTokens": {
+            "observedTotal": 0,
+            "knownSamples": 3,
+            "unknownSamples": 0
+          },
+          "cacheWriteTokens": {
+            "observedTotal": 0,
+            "knownSamples": 3,
+            "unknownSamples": 0
+          },
+          "cost": {
+            "observedTotal": 0.014700000000000001,
+            "knownSamples": 3,
+            "unknownSamples": 0
+          }
+        },
+        "transport": {
+          "observed": 3,
+          "missing": 0,
+          "policies": {
+            "pooled": 3
+          },
+          "rawErrors": {},
+          "failurePhases": {},
+          "socketReuse": {
+            "new": 3
+          }
+        },
+        "requestsWithMetadata": 3
+      }
+    }
+  },
+  "batchId": "1a411706-d073-41e7-a6af-e878fa7388dd",
+  "inFlight": null,
+  "suite": "learning-quality-v1",
+  "promptVersion": "learning-v8",
+  "mode": "live",
+  "auth": "oauth",
+  "provider": "openai-codex",
+  "model": "gpt-6.1-sol",
+  "createdAt": "2026-10-22T16:21:28.164Z",
+  "casesHash": "0f77d2f876c4b3f4815d6875251d4356457395f22f55db500d52be7f70c9284e",
+  "offset": null,
+  "limit": 3,
+  "maxOutputTokens": 4096,
+  "allowUnboundedOAuthOutput": true,
+  "continueOnError": true,
+  "costStopThresholdUsd": null,
+  "knownCostUsd": 0.014700000000000001,
+  "unknownUsageAttempts": 0,
+  "stopped": null,
+  "results": [
+    {
+      "topic": "二分查找",
+      "reference": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。",
+      "id": "search-extract",
+      "task": {
+        "kind": "extract",
+        "recitation": {
+          "learned": "数据需要有序，每次根据中间值的比较排除一半区间，所以查询时间 O(log n)。",
+          "unclear": "适用条件是什么？",
+          "application": "用一个小例子检验",
+          "topic": "二分查找"
+        },
+        "sources": [
+          {
+            "id": "source-search",
+            "name": "二分查找.txt",
+            "text": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。"
+          }
+        ]
+      },
+      "checks": [
+        "仅引用给定来源",
+        "提取结论及适用条件",
+        "不扩展未提供的考核范围"
+      ],
+      "response": {
+        "output": {
+          "kind": "extract",
+          "candidates": [
+            {
+              "title": "二分查找的适用条件",
+              "description": "资料指出，二分查找要求数据可按比较规则有序访问；对无序数组直接使用普通二分查找不能保证正确。用户复述提到“数据需要有序”，但仍询问适用条件，具体理解待确认。",
+              "sourceIds": [
+                "source-search"
+              ]
+            },
+            {
+              "title": "二分查找的区间缩减与时间复杂度",
+              "description": "用户复述与资料一致：每次比较中间元素，根据比较结果排除一半区间，时间复杂度为 O(log n)。用户希望用小例子检验，能否正确执行区间缩减仍待确认。",
+              "sourceIds": [
+                "source-search"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 775,
+          "outputTokens": 169,
+          "cost": 0.00324,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 775,
+        "outputTokens": 169,
+        "cost": 0.00324,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "8d2e92295c35652ff6a0c64e4aeb8fe58c926cd734f791a24b74ec1e9c2beaa1",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 7280,
+        "queuedMs": 28,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 4,
+        "firstResponseMs": 2019,
+        "firstTextMs": 2860,
+        "lastContentMs": 6753,
+        "generationCompletedMs": 7258,
+        "saveStartedMs": 7264,
+        "completedMs": 7280
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 1711,
+        "inputBytes": 3125,
+        "estimatedInputTokens": 3125,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "transport": {
+        "policy": "pooled",
+        "phase": "streaming",
+        "requestCount": 1,
+        "reusedSocket": false,
+        "bytesWritten": 4348,
+        "bytesRead": 68989,
+        "httpStatus": 200
+      },
+      "boundPromptHash": "72061203d2014a92458c70394920339295fb72e445fbe60478702ec8ec5964d4",
+      "stages": {
+        "queueMs": 28,
+        "preparationMs": 4,
+        "firstResponseWaitMs": 2015,
+        "firstTextWaitMs": 2856,
+        "generationMs": 4398,
+        "validationMs": 6,
+        "savingMs": 16,
+        "executionMs": 7280,
+        "observedElapsedMs": 7280
+      },
+      "durationMs": 8098,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "独立事件乘法规则",
+      "reference": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。",
+      "id": "probability-quiz",
+      "task": {
+        "kind": "quiz",
+        "points": [
+          {
+            "id": "point-probability",
+            "title": "独立事件乘法规则",
+            "description": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。",
+            "sourceIds": [
+              "source-probability"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-probability",
+            "name": "独立事件乘法规则.txt",
+            "text": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。"
+          }
+        ],
+        "count": 2
+      },
+      "checks": [
+        "两道题均在给定范围内",
+        "参考答案和评分细则正确",
+        "题目有明确可判定答案"
+      ],
+      "response": {
+        "output": {
+          "kind": "quiz",
+          "questions": [
+            {
+              "knowledgeId": "point-probability",
+              "kind": "short",
+              "prompt": "已知事件 A、B 独立，P(A)=0.6，P(B)=0.3。求 P(A 且 B)，并写出计算依据和过程。",
+              "options": [],
+              "correctIndex": null,
+              "referenceAnswer": "由于 A、B 独立，可使用独立事件乘法规则：P(A 且 B)=P(A)P(B)=0.6×0.3=0.18。",
+              "rubric": [
+                {
+                  "id": "r1",
+                  "description": "指出因 A、B 独立，可以将两个事件的概率相乘。",
+                  "maxScore": 2
+                },
+                {
+                  "id": "r2",
+                  "description": "正确列式并算得交集概率为 0.18。",
+                  "maxScore": 2
+                }
+              ],
+              "sourceIds": [
+                "source-probability"
+              ]
+            },
+            {
+              "knowledgeId": "point-probability",
+              "kind": "single",
+              "prompt": "已知 P(A)=0.5、P(B)=0.4，并且 A、B 不独立。关于 P(A 且 B)，以下判断哪项正确？",
+              "options": [
+                "必定等于 0.2，因为两个概率可以直接相乘。",
+                "不能仅凭这两个边缘概率直接相乘来确定交集概率。",
+                "必定等于 0.9，因为两个概率应直接相加。"
+              ],
+              "correctIndex": 1,
+              "referenceAnswer": "选第二项。不独立时，不能仅凭 P(A) 和 P(B) 相乘来确定交集概率；0.5×0.4=0.2 的计算不能作为此处的依据。",
+              "rubric": [
+                {
+                  "id": "r1",
+                  "description": "选择第二项，识别出不独立时不能仅凭两个边缘概率使用独立事件乘法规则。",
+                  "maxScore": 2
+                }
+              ],
+              "sourceIds": [
+                "source-probability"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 2246,
+          "outputTokens": 406,
+          "cost": 0.008552,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 2246,
+        "outputTokens": 406,
+        "cost": 0.008552,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "eae34224088cfe977fb5975fc431e2196dce953b7b3adee97f5a9d31eabe5e41",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 13843,
+        "queuedMs": 21,
+        "totalTimeoutMs": 120000,
+        "requestStartedMs": 1,
+        "firstResponseMs": 4189,
+        "firstTextMs": 5555,
+        "lastContentMs": 13805,
+        "generationCompletedMs": 13824,
+        "saveStartedMs": 13828,
+        "completedMs": 13843
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 5371,
+        "inputBytes": 8799,
+        "estimatedInputTokens": 8799,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 120000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "transport": {
+        "policy": "pooled",
+        "phase": "streaming",
+        "requestCount": 1,
+        "reusedSocket": false,
+        "bytesWritten": 6696,
+        "bytesRead": 156084,
+        "httpStatus": 200
+      },
+      "boundPromptHash": "d09e5d44885bf882be057ee87c7bdd3d57715451e5da044f7b45a833dfec5dbb",
+      "stages": {
+        "queueMs": 21,
+        "preparationMs": 1,
+        "firstResponseWaitMs": 4188,
+        "firstTextWaitMs": 5554,
+        "generationMs": 8269,
+        "validationMs": 4,
+        "savingMs": 15,
+        "executionMs": 13843,
+        "observedElapsedMs": 13843
+      },
+      "durationMs": 14061,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "保持顺序的去重",
+      "reference": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。",
+      "id": "unique-grade-correct",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-unique",
+          "kind": "short",
+          "prompt": "解释 [...new Set([2,1,2,3,1])] 的结果和顺序。",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "结果是 [2,1,3]。Set 去掉重复值并保持首次插入顺序，不修改原数组。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "结果为 [2,1,3]",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "顺序来自首次插入而不是排序",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-unique"
+          ]
+        },
+        "answer": "结果是 [2,1,3]。Set 去掉重复值并保持首次插入顺序，不修改原数组。"
+      },
+      "checks": [
+        "完整正确回答应得满分",
+        "每项依据来自答案内容"
+      ],
+      "expectedScore": {
+        "min": 2,
+        "max": 2
+      },
+      "response": {
+        "output": {
+          "kind": "grade",
+          "status": "graded",
+          "scores": [
+            {
+              "rubricId": "r1",
+              "score": 1,
+              "evidence": "回答明确写出“结果是 [2,1,3]”。"
+            },
+            {
+              "rubricId": "r2",
+              "score": 1,
+              "evidence": "回答指出“保持首次插入顺序”，正确说明顺序并非来自排序。"
+            }
+          ],
+          "feedback": "结果与顺序解释均符合参考答案。AI 评价可能出错。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 949,
+          "outputTokens": 101,
+          "cost": 0.002908,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 949,
+        "outputTokens": 101,
+        "cost": 0.002908,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "6ef2c82e133339cab07f176a2f4de4363a9d83160fc981d1190baf7892076ef5",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 10379,
+        "queuedMs": 19,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 6938,
+        "firstTextMs": 7673,
+        "lastContentMs": 10189,
+        "generationCompletedMs": 10361,
+        "saveStartedMs": 10365,
+        "completedMs": 10379
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 2190,
+        "inputBytes": 3774,
+        "estimatedInputTokens": 3774,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "transport": {
+        "policy": "pooled",
+        "phase": "streaming",
+        "requestCount": 1,
+        "reusedSocket": false,
+        "bytesWritten": 4676,
+        "bytesRead": 49729,
+        "httpStatus": 200
+      },
+      "boundPromptHash": "59637d17764e784b725737417bb7861d1593d4ec2d9e9a6dcad8f21a85d3b2ca",
+      "stages": {
+        "queueMs": 19,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 6938,
+        "firstTextWaitMs": 7673,
+        "generationMs": 2688,
+        "validationMs": 4,
+        "savingMs": 14,
+        "executionMs": 10379,
+        "observedElapsedMs": 10379
+      },
+      "durationMs": 11049,
+      "scoreMatchesReference": true,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    }
+  ]
+}

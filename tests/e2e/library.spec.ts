@@ -1,6 +1,8 @@
+import { learningStatistics } from '../../packages/learning-domain/src/statistics.ts';
+import { emptyData } from '@sanxing/database';
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { LIMITS, type LearningPreferencesView, type LibrarySearchResult, type PublicState, type TaskInputPreview, type TokenUsageHeatmap } from '@sanxing/contracts';
-import { answerDialog } from './dialog.ts';
+import { acknowledgeFeedback, answerDialog } from './dialog.ts';
 
 // Browser-only contracts: every API route fails closed, never a provider or personal database.
 function fixture(): PublicState {
@@ -23,7 +25,7 @@ async function offline(page: Page, data: PublicState) {
   const requests: { path: string; method: string; body: Record<string, unknown> }[] = [];
   const errors: string[] = [];
   const controls = { conflict: false, cache: true };
-  let preferences: LearningPreferencesView = { revision: 4, source: 'environment', schedulingEnabled: data.capabilities.schedulingEnabled, promptCacheRetention: 'none', associationEnabled: false, codeExercisesEnabled: false, codeLanguages: ['python'] };
+  let preferences: LearningPreferencesView = { revision: 4, source: 'environment', reviewOrder: 'due', reviewBatchSize: null, schedulingEnabled: data.capabilities.schedulingEnabled, promptCacheRetention: 'none', associationEnabled: false, codeExercisesEnabled: false, codeLanguages: ['python'] };
   page.on('pageerror', error => errors.push(error.message));
   await page.route('**/api/**', async route => {
     const request = route.request(); const path = new URL(request.url()).pathname; const method = request.method();
@@ -32,11 +34,12 @@ async function offline(page: Page, data: PublicState) {
     if (method !== 'GET') expect(request.headers()['x-csrf-token']).toBe(data.csrfToken);
     if (path === '/api/auth/status') return json(route, { authenticated: true });
     if (path === '/api/state') return json(route, data);
+    if (path === '/api/runs/progress' && method === 'GET') return json(route, {});
     if (path === '/api/library/search') {
       expect(method).toBe('POST');
       const documents = [{ kind: 'document' as const, id: 'old-doc', title: '历史记忆笔记.md', excerpt: '提取练习资料片段', score: 3, startLine: 4, endLine: 6, contentVersion: null }];
       const knowledge = data.knowledge.map(point => ({ kind: 'knowledge' as const, id: point.id, title: point.title, excerpt: point.description, score: 2, startLine: 1, endLine: 2, contentVersion: point.contentVersion ?? null }));
-      return json(route, { query: body.query, strategy: 'local-bm25-v1', hits: body.kind === 'document' ? documents : body.kind === 'knowledge' ? knowledge : [...documents, ...knowledge] } satisfies LibrarySearchResult);
+      return json(route, { query: body.query, strategy: 'local-bm25-v1', total: body.kind === 'document' ? 1 : body.kind === 'knowledge' ? knowledge.length : knowledge.length + 1, offset: 0, nextOffset: null, revision: data.revision, expandedTerms: [], hits: body.kind === 'document' ? documents : body.kind === 'knowledge' ? knowledge : [...documents, ...knowledge] } satisfies LibrarySearchResult);
     }
     if (path === '/api/documents/old-doc') return json(route, { ...data.documents[0], text: '按需读取的公开原文\n提取练习资料' });
     if (path === '/api/recitations/draft/input-preview') return json(route, {
@@ -58,11 +61,13 @@ async function offline(page: Page, data: PublicState) {
       const session = data.sessions[0]!;
       session.candidates = session.candidates.map(candidate => ({ ...candidate, ...body.decisions.find((decision: { candidateId: string }) => decision.candidateId === candidate.id) }));
       // Association is server-side and preference-gated; the client never chooses related points.
-      expect(Object.keys(body).sort()).toEqual(['decisions', 'version']);
+      expect(Object.keys(body).sort()).toEqual(['decisions', 'skillSelections', 'version']);
+      expect(body.skillSelections).toEqual([]);
       session.relatedKnowledge = [];
       session.status = 'CLARIFYING'; session.version++; data.revision++;
       return json(route, { version: session.version });
     }
+    if (path === '/api/learning/statistics') return json(route, learningStatistics(emptyData(data.mode), new Date(), data.timezone));
     if (path === '/api/learning/preferences') {
       if (method === 'GET') return json(route, preferences);
       expect(method).toBe('PUT');
@@ -71,7 +76,7 @@ async function offline(page: Page, data: PublicState) {
         return json(route, { error: { code: 'VERSION_CONFLICT', message: '设置版本冲突' } }, 409);
       }
       expect(body.expectedRevision).toBe(preferences.revision); expect(body.confirm).toBe(true);
-      preferences = { revision: preferences.revision + 1, source: 'saved', schedulingEnabled: body.schedulingEnabled, promptCacheRetention: body.promptCacheRetention, associationEnabled: body.associationEnabled, codeExercisesEnabled: body.codeExercisesEnabled, codeLanguages: body.codeLanguages };
+      preferences = { revision: preferences.revision + 1, source: 'saved', reviewOrder: body.reviewOrder ?? preferences.reviewOrder, reviewBatchSize: body.reviewBatchSize === undefined ? preferences.reviewBatchSize : body.reviewBatchSize, schedulingEnabled: body.schedulingEnabled, promptCacheRetention: body.promptCacheRetention, associationEnabled: body.associationEnabled, codeExercisesEnabled: body.codeExercisesEnabled, codeLanguages: body.codeLanguages };
       data.capabilities.schedulingEnabled = preferences.schedulingEnabled; data.revision++;
       return json(route, { version: preferences.revision });
     }
@@ -82,6 +87,7 @@ async function offline(page: Page, data: PublicState) {
       return json(route, { id: 'single-card' });
     }
     if (path === '/api/ai/access') return json(route, { mode: 'live', providers: [], notice: '' });
+    if (path === '/api/ai/skills' && method === 'GET') return json(route, { mode: data.mode, items: [] });
     if (path === '/api/ai/configuration') return json(route, { mode: 'live', revision: 0, selection: null, source: 'none', ready: false, problem: null, budget: { enabled: false, dailyUsd: null, reservationUsd: null }, providers: [] });
     if (path === '/api/ai/usage') return json(route, {
       mode: 'live', timezone: 'UTC', year: 2026, availableYears: [2026], days: [],
@@ -159,20 +165,18 @@ test('preferences need explicit confirmation, retain choices after CAS conflict,
   expect(writes(observed.requests)).toEqual([]);
   observed.controls.conflict = true;
   await card.getByRole('button', { name: '确认保存设置' }).click(); await answerDialog(page, true, ['缓存非免费、不保证命中']);
-  await expect(card.getByRole('alert')).toContainText('设置版本冲突');
+  await acknowledgeFeedback(page, ['设置版本冲突']);
   await expect(scheduling).toBeChecked(); await expect(cache).toHaveValue('short'); await expect(card).toContainText('设置版本 4');
-  await page.getByRole('button', { name: '刷新状态', exact: true }).click();
-  await expect(scheduling).toBeChecked(); await expect(cache).toHaveValue('short');
   await card.getByRole('button', { name: '重新读取设置' }).click(); await answerDialog(page, true);
   await expect(card).toContainText('设置版本 5'); await expect(scheduling).not.toBeChecked();
   const association = card.getByRole('checkbox', { name: '旧知识联想' }); await expect(association).not.toBeChecked();
   await scheduling.check(); await cache.selectOption('short'); await association.check();
   await card.getByRole('button', { name: '确认保存设置' }).click(); await answerDialog(page, true, ['旧知识联想：开启']);
-  await expect(card.getByRole('status')).toHaveText('学习、复习与缓存设置已保存。');
+  await acknowledgeFeedback(page, ['学习、复习与缓存设置已保存']);
   await expect(association).toBeChecked();
   expect(writes(observed.requests).map(item => item.body)).toEqual([
-    { expectedRevision: 4, schedulingEnabled: true, promptCacheRetention: 'short', associationEnabled: false, codeExercisesEnabled: false, codeLanguages: ['python'], confirm: true },
-    { expectedRevision: 5, schedulingEnabled: true, promptCacheRetention: 'short', associationEnabled: true, codeExercisesEnabled: false, codeLanguages: ['python'], confirm: true },
+    { expectedRevision: 4, schedulingEnabled: true, promptCacheRetention: 'short', associationEnabled: false, codeExercisesEnabled: false, codeLanguages: ['python'], reviewOrder: 'due', reviewBatchSize: null, confirm: true },
+    { expectedRevision: 5, schedulingEnabled: true, promptCacheRetention: 'short', associationEnabled: true, codeExercisesEnabled: false, codeLanguages: ['python'], reviewOrder: 'due', reviewBatchSize: null, confirm: true },
   ]);
   expect(data.cards).toEqual([]); expect(data.mode).toBe('live');
   expect(observed.requests.filter(item => item.path === '/api/learning/preferences' && item.method === 'GET').length).toBeGreaterThanOrEqual(3);
@@ -224,28 +228,33 @@ test('unsaved input holds navigation behind the dialog and replays it only after
   await page.route('**/api/recitations/draft/draft', () => { /* never settles: the draft stays unsaved */ });
   await page.goto('/recite'); await page.getByRole('textbox', { name: '今天学了什么', exact: true }).fill('尚未保存的复述');
   await expect(page.locator('[data-unsaved="true"]')).toHaveCount(1);
-  const library = page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: /本地资料库/ });
-  await library.click(); await answerDialog(page, false, ['仍有未保存的输入']);
+  const home = page.getByRole('link', { name: '每日三省首页' });
+  await home.click(); await answerDialog(page, false, ['仍有未保存的输入']);
   await expect(page).toHaveURL(/\/recite$/);
-  // The top search navigates in-app too, so it waits for the same confirmation.
-  await page.getByRole('textbox', { name: '搜索知识点' }).fill('递归'); await page.getByRole('button', { name: '搜索', exact: true }).click();
+  await expect(home).toBeFocused();
+  // The module menu navigates in-app too, so it waits for the same confirmation.
+  const openLibrary = async () => {
+    await page.getByRole('button', { name: '全部模块', exact: true }).click();
+    const menu = page.getByRole('dialog', { name: '全部模块' });
+    await menu.getByLabel('搜索模块').fill('本地资料库');
+    await menu.getByRole('button', { name: /本地资料库/ }).click();
+  };
+  await openLibrary();
   await answerDialog(page, false); await expect(page).toHaveURL(/\/recite$/);
-  await expect(page.getByRole('button', { name: '搜索', exact: true })).toBeFocused();
   // An in-page anchor never leaves the page, so it never asks.
   await page.getByRole('link', { name: '跳至主要内容' }).focus(); await page.keyboard.press('Enter');
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
-  await library.click(); await answerDialog(page, true);
+  await openLibrary(); await answerDialog(page, true);
   await expect(page).toHaveURL(/\/library$/); await expect(page.getByRole('heading', { name: '本地资料库' })).toBeVisible();
   expect(observed.errors).toEqual([]);
 });
 
-test('retrieved context does not claim full text even without budget truncation', async ({ page }) => {
+test('recitation keeps preflight descriptions hidden for retrieved context', async ({ page }) => {
   const observed = await offline(page, fixture()); await page.goto('/recite');
   const budget = page.getByRole('note', { name: 'AI 输入预算' });
-  await expect(budget).toContainText('检索节选 900 / 6,000 字符');
-  await expect(budget).toContainText('不代表模型阅读了全文');
-  await expect(budget).toContainText('检索节选已按预算选入，不再做预算截断');
-  await expect(budget).not.toContainText('全文发送'); expect(observed.errors).toEqual([]);
+  await expect(budget).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '提交复述', exact: true })).toBeEnabled();
+  expect(observed.errors).toEqual([]);
 });
 
 test('cache totals are informational subsets, and old fixtures without cache remain usable', async ({ page }) => {

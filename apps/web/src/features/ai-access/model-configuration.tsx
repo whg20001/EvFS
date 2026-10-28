@@ -1,9 +1,10 @@
 'use client';
 
+import { Feedback } from '../../components/feedback';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AiModelConfiguration, AiModelSelection } from '@sanxing/contracts';
 import { useApp } from '../../components/store';
-import { Badge, Card } from '../../components/ui';
+import { Badge } from '../../components/ui';
 import { HttpError } from '../../lib/api-client';
 import { accessError } from './use-oauth';
 import styles from './ai-access.module.css';
@@ -16,7 +17,7 @@ const sources: Record<AiModelConfiguration['source'], string> = {
 };
 
 export function ModelConfiguration({ connectionKey, onConfigurationChange }: { connectionKey: string | null; onConfigurationChange?: (configuration: AiModelConfiguration | null) => void }) {
-  const { api } = useApp();
+  const { api, storageMode } = useApp();
   const [configuration, setConfiguration] = useState<AiModelConfiguration | null>(null);
   const confirm = useConfirm();
   useEffect(() => { onConfigurationChange?.(configuration); }, [configuration, onConfigurationChange]);
@@ -25,6 +26,7 @@ export function ModelConfiguration({ connectionKey, onConfigurationChange }: { c
   const [busy, setBusy] = useState<'read' | 'save' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
   const [needsRefresh, setNeedsRefresh] = useState(false);
   const request = useRef<{ controller: AbortController; kind: 'read' | 'save' } | null>(null);
   const dirtyRef = useRef(false);
@@ -53,6 +55,7 @@ export function ModelConfiguration({ connectionKey, onConfigurationChange }: { c
     setBusy('read');
     if (!conflict.current) setError(null);
     setMessage(null);
+    setSaved(false);
     try {
       const next = await api<AiModelConfiguration>('/ai/configuration', { signal: current.controller.signal });
       if (current.controller.signal.aborted || request.current !== current) return;
@@ -92,12 +95,14 @@ export function ModelConfiguration({ connectionKey, onConfigurationChange }: { c
     setDirty(true);
     setDraft(next);
     setMessage(null);
+    setSaved(false);
   };
   const provider = configuration?.providers.find(item => item.id === draft.providerId);
   const model = provider?.models.find(item => item.id === draft.modelId);
-  const needsAcknowledgement = draft.authMethod === 'oauth' && !!provider?.requiresOAuthOutputAcknowledgement;
-  const authAvailable = draft.authMethod === 'oauth' ? provider?.oauthConnected : draft.authMethod === 'api_key' ? provider?.apiKeyAvailable : false;
-  const valid = !!provider && !!model && !!draft.authMethod && !!authAvailable && (!needsAcknowledgement || draft.allowUnboundedOutput);
+  const usesUnboundedOutput = draft.authMethod === 'oauth' && !!provider?.requiresOAuthOutputAcknowledgement;
+  const platformSelected = draft.authMethod === 'platform';
+  const authAvailable = platformSelected ? provider?.platformAvailable : draft.authMethod === 'oauth' ? provider?.oauthConnected : draft.authMethod === 'api_key' ? provider?.apiKeyAvailable : false;
+  const valid = !!provider && !!model && !!draft.authMethod && !!authAvailable;
   // The same model id can be listed by several providers (e.g. OpenAI and Codex) whose authorizations never interchange.
   const authorizedAlternative = draft.authMethod === 'oauth' && provider && !provider.oauthConnected && draft.modelId
     ? configuration?.providers.find(item => item.oauthConnected && item.models.some(entry => entry.id === draft.modelId)) : undefined;
@@ -108,14 +113,15 @@ export function ModelConfiguration({ connectionKey, onConfigurationChange }: { c
     if (request.current || conflict.current || revision.current === null || !valid || !draft.authMethod) return;
     const current = { controller: new AbortController(), kind: 'save' as const };
     request.current = current;
-    setBusy('save'); setError(null); setMessage(null);
+    setBusy('save'); setError(null); setMessage(null); setSaved(false);
     try {
       const next = await api<AiModelConfiguration>('/ai/configuration', {
         method: 'POST', signal: current.controller.signal,
-        body: { expectedRevision: revision.current, ...draft, allowUnboundedOutput: needsAcknowledgement && draft.allowUnboundedOutput },
+        body: { expectedRevision: revision.current, ...draft, allowUnboundedOutput: usesUnboundedOutput },
       });
       if (current.controller.signal.aborted || request.current !== current) return;
       adopt(next);
+      setSaved(true);
       setMessage(next.mode === 'mock' ? '候选模型已保存；实际任务仍使用 faux，不会启用真实调用。' : '模型配置已保存，仅影响随后由你发起的新任务；未发送测试请求。');
     } catch (cause) {
       if (current.controller.signal.aborted || request.current !== current) return;
@@ -142,33 +148,34 @@ export function ModelConfiguration({ connectionKey, onConfigurationChange }: { c
     void load(true);
   };
 
-  return <Card title="模型选择" className={styles.environment}>
+  return <section className={styles.environment} aria-labelledby="ai-model-title">
+    <h3 id="ai-model-title">模型选择</h3>
     <div className={styles.row}>
       {configuration && <Badge tone={configuration.mode === 'mock' ? 'amber' : 'blue'}>{configuration.mode === 'mock' ? 'MOCK · 演示模式' : 'LIVE · 真实模式'}</Badge>}
       <button type="button" className="button subtle" disabled={!!busy} onClick={refresh}>刷新模型配置</button>
     </div>
     {busy && <div className={styles.row}><p role="status" className="small muted">{busy === 'save' ? '正在保存模型配置…' : '正在读取模型配置…'}</p><button type="button" className="button subtle" onClick={cancelRequest}>取消请求</button></div>}
-    {error && <p role="alert" className={styles.error}>{error}</p>}
-    {message && <p role="status" className="small muted">{message}</p>}
+    {error && <Feedback title="操作提示" tone="error" className={styles.error}>{error}</Feedback>}
     {configuration && <>
       <dl className={styles.model}>
-        <div><dt>保存来源</dt><dd>{sources[configuration.source]}</dd></div>
-        <div><dt>已保存 / 当前选择</dt><dd>{configuration.selection ? `${configuration.selection.providerId} / ${configuration.selection.modelId} · ${configuration.selection.authMethod === 'oauth' ? 'OAuth' : 'API key'}` : '未选择 Provider 或模型'}</dd></div>
+        <div><dt>保存来源</dt><dd>{configuration.source === 'saved' && storageMode === 'browser' ? '已保存 · 此账号在当前浏览器的数据库' : sources[configuration.source]}</dd></div>
+        <div><dt>已保存 / 当前选择</dt><dd>{configuration.selection?.authMethod === 'platform' ? `${configuration.platform?.label ?? '平台 AI'} · 由平台提供` : configuration.selection ? `${configuration.selection.providerId} / ${configuration.selection.modelId} · ${configuration.selection.authMethod === 'oauth' ? 'OAuth' : 'API key'}` : '未选择 Provider 或模型'}</dd></div>
       </dl>
-      <div className={styles.mock}>
-        <strong>{configuration.budget.enabled ? '应用预算已启用' : '未设置应用预算'}</strong>
-        <p>{configuration.budget.enabled ? `每日预算：${configuration.budget.dailyUsd ?? '未提供'} USD；任务预留：${configuration.budget.reservationUsd ?? '未提供'} USD。` : '这不代表免费或无限会员额度；厂商仍可能收取费用或扣减订阅额度。'} 超时、任务次数等其他限制仍然保留。</p>
-      </div>
-      {configuration.mode === 'live' && !configuration.ready && <p role="alert" className={styles.error}>API 已启动，但尚不能提交模型任务：{configuration.problem || '请先完成可用的模型配置。'} 配置完成后才能提交模型任务。</p>}
+      {configuration.budget.enabled && <p className="small muted">每日预算：{configuration.budget.dailyUsd ?? '未提供'} USD · 任务预留：{configuration.budget.reservationUsd ?? '未提供'} USD</p>}
+      {configuration.mode === 'live' && !configuration.ready && <Feedback title="操作提示" tone="error" className={styles.error}>API 已启动，但尚不能提交模型任务：{configuration.problem || '请先完成可用的模型配置。'} 配置完成后才能提交模型任务。</Feedback>}
       {configuration.mode === 'mock' && <p className={styles.mock}><strong>当前只保存候选模型；实际任务仍使用 faux，不会启用真实调用。</strong>{configuration.problem && ` 候选配置提示：${configuration.problem}`}</p>}
-      <p className="small muted">选择存于当前模式的学习数据库，重启保留并随学习备份；mock / live 各自隔离。切换运行模式需修改 AI_MODE 并重启，之后请核对该模式已保存的选择；本页不会热切数据模式。已保存的选择覆盖旧环境变量 MODEL_*。</p>
       <form className={styles.inputForm} data-unsaved={dirty ? 'true' : undefined} onSubmit={event => { event.preventDefault(); void save(); }}>
+        {configuration.platform && <fieldset disabled={busy === 'save'} className={styles.sourceChoice}><legend>AI 服务来源</legend>
+          <label><input type="radio" name="ai-source" checked={platformSelected} onChange={() => change({ providerId: 'platform', modelId: 'managed', authMethod: 'platform', allowUnboundedOutput: false })} />使用平台 AI <small>无需自行授权</small></label>
+          <label><input type="radio" name="ai-source" checked={!platformSelected} onChange={() => change(emptyDraft())} />自行配置 <small>使用个人 Provider 授权</small></label>
+        </fieldset>}
+        {platformSelected ? <div className={styles.platformNotice}><strong>{configuration.platform?.label ?? '平台 AI'}</strong><p>{configuration.platform?.message}</p><span className="small muted">每账号每日最多 {configuration.platform?.perUserDailyCalls ?? '—'} 次平台调用。选择保存在当前设备，后续新任务使用平台服务。</span></div> : <>
         <fieldset className={styles.modelFields} disabled={busy === 'save'}>
           <label className="field-label" htmlFor="ai-model-provider">Provider</label>
           <select id="ai-model-provider" required value={draft.providerId} onChange={event => change({ providerId: event.target.value, modelId: '', authMethod: '', allowUnboundedOutput: false })}>
             <option value="" disabled>请选择 Provider</option>
             {draft.providerId && !provider && <option value={draft.providerId}>{draft.providerId}（已不在目录中，请重选）</option>}
-            {configuration.providers.map(item => <option key={item.id} value={item.id}>{item.name}{item.oauthConnected ? ' · OAuth 已授权' : ''}</option>)}
+            {configuration.providers.filter(item => item.id !== 'platform').map(item => <option key={item.id} value={item.id}>{item.name}{item.oauthConnected ? ' · OAuth 已授权' : ''}</option>)}
           </select>
           <label className="field-label" htmlFor="ai-model-auth">认证方式</label>
           <select id="ai-model-auth" required disabled={!provider} value={draft.authMethod} onChange={event => change({ ...draft, authMethod: event.target.value as Draft['authMethod'], allowUnboundedOutput: false })}>
@@ -176,13 +183,13 @@ export function ModelConfiguration({ connectionKey, onConfigurationChange }: { c
             <option value="oauth">OAuth{provider?.oauthConnected ? ' · 已连接' : ' · 尚未授权'}</option>
             <option value="api_key">API key{provider?.apiKeyAvailable ? ' · 服务端已有密钥' : ' · 服务端无可用密钥'}</option>
           </select>
-          {provider && draft.authMethod === 'oauth' && !provider.oauthConnected && <div className={`${styles.error} ${styles.authHint}`}>
+          {provider && draft.authMethod === 'oauth' && !provider.oauthConnected && <Feedback title="Provider 尚未授权" tone="info" className={styles.authHint}>
             <p>{provider.name} 尚未 OAuth 授权，连接后才能保存。{authorizedAlternative
               ? `该模型同时由已授权的 ${authorizedAlternative.name} 提供，但不同 Provider 的授权不可互换。`
-              : '请先在下方 OAuth 分区授权此 Provider。'}</p>
+              : '请在同一模块的 Provider 授权区连接此 Provider。'}</p>
             {authorizedAlternative && <button type="button" className="button subtle" onClick={() => change({ ...draft, providerId: authorizedAlternative.id, allowUnboundedOutput: false })}>改用已授权的 {authorizedAlternative.name}</button>}
-          </div>}
-          {provider && draft.authMethod === 'api_key' && !provider.apiKeyAvailable && <p className={styles.error}>服务端没有可用的 API key，不能保存此认证方式；本页不收集密钥。也可选择 OAuth 并在下方授权。</p>}
+          </Feedback>}
+          {provider && draft.authMethod === 'api_key' && !provider.apiKeyAvailable && <Feedback title="API key 尚未配置" tone="info">服务端没有可用的 API key，不能保存此认证方式；本页不收集密钥。也可选择 OAuth 并在 Provider 授权区连接。</Feedback>}
           <label className="field-label" htmlFor="ai-model-id">模型</label>
           <select id="ai-model-id" required disabled={!provider} value={draft.modelId} onChange={event => change({ ...draft, modelId: event.target.value, allowUnboundedOutput: false })}>
             <option value="" disabled>请选择模型</option>
@@ -191,12 +198,12 @@ export function ModelConfiguration({ connectionKey, onConfigurationChange }: { c
           </select>
           {provider && !provider.models.length && <p className="small muted">此 Provider 当前没有服务端可选模型。</p>}
           <p className="small muted">Provider 与模型来自服务端实际 Pi 目录；列入目录不保证你的账号具有调用权限。API key 仅使用服务器已有密钥，不在浏览器输入。</p>
-          {needsAcknowledgement && <label className={styles.acknowledgement}><input type="checkbox" checked={draft.allowUnboundedOutput} onChange={event => change({ ...draft, allowUnboundedOutput: event.target.checked })} /><span>我确认：此认证不提供上游输出token硬上限，真实调用会外发任务资料并可能消耗费用/订阅额度。</span></label>}
         </fieldset>
-        <p className="small muted">所有真实模型调用都会向所选厂商发送任务资料，可能产生厂商费用或消耗订阅额度。保存配置不发测试请求，只影响随后由你主动发起的新任务；不提供默认模型。</p>
+        </>}
         {needsRefresh && <p role="status" className="small muted">保存已暂停：请点击“刷新模型配置”，明确确认服务器选择与版本后重新编辑。</p>}
         <button type="submit" className="button primary" disabled={!!busy || needsRefresh || !valid}>{configuration.mode === 'mock' ? '保存候选模型' : '保存模型配置'}</button>
       </form>
     </>}
-  </Card>;
+    {message && <Feedback title={saved ? '模型配置保存成功' : '模型配置提示'} tone={saved ? 'success' : 'info'} onDismiss={() => setMessage(null)}>{message}</Feedback>}
+  </section>;
 }

@@ -1,0 +1,296 @@
+{
+  "measuredAt": "2026-10-23T15:54:16.081Z",
+  "node": "v22.23.2",
+  "cpu": "Intel(R) Core(TM) i5-14600KF",
+  "network": false,
+  "workload": {
+    "knowledge": 1000,
+    "documents": 500,
+    "quizzes": 1095,
+    "evidence": 3285,
+    "runs": 3285,
+    "warmupPerRoute": 3,
+    "samplesPerRoute": 10
+  },
+  "measurements": [
+    {
+      "name": "document",
+      "samplesMs": [
+        20.88,
+        17.413,
+        17.4,
+        17.372,
+        21.248,
+        17.271,
+        16.458,
+        19.62,
+        17.098,
+        16.699
+      ],
+      "medianMs": 17.386,
+      "maxMs": 21.248,
+      "fullReads": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "responseBytes": 18751,
+      "responseSha256": "341a3d37c987d00895ad8588ecd15ca83aa4ff200ef57b9a75701542c9dd57dc"
+    },
+    {
+      "name": "documentOriginal",
+      "samplesMs": [
+        16.903,
+        20.894,
+        17.023,
+        18.02,
+        20.216,
+        17.183,
+        17.397,
+        19.853,
+        16.871,
+        16.293
+      ],
+      "medianMs": 17.29,
+      "maxMs": 20.894,
+      "fullReads": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "responseBytes": 18615,
+      "responseSha256": "a28e0834232ed00bfa38dd4fd157c3248dc5cb2d43bf00e8b0a49c07ccf41a3d"
+    },
+    {
+      "name": "quiz",
+      "samplesMs": [
+        16.536,
+        20.717,
+        17.055,
+        17.141,
+        21.587,
+        17.557,
+        17.863,
+        17.261,
+        20.515,
+        16.845
+      ],
+      "medianMs": 17.409,
+      "maxMs": 21.587,
+      "fullReads": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "responseBytes": 8759,
+      "responseSha256": "ff263861d54d7e6052ed4ac51ab31324dd9a765dd711d96b59c1a3ca90f100fd"
+    },
+    {
+      "name": "preferences",
+      "samplesMs": [
+        16.852,
+        16.99,
+        21.023,
+        17.152,
+        17.089,
+        20.618,
+        16.926,
+        17.498,
+        29.786,
+        15.799
+      ],
+      "medianMs": 17.12,
+      "maxMs": 29.786,
+      "fullReads": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "responseBytes": 218,
+      "responseSha256": "3008b27ee633aa8c1e6acc419cf53bd2c6527db714f741e4bef40c1809e11176"
+    },
+    {
+      "name": "skills",
+      "samplesMs": [
+        16.055,
+        15.62,
+        18.368,
+        15.474,
+        15.256,
+        17.672,
+        15.59,
+        15.719,
+        18.686,
+        16.232
+      ],
+      "medianMs": 15.887,
+      "maxMs": 18.686,
+      "fullReads": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "responseBytes": 26,
+      "responseSha256": "106ca1431ad2aab773c8baa5632ac2515effb2b63ae029c63f9a61092b83d2a5"
+    },
+    {
+      "name": "evidencePage",
+      "samplesMs": [
+        16.968,
+        19.604,
+        17.221,
+        16.664,
+        19.793,
+        16.867,
+        17.298,
+        19.685,
+        16.587,
+        16.654
+      ],
+      "medianMs": 17.095,
+      "maxMs": 19.793,
+      "fullReads": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "responseBytes": 8883,
+      "responseSha256": "0c3f19e9bfe59ada905303a7fcd595928c4257aa1cda58f94b4a7fb26270ea65"
+    },
+    {
+      "name": "statistics",
+      "samplesMs": [
+        191.805,
+        195.505,
+        194.143,
+        193.857,
+        194.075,
+        194.976,
+        196.006,
+        197.09,
+        202.503,
+        195.794
+      ],
+      "medianMs": 195.24,
+      "maxMs": 202.503,
+      "fullReads": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "responseBytes": 855604,
+      "responseSha256": "cdf9b6df1658a364041d30246b30e9680c6c857b09a515f7a98859db9b6982d2"
+    },
+    {
+      "name": "reviewPlan",
+      "samplesMs": [
+        20.881,
+        22.26,
+        20.922,
+        21.876,
+        17.207,
+        20.645,
+        17.105,
+        17.375,
+        20.087,
+        17.943
+      ],
+      "medianMs": 20.366,
+      "maxMs": 22.26,
+      "fullReads": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "responseBytes": 50961,
+      "responseSha256": "026ebc953743995945a4e04c8ac89cd69d694da5ad27b55a885883d9ef6487b2"
+    },
+    {
+      "name": "search",
+      "samplesMs": [
+        242.166,
+        241.47,
+        239.914,
+        239.344,
+        247.028,
+        240.888,
+        243.243,
+        241.461,
+        242.452,
+        248.759
+      ],
+      "medianMs": 241.818,
+      "maxMs": 248.759,
+      "fullReads": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "responseBytes": 57560,
+      "responseSha256": "da3303d7d961447c60e78c1d791555767fceb7512875e327be464830754e810b"
+    }
+  ]
+}

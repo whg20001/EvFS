@@ -4,28 +4,38 @@ import multipart from '@fastify/multipart';
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { z, ZodError } from 'zod';
 import type { FastifyRequest } from 'fastify';
-import { IDEMPOTENCY_KEY_PATTERN, LIMITS, type AppData, type CommandResult, type LearningEngine, type LearningPreferencesView, type PublicDocument } from '@sanxing/contracts';
-import { DomainError, LearningService, RunWorker, effectiveLearningPreferences, record, searchLibrary } from '@sanxing/learning-domain';
+import { IDEMPOTENCY_KEY_PATTERN, LIMITS, documentUploadLimit, isPdfFilename, isImageFilename, imageImportInputSchema, type DocumentImport, type AppData, type CommandResult, type LearningEngine, type LearningPreferencesView, type PublicDocument } from '@sanxing/contracts';
+import { DomainError, LearningService, RunWorker, effectiveLearningPreferences, record, searchLibrary, learningStatistics, projectState, publicQuiz, previewKnowledgeMerge, resolvedKnowledgeId, reviewPlan } from '@sanxing/learning-domain';
 import type { Repository } from '@sanxing/database';
+import { learningMutations } from '@sanxing/learning-domain';
 import type { ApiConfig } from './config.ts';
 import type { AiAccessController } from '@sanxing/ai-access';
 import { registerAiRoutes } from './routes/ai.ts';
+import { registerEvaluationRoutes } from './routes/evaluations.ts';
+import { registerSkillRoutes } from './routes/skills.ts';
+import { createCloudSkillCatalog, type CloudSkillCatalog } from './cloud-skills.ts';
 import { AiModelRuntime } from './ai-runtime.ts';
+import { describeLearningPrompt } from '@sanxing/learning-agent';
+import { createPdfImporter } from './pdf-import.ts';
 import { StateSync } from './state-sync.ts';
+import { readEntity, readFields } from './repository-reads.ts';
 import { loginClientAddress } from './client-address.ts';
+import { registerOcrRoutes, type OcrRecognizer } from './ocr.ts';
 
-export async function createApp(options: { config: ApiConfig; repository: Repository; engine: LearningEngine; modelRuntime?: AiModelRuntime; aiAccess?: AiAccessController; now?: () => Date; startWorker?: boolean }) {
+export async function createApp(options: { config: ApiConfig; repository: Repository; engine: LearningEngine; modelRuntime?: AiModelRuntime; aiAccess?: AiAccessController; cloudSkills?: CloudSkillCatalog; now?: () => Date; startWorker?: boolean; ocrRecognizer?: OcrRecognizer }) {
   const { config, repository, engine } = options;
   // JSON may encode each UTF-16 unit as six bytes (\\uXXXX); upload byte limits
   // are separately enforced by multipart and the document domain validator.
   const bodyLimit = Math.max(config.maxUploadBytes * 6 + 24000, LIMITS.recitationFieldChars * 3 * 6 + 2048, LIMITS.answerChars * 6 + 2048);
   const app = Fastify({ logger: false, bodyLimit, trustProxy: false, forceCloseConnections: true });
   await app.register(cookie, { secret: config.sessionSecret });
-  await app.register(multipart, { limits: { files: 1, fileSize: config.maxUploadBytes, fields: 2, parts: 3 } });
+  await app.register(multipart, { limits: { files: 1, fileSize: LIMITS.pdfUploadBytes, fieldSize: LIMITS.ocrTextChars * 4 + 16000, fields: 2, parts: 3 } });
+  const pdfImporter = createPdfImporter();
   const models = options.modelRuntime ?? new AiModelRuntime({ config, repository, credentials: options.aiAccess?.credentials });
-  const service = new LearningService(repository, config, options.now, (task, data) => models.prepareTask(data, task));
+  const service = new LearningService(repository, config, options.now, (task, data) => models.prepareTask(data, task), describeLearningPrompt);
   const worker = new RunWorker(service, engine);
   const stateSync = new StateSync(() => service.state(''), repository.revision ? () => repository.revision!() : undefined);
+  const compactSync = new StateSync(async () => projectState(await repository.read(), config, '', true), () => repository.revision());
   const sessions = new Map<string, { csrfToken: string; expires: number }>();
   const attempts = new Map<string, { count: number; since: number }>();
   let aiRoutes: ReturnType<typeof registerAiRoutes> | undefined;
@@ -80,10 +90,12 @@ export async function createApp(options: { config: ApiConfig; repository: Reposi
     reply.clearCookie('sanxing_session', { path: '/' }); return { ok: true };
   });
   app.get('/api/state', async request => {
-    const { since } = z.object({ since: z.string().regex(/^\d+$/).transform(Number).pipe(z.number().int().nonnegative().safe()).optional() }).parse(request.query);
+    const { since, compact } = z.object({ compact: z.literal('1').optional(), since: z.string().regex(/^\d+$/).transform(Number).pipe(z.number().int().nonnegative().safe()).optional() }).parse(request.query);
     const csrfToken = authenticate(request)!.csrfToken;
-    return since === undefined ? stateSync.get(csrfToken) : stateSync.get(csrfToken, since);
+    const sync = compact ? compactSync : stateSync;
+    return since === undefined ? sync.get(csrfToken) : sync.get(csrfToken, since);
   });
+  app.get('/api/runs/progress', async () => worker.progress());
   app.get('/api/me', async request => ({ mode: config.mode, timezone: config.timezone, csrfToken: authenticate(request)!.csrfToken,
     capabilities: { maxUploadBytes: config.maxUploadBytes, maxDocuments: config.maxDocuments, maxFollowups: config.maxFollowups, quizCount: config.quizCount, schedulingEnabled: (await (repository.learningPreferences?.() ?? repository.read().then(data => data.learningPreferences)))?.schedulingEnabled ?? config.schedulingEnabled } }));
 
@@ -99,24 +111,51 @@ export async function createApp(options: { config: ApiConfig; repository: Reposi
       return result.runId!;
     },
   });
+  registerEvaluationRoutes(app, { service, worker, models, config });
+  registerSkillRoutes(app, service, options.cloudSkills ?? createCloudSkillCatalog(config));
+  registerOcrRoutes(app, { config, owner: request => authenticate(request)!.id, recognizer: options.ocrRecognizer });
 
   type Mutation = (data: AppData, request: FastifyRequest, body: unknown) => CommandResult;
   const id = (request: FastifyRequest, key = 'id') => z.record(z.string(), z.string()).parse(request.params)[key]!;
   const writeKey = (request: FastifyRequest) => z.string().regex(IDEMPOTENCY_KEY_PATTERN).parse(request.headers['idempotency-key']);
   app.get('/api/documents/:id', async request => {
-    const document = record((await repository.read()).documents, id(request));
+    const document = await readEntity(repository, 'documents', id(request));
     // Explicit whitelist: no storage paths, hashes, or original upload bytes.
     return { id: document.id, recitationId: document.recitationId, name: document.name, text: document.text,
-      lineCount: document.lineCount, createdAt: document.createdAt } satisfies PublicDocument;
+      lineCount: document.lineCount, createdAt: document.createdAt, ...(document.import ? { import: document.import } : {}) } satisfies PublicDocument;
+  });
+  app.get('/api/documents/:id/original', async (request, reply) => {
+    const document = await readEntity(repository, 'documents', id(request));
+    reply.header('Content-Type', 'application/octet-stream');
+    reply.header('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(document.name).replace(/['()*]/g, char => '%' + char.charCodeAt(0).toString(16))}`);
+    return reply.send(Buffer.from(document.originalBase64, 'base64'));
   });
   // Read-only POSTs accept unsaved editor content without putting private text in URLs.
   // Cookie/Origin/CSRF still apply; no receipt, write transaction, task, or model call.
   app.post('/api/library/search', async request => {
-    const { query, kind } = z.object({ query: z.string().max(LIMITS.libraryQueryChars), kind: z.enum(['document', 'knowledge']).optional() }).strict().parse(request.body);
-    return searchLibrary(await repository.read(), query, kind);
+    const { query, kind, ...options } = z.object({ query: z.string().max(LIMITS.libraryQueryChars), kind: z.enum(['document', 'knowledge']).optional(), offset: z.number().int().nonnegative().safe().optional(), limit: z.number().int().min(1).max(LIMITS.libraryPageSizeMaximum).optional(), includeUnderstanding: z.boolean().optional(), expandTerms: z.boolean().optional(), expectedRevision: z.number().int().nonnegative().optional() }).strict().parse(request.body);
+    return searchLibrary(await readFields(repository, ['revision', 'documents', 'knowledge']), query, kind, options);
+  });
+  app.get('/api/learning/statistics', async request => {
+    const { days } = z.object({ days: z.enum(['7', '30', '90', '0']).default('30') }).strict().parse(request.query);
+    return learningStatistics(await readFields(repository, ['revision', 'mode', 'knowledge', 'evidence', 'quizzes', 'cards', 'reviewSessions', 'reviewEvents']), options.now?.() ?? new Date(), config.timezone, Number(days) as 0 | 7 | 30 | 90);
+  });
+  app.get('/api/reviews/plan', async () => reviewPlan(await readFields(repository, ['revision', 'mode', 'learningPreferences', 'knowledge', 'cards', 'quizzes', 'evidence']), config, options.now?.() ?? new Date()));
+  app.get('/api/quizzes/:id', async request => publicQuiz(await readEntity(repository, 'quizzes', id(request))));
+  app.get('/api/knowledge-points/:id/evidence', async request => {
+    const query = z.object({ offset: z.coerce.number().int().nonnegative().safe().default(0), limit: z.coerce.number().int().min(1).max(50).default(20), expectedRevision: z.coerce.number().int().nonnegative().optional() }).strict().parse(request.query);
+    const data = await readFields(repository, ['revision', 'knowledge', 'evidence']); const point = record(data.knowledge, id(request));
+    if (query.expectedRevision !== undefined && query.expectedRevision !== data.revision) throw new DomainError('EVIDENCE_CHANGED', '记录已变化，请重新加载第一页', 409);
+    const items = Object.values(data.evidence).filter(item => point.merge ? item.knowledgeId === point.id : resolvedKnowledgeId(data, item.knowledgeId) === point.id).sort((a, b) => b.answer.submittedAt.localeCompare(a.answer.submittedAt) || a.id.localeCompare(b.id));
+    const end = query.offset + query.limit;
+    return { revision: data.revision, total: items.length, nextOffset: end < items.length ? end : null, items: items.slice(query.offset, end) };
+  });
+  app.post('/api/knowledge-points/:id/merge-preview', async request => {
+    const { targetId } = z.object({ targetId: z.string().min(1) }).strict().parse(request.body);
+    return previewKnowledgeMerge(await repository.read(), id(request), targetId);
   });
   app.get('/api/learning/preferences', async () => {
-    const data = await repository.read();
+    const data = await readFields(repository, ['revision', 'learningPreferences']);
     return { revision: data.revision, source: data.learningPreferences ? 'saved' : 'environment',
       ...effectiveLearningPreferences(data, config) } satisfies LearningPreferencesView;
   });
@@ -151,44 +190,36 @@ export async function createApp(options: { config: ApiConfig; repository: Reposi
       return result;
     } });
   }
-  mutation('PUT', '/api/learning/preferences', (data, _request, body) => service.saveLearningPreferences(data, body));
-  mutation('POST', '/api/recitations/:id/references', (data, request, body) => service.attachDocument(data, id(request), body));
-  mutation('POST', '/api/knowledge-points/:id/review-card', (data, request, body) => service.addReviewCard(data, id(request), body));
-  mutation('POST', '/api/recitations', (data, _request, body) => service.createRecitation(data, body));
-  mutation('PUT', '/api/recitations/:id/draft', (data, request, body) => service.saveDraft(data, id(request), body));
-  mutation('POST', '/api/recitations/:id/submit', (data, request, body) => service.submitRecitation(data, id(request), body));
+  for (const item of learningMutations) mutation(item.method, item.path, (data, request, body) => item.apply(service, data, (request.params ?? {}) as Record<string, string>, body));
   app.post('/api/documents', async (request, reply) => {
     const key = writeKey(request);
-    let input: unknown; let bytes: Buffer | undefined;
+    let input: unknown; let bytes: Buffer | undefined; let parsedDocument: { text: string; import: DocumentImport } | undefined;
     if (request.isMultipart()) {
-      const file = await request.file(); if (!file) throw new DomainError('FILE_REQUIRED', '请选择文本文件');
+      const file = await request.file(); if (!file) throw new DomainError('FILE_REQUIRED', '请选择笔记、PDF 或图片文件');
       bytes = await file.toBuffer();
       if (file.file.truncated) throw new DomainError('FILE_TOO_LARGE', '文件超过限制', 413);
+      if (bytes.byteLength > documentUploadLimit(file.filename, config.maxUploadBytes)) throw new DomainError('FILE_TOO_LARGE', '文件超过限制', 413);
       const query = z.object({ recitationId: z.string() }).parse(request.query);
       input = { recitationId: query.recitationId, name: file.filename, text: '' };
+      if (isImageFilename(file.filename)) {
+        const field = file.fields.ocr;
+        if (!field || Array.isArray(field) || field.type !== 'field') throw new DomainError('IMAGE_OCR_REQUIRED', '图片需要先完成 OCR 并确认文字后导入。', 400);
+        let metadata: unknown;
+        try { metadata = JSON.parse(z.string().parse(field.value)); }
+        catch { throw new DomainError('IMAGE_OCR_REQUIRED', '图片识别信息无效，请重新识别并确认文字。', 400); }
+        parsedDocument = imageImportInputSchema.parse(metadata);
+      }
+      if (isPdfFilename(file.filename)) {
+        record((await repository.read()).recitations, query.recitationId);
+        parsedDocument = await pdfImporter.parse(bytes);
+      }
     } else input = request.body;
-    const receiptInput = bytes ? { input, hash: createHash('sha256').update(bytes).digest('hex') } : input;
-    const result = await service.command('POST:/api/documents', key, receiptInput, data => service.addDocument(data, input, bytes));
+    const receiptInput = bytes ? { input, hash: createHash('sha256').update(bytes).digest('hex'), ...(parsedDocument?.import.format === 'image' ? { ocr: parsedDocument } : {}) } : input;
+    const result = await service.command('POST:/api/documents', key, receiptInput, data => service.addDocument(data, input, bytes, parsedDocument));
     return reply.code(201).send(result);
   });
-  mutation('DELETE', '/api/recitations/:id/documents/:documentId', (data, request, body) => service.removeDocument(data, id(request), id(request, 'documentId'), body));
-  mutation('POST', '/api/sessions/:id/confirmations', (data, request, body) => service.confirm(data, id(request), body));
-  mutation('POST', '/api/sessions/:id/scope-revisions', (data, request, body) => service.changeScope(data, id(request), body));
-  mutation('POST', '/api/sessions/:id/answers', (data, request, body) => service.followupAnswer(data, id(request), body));
-  mutation('POST', '/api/sessions/:id/finish-followup', (data, request, body) => service.finishFollowup(data, id(request), body));
-  mutation('POST', '/api/sessions/:id/finish', (data, request, body) => service.endSession(data, id(request), body));
-  mutation('PUT', '/api/questions/:id/draft', (data, request, body) => service.saveAnswerDraft(data, id(request), body));
-  mutation('POST', '/api/questions/:id/answers', (data, request, body) => service.answerQuestion(data, id(request), body));
-  mutation('POST', '/api/quizzes/:id/submit', (data, request, body) => service.submitQuiz(data, id(request), body));
-  mutation('POST', '/api/reviews/:id/start', (data, request) => service.startReview(data, id(request)));
-  mutation('PUT', '/api/review-sessions/:id/recall', (data, request, body) => service.reviewRecall(data, id(request), body));
-  mutation('POST', '/api/review-sessions/:id/complete', (data, request, body) => service.completeReview(data, id(request), body));
-  mutation('POST', '/api/review-sessions/:id/abandon', (data, request, body) => service.abandonReview(data, id(request), body));
-  mutation('PUT', '/api/knowledge-points/:id/understanding', (data, request, body) => service.saveUnderstanding(data, id(request), body));
-  mutation('POST', '/api/runs/:id/cancel', (data, request) => service.cancelRun(data, id(request)));
-  mutation('POST', '/api/runs/:id/retry', (data, request) => service.retryRun(data, id(request)));
 
   if (options.startWorker !== false) await worker.start();
-  app.addHook('onClose', async () => { await worker.stop(); sessions.clear(); await options.aiAccess?.close(); });
+  app.addHook('onClose', async () => { await pdfImporter.close(); await worker.stop(); await models.close(); sessions.clear(); await options.aiAccess?.close(); });
   return { app, service, worker };
 }

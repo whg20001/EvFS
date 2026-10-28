@@ -1,5 +1,6 @@
 'use client';
 
+import { Feedback } from '../../components/feedback';
 import type { AiConnectionTestView, AiModelConfiguration, AiProviderView, Mode } from '@sanxing/contracts';
 import type { ApiClient } from '../../lib/api-client';
 import { testInProgress, useConnectionTest } from './use-connection-test';
@@ -41,8 +42,8 @@ export function ConnectionTest({ api, provider, mode, configuration, onComplete 
     </div>
     <p id={`test-hint-${provider.id}`} className="small muted">{reason || `测试已保存模型：${selection!.modelId}；不会测试未保存的编辑。`}</p>
     {(actions.loading || actions.busy) && <p role="status" className="small muted">{actions.busy ? '正在提交测试操作…' : '正在读取最近测试…'}</p>}
-    {actions.readError && <p role="alert" className={styles.error}>{actions.readError} 状态读取已暂停，未重新发送测试。</p>}
-    {actions.actionError && <p role="alert" className={styles.error}>{actions.actionError}</p>}
+    {actions.readError && <Feedback title="操作提示" tone="error" className={styles.error}>{actions.readError} 状态读取已暂停，未重新发送测试。</Feedback>}
+    {actions.actionError && <Feedback title="操作提示" tone="error" className={styles.error}>{actions.actionError}</Feedback>}
     {test && <div className={styles.testResult} role="status" aria-live="polite">
       <strong>{test.mode === 'mock' ? 'MOCK · 演示记录，不代表真实连通' : labels[test.status]}</strong>
       <p className="small muted">{test.mode.toUpperCase()} · {test.providerId} / {test.modelId} · {new Date(test.createdAt).toLocaleString('zh-CN', { hour12: false })}</p>

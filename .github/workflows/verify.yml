@@ -1,0 +1,55 @@
+name: Verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify (${{ matrix.suite }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [core, browser]
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22.23.2'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install the declared npm version
+        run: npm install --global npm@12.0.2 --ignore-scripts
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Install Chromium and system dependencies
+        if: matrix.suite == 'browser'
+        run: npx playwright install --with-deps chromium
+      - name: Run the shared local verification suite
+        run: npm run verify -- --suite ${{ matrix.suite }}
+      - name: Retain verification diagnostics
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: verification-${{ matrix.suite }}
+          path: |
+            artifacts/
+            test-results/
+          retention-days: 7
+          if-no-files-found: warn

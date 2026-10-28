@@ -51,7 +51,7 @@ test('real UI → API → Pi faux Provider learning and review loop', async ({ p
   await expect(page.getByRole('textbox', { name: '今天学了什么', exact: true })).toHaveValue(learned);
   await page.getByRole('button', { name: '保存草稿', exact: true }).click();
   await expect.poll(async () => (await state(page)).recitations.at(-1)!.learned).toBe(learned);
-  await page.getByLabel('上传 TXT 或 Markdown 笔记').setInputFiles({ name: '学习笔记.md', mimeType: 'text/markdown', buffer: Buffer.from(`# 学习笔记\n${learned}`) });
+  await page.getByLabel('上传笔记、PDF 或图片').setInputFiles({ name: '学习笔记.md', mimeType: 'text/markdown', buffer: Buffer.from(`# 学习笔记\n${learned}`) });
   await expect(page.getByText('学习笔记.md', { exact: true })).toBeVisible();
   await page.reload(); await expect(page.getByRole('textbox', { name: '今天学了什么', exact: true })).toHaveValue(learned);
   await page.getByRole('button', { name: '提交复述', exact: true }).click();
@@ -76,7 +76,7 @@ test('real UI → API → Pi faux Provider learning and review loop', async ({ p
   expect(quiz.questions[0]).not.toHaveProperty('correctIndex'); expect(quiz.questions[0]).not.toHaveProperty('rubric');
   await answerQuiz(page);
   await page.getByRole('main').getByRole('link', { name: '查看复习计划', exact: true }).click();
-  await page.getByRole('button', { name: /^全部 / }).click();
+  await page.getByRole('button', { name: /^使用中 / }).click();
   await page.getByRole('button', { name: '提前复习', exact: true }).first().click();
   await page.getByLabel('独立回忆').fill('不翻笔记提取概念，用具体例子说明，最后核对遗漏。');
   await page.getByRole('button', { name: '提交回忆，开始检验' }).click();
@@ -153,7 +153,8 @@ test('mobile login, navigation and learning editor fit a small viewport', async 
   await expect(page.getByRole('textbox', { name: '今天学了什么', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   await page.screenshot({ path: 'test-results/recite-mobile.png', fullPage: true });
-  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '学习足迹' }).click();
+  await page.getByRole('button', { name: '全部模块' }).click();
+  await page.getByRole('dialog', { name: '全部模块' }).getByRole('button', { name: /学习足迹/ }).click();
   await expect(page.getByRole('main')).toContainText('学习');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
 });

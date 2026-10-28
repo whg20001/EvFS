@@ -77,7 +77,8 @@ export function createWebHandler({ apiUrl = 'http://127.0.0.1:4000', secret, nex
       if (!res.headersSent) res.writeHead(502).end('API unavailable');
       else res.destroy();
     });
-    upstream.setTimeout(120_000, () => upstream.destroy());
+    // OCR can wait up to 170 seconds in the API; leave room for its timeout response.
+    upstream.setTimeout(url.split('?')[0] === '/api/ocr/recognize' ? 190_000 : 120_000, () => upstream.destroy());
     req.on('aborted', () => upstream.destroy());
     req.on('error', () => upstream.destroy());
     res.on('close', () => { if (!res.writableFinished) upstream.destroy(); });

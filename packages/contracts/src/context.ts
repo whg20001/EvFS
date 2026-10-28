@@ -102,7 +102,7 @@ export function prepareTaskContext<T extends AiTask>(input: T, budget: { maxChar
     for (const point of task.points) field(`points.${point.id}.description`, point.description, value => { point.description = value; });
     for (const point of task.related ?? []) field(`related.${point.id}.description`, point.description, value => { point.description = value; });
     if (task.kind === 'quiz' && task.recall !== undefined) field('recall', task.recall, value => { task.recall = value; });
-    if (task.kind === 'followup') for (const turn of task.turns) {
+    for (const turn of task.turns ?? []) {
       field(`turns.${turn.id}.question`, turn.question, value => { turn.question = value; });
       // Practice answers may be excerpted; grade.answer below never is.
       if (turn.answer !== null) field(`turns.${turn.id}.answer`, turn.answer, value => { turn.answer = value; });

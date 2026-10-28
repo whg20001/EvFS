@@ -2,32 +2,54 @@ import { z } from 'zod';
 import { createHmac } from 'node:crypto';
 import type { CredentialStore } from '@sanxing/ai-access';
 import { createExplicitProvider, LIVE_PROVIDER_IDS, providerPolicy, type LiveProviderId } from '@sanxing/ai-access/providers';
-import { LIMITS, aiModelSelectionSchema, isActiveRun, type AiModelConfiguration, type AiModelProvider, type AiModelSelection, type AiTask, type AppData, type LearningEngine, type TaskInputPreview } from '@sanxing/contracts';
+import { LIMITS, taskTimeoutMs, aiModelSelectionSchema, isActiveRun, type AiModelConfiguration, type AiModelProvider, type AiModelSelection, type AiTask, type AppData, type LearningEngine, type TaskInputPreview } from '@sanxing/contracts';
 import type { Repository } from '@sanxing/database';
-import { createLearningEngine, prepareLearningRequest, inspectLearningRequest, CONNECTION_TEST_OUTPUT_TOKENS, INPUT_SAFETY_MARGIN_TOKENS } from '@sanxing/learning-agent';
-import { DomainError, effectiveLearningPreferences } from '@sanxing/learning-domain';
+import { assertLearningPrompt, createLearningEngine, LearningTransport, prepareLearningRequest, inspectLearningRequest, CONNECTION_TEST_OUTPUT_TOKENS, INPUT_SAFETY_MARGIN_TOKENS } from '@sanxing/learning-agent';
+import { bindLearningSkills, DomainError, effectiveLearningPreferences } from '@sanxing/learning-domain';
 import { planLearningInput } from './input-plan.ts';
 import type { ApiConfig } from './config.ts';
 
+type RuntimeSettings = Pick<AppData, 'ownerId' | 'mode' | 'revision' | 'aiModel' | 'learningPreferences'>;
+type RuntimeRepository = Pick<Repository, 'read' | 'transact' | 'aiSettings'>;
 const saveSchema = aiModelSelectionSchema.extend({ expectedRevision: z.number().int().nonnegative() }).strict();
 
 /** Local catalog/configuration only; constructing the runtime never constructs a live engine. */
 export class AiModelRuntime implements LearningEngine {
+  private readonly transport: LearningTransport;
+  private readonly ownsTransport: boolean;
+  async close() { if (this.ownsTransport) await this.transport.close(); }
   private readonly config: ApiConfig;
-  private readonly repository: Repository;
+  private readonly repository: RuntimeRepository;
   private readonly credentials?: CredentialStore;
   private readonly engineFactory: typeof createLearningEngine;
+  private readonly catalogs = new Map<LiveProviderId, { name: string; models: ReturnType<ReturnType<typeof createExplicitProvider>['getModels']> }>();
 
-  constructor(options: { config: ApiConfig; repository: Repository; credentials?: CredentialStore; engineFactory?: typeof createLearningEngine }) {
+  private catalog(id: LiveProviderId) {
+    let catalog = this.catalogs.get(id);
+    if (!catalog) {
+      const provider = createExplicitProvider(id);
+      catalog = { name: provider.name, models: structuredClone(provider.getModels().filter(model => model.input.includes('text'))) };
+      this.catalogs.set(id, catalog);
+    }
+    return catalog;
+  }
+
+  private settings(): Promise<RuntimeSettings> {
+    return this.repository.aiSettings ? this.repository.aiSettings() : this.repository.read();
+  }
+
+  constructor(options: { config: ApiConfig; repository: RuntimeRepository; credentials?: CredentialStore; engineFactory?: typeof createLearningEngine; transport?: LearningTransport }) {
     this.config = structuredClone(options.config);
     this.repository = options.repository;
     this.credentials = options.credentials;
     this.engineFactory = options.engineFactory ?? createLearningEngine;
+    this.ownsTransport = !options.transport;
+    this.transport = options.transport ?? new LearningTransport();
   }
 
   get mode() { return this.config.mode; }
 
-  private selected(data: AppData): Pick<AiModelConfiguration, 'selection' | 'source'> {
+  private selected(data: RuntimeSettings): Pick<AiModelConfiguration, 'selection' | 'source'> {
     if (data.aiModel != null) return { selection: structuredClone(data.aiModel), source: 'saved' };
     const { provider, model, modelAuthMethod, allowUnboundedOAuthOutput } = this.config;
     if (provider && model) return { source: 'environment', selection: {
@@ -36,25 +58,32 @@ export class AiModelRuntime implements LearningEngine {
     return { selection: null, source: 'none' };
   }
 
-  private async providers(): Promise<AiModelProvider[]> {
-    return Promise.all(LIVE_PROVIDER_IDS.map(async id => {
-      const provider = createExplicitProvider(id);
-      let oauthConnected = false;
-      try { oauthConnected = (await this.credentials?.read(id))?.type === 'oauth'; }
-      catch { throw new DomainError('AI_CREDENTIALS_UNAVAILABLE', '无法读取本地 AI 授权状态，请稍后重试', 409); }
-      return {
-        id, name: provider.name, oauthConnected,
-        apiKeyAvailable: this.config.provider === id && Boolean(this.config.apiKey) && !providerPolicy(id).oauthOnly,
-        requiresOAuthOutputAcknowledgement: providerPolicy(id).unboundedOAuthOutput,
-        // getModels is the explicit provider's synchronous chat catalog, not account discovery.
-        models: provider.getModels().filter(model => model.input.includes('text')).map(({ id, name }) => ({ id, name })),
-      };
-    }));
+  private async providerStatus(id: LiveProviderId, checkOAuth = true): Promise<AiModelProvider> {
+    const catalog = this.catalog(id);
+    let oauthConnected = false;
+    // Only immutable model definitions are cached. Credentials are checked on every use.
+    try { oauthConnected = checkOAuth && (await this.credentials?.read(id))?.type === 'oauth'; }
+    catch { throw new DomainError('AI_CREDENTIALS_UNAVAILABLE', '无法读取本地 AI 授权状态，请稍后重试', 409); }
+    return { id, name: catalog.name, oauthConnected,
+      apiKeyAvailable: this.config.provider === id && Boolean(this.config.apiKey) && !providerPolicy(id).oauthOnly,
+      requiresOAuthOutputAcknowledgement: providerPolicy(id).unboundedOAuthOutput,
+      models: catalog.models.map(({ id, name, contextWindow, maxTokens }) => ({ id, name, contextWindow, maxTokens })),
+    };
+  }
+
+  private async validateSelected(selection: AiModelSelection | null): Promise<AiModelSelection> {
+    if (!selection || !LIVE_PROVIDER_IDS.includes(selection.providerId as LiveProviderId)) {
+      this.validate(selection, []);
+    }
+    const provider = await this.providerStatus(selection.providerId as LiveProviderId, selection.authMethod === 'oauth');
+    this.validate(selection, [provider]);
+    return selection;
   }
 
   private validate(selection: AiModelSelection | null, providers: AiModelProvider[]): asserts selection is AiModelSelection {
     if (!selection) throw new DomainError('AI_MODEL_REQUIRED', '请先在 AI 配置页面选择并保存模型', 400);
     if (!aiModelSelectionSchema.safeParse(selection).success) throw new DomainError('AI_MODEL_INVALID', 'AI 模型配置格式无效，请重新选择并保存', 400);
+    if (selection.authMethod === 'platform') throw new DomainError('AI_MODEL_INVALID', '平台 AI 仅由云端网关解析，请重新选择模型。', 400);
     const provider = providers.find(item => item.id === selection.providerId);
     if (!provider) throw new DomainError('AI_PROVIDER_UNSUPPORTED', '不支持所选 AI 厂商，请重新选择', 400);
     if (!provider.models.some(model => model.id === selection.modelId)) throw new DomainError('AI_MODEL_UNSUPPORTED', '所选模型不在本地文本聊天模型目录中，请重新选择', 400);
@@ -69,9 +98,9 @@ export class AiModelRuntime implements LearningEngine {
   }
 
   async configuration(): Promise<AiModelConfiguration> {
-    const data = await this.repository.read();
+    const data = await this.settings();
     const selected = this.selected(data);
-    const providers = await this.providers();
+    const providers = await Promise.all(LIVE_PROVIDER_IDS.map(id => this.providerStatus(id)));
     let problem: string | null = null;
     if (this.mode === 'live') {
       try { this.validate(selected.selection, providers); }
@@ -95,17 +124,16 @@ export class AiModelRuntime implements LearningEngine {
         throw new DomainError('AI_MODEL_BUSY', '仍有排队或执行中的 AI 任务，请等待任务结束后再更换模型', 409);
       }
       // Recheck local credentials under the repository transaction; never nest repository reads.
-      this.validate(selection, await this.providers());
+      await this.validateSelected(selection);
       data.aiModel = structuredClone(selection);
     });
     return this.configuration();
   }
 
-  private async resolved(data: AppData): Promise<AiModelSelection> {
-    const selection = this.selected(data).selection;
-    this.validate(selection, await this.providers());
-    return selection;
+  private resolved(data: RuntimeSettings): Promise<AiModelSelection> {
+    return this.validateSelected(this.selected(data).selection);
   }
+  assertSelection(selection: AiModelSelection): Promise<AiModelSelection> { return this.validateSelected(selection); }
 
   /** Pure local catalog lookup: no credentials, refresh, engine construction or network. */
   private inputPolicy(data: AppData, task: AiTask) {
@@ -113,7 +141,7 @@ export class AiModelRuntime implements LearningEngine {
     const selection = task.kind === 'connection_test' ? task.selection : this.selected(data).selection;
     if (!selection) throw new DomainError('AI_MODEL_REQUIRED', '请先在 AI 配置页面选择并保存模型', 400);
     if (!LIVE_PROVIDER_IDS.includes(selection.providerId as LiveProviderId)) throw new DomainError('AI_PROVIDER_UNSUPPORTED', '所选厂商不受支持，请重新选择', 400);
-    const model = createExplicitProvider(selection.providerId as LiveProviderId).getModels().find(model => model.id === selection.modelId && model.input.includes('text'));
+    const model = this.catalog(selection.providerId as LiveProviderId).models.find(model => model.id === selection.modelId);
     if (!model) throw new DomainError('AI_MODEL_UNSUPPORTED', '所选模型不在本地文本聊天目录中，请重新选择', 400);
     if (!Number.isSafeInteger(model.contextWindow) || model.contextWindow < 1 || !Number.isSafeInteger(model.maxTokens) || model.maxTokens < 1) {
       throw new DomainError('AI_MODEL_LIMIT_INVALID', '模型目录缺少有效的上下文或输出上限，不能预检或提交任务', 400);
@@ -125,11 +153,13 @@ export class AiModelRuntime implements LearningEngine {
 
   /** Used inside the domain transaction, so the persisted run is exactly the budgeted task. */
   prepareTask(data: AppData, task: AiTask): AiTask {
+    task = bindLearningSkills(data, task);
     const policy = this.inputPolicy(data, task);
     return prepareLearningRequest(planLearningInput(task, policy).task, policy).task;
   }
 
   previewTask(data: AppData, task: Extract<AiTask, { kind: 'extract' | 'grade' }>): TaskInputPreview {
+    task = bindLearningSkills(data, task);
     // Same plan as the queued task, but a model/budget error must still render a read-only view.
     let policy: ReturnType<AiModelRuntime['inputPolicy']> | null = null;
     let retrieval: ReturnType<typeof planLearningInput<typeof task>> | null = null;
@@ -173,7 +203,7 @@ export class AiModelRuntime implements LearningEngine {
   }
 
   /** Validate against the transaction draft; never choose a model for the caller. */
-  async assertConnectionTest(data: AppData, providerId: string, expected: AiModelSelection): Promise<AiModelSelection> {
+  async assertConnectionTest(data: RuntimeSettings, providerId: string, expected: AiModelSelection): Promise<AiModelSelection> {
     if (this.mode !== 'live') throw new DomainError('AI_TEST_LIVE_REQUIRED', '模拟模式不能验证真实连接，请先明确启用 live 并保存模型', 400);
     const selection = await this.resolved(data);
     if (selection.providerId !== providerId || selection.authMethod !== 'oauth') {
@@ -187,9 +217,11 @@ export class AiModelRuntime implements LearningEngine {
 
   async execute(task: Parameters<LearningEngine['execute']>[0], options: Parameters<LearningEngine['execute']>[1]): ReturnType<LearningEngine['execute']> {
     options.signal.throwIfAborted();
-    const data = await this.repository.read();
+    assertLearningPrompt(task, options.expectedPrompt);
+    const data = await this.settings();
     options.signal.throwIfAborted();
-    const limits = { maxOutputTokens: this.config.maxOutputTokens, timeoutMs: this.config.runTimeoutMs };
+    const limits = { maxOutputTokens: this.config.maxOutputTokens, timeoutMs: taskTimeoutMs(task.kind, this.config),
+      firstResponseTimeoutMs: this.config.firstResponseTimeoutMs, streamIdleTimeoutMs: this.config.streamIdleTimeoutMs };
     if (this.mode === 'mock') {
       if (task.kind === 'connection_test') throw new DomainError('AI_TEST_LIVE_REQUIRED', '模拟模式不能验证真实连接', 400);
       // Mock remains faux, even when the database contains a saved live candidate.
@@ -200,12 +232,14 @@ export class AiModelRuntime implements LearningEngine {
       : await this.resolved(data);
     options.signal.throwIfAborted();
     const { promptCacheRetention } = effectiveLearningPreferences(data, this.config);
+    if (selection.authMethod === 'platform') throw new DomainError('AI_MODEL_INVALID', '平台模型尚未解析。', 400);
     const engine = this.engineFactory({
+      connectionPolicy: this.config.connectionPolicy,
       mode: 'live', provider: selection.providerId as LiveProviderId, model: selection.modelId,
       authMethod: selection.authMethod, allowUnboundedOAuthOutput: selection.allowUnboundedOutput,
       ...(selection.authMethod === 'api_key' ? { apiKey: this.config.apiKey } : {}), ...limits,
       cacheRetention: task.kind === 'connection_test' ? 'none' : promptCacheRetention,
-    }, { credentials: this.credentials });
+    }, { credentials: this.credentials, transport: this.transport });
     // Provider affinity contains no document text, account identifier or credential.
     const { cacheScope, ...execution } = options;
     const key = cacheScope && task.kind !== 'connection_test' && promptCacheRetention === 'short'

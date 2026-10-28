@@ -3,6 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts", "./code": "./src/code.ts", "./limits": "./src/limits.ts" },
-  "dependencies": { "zod": "4.6.5" }
+  "exports": {
+    ".": "./src/index.ts",
+    "./code": "./src/code.ts",
+    "./limits": "./src/limits.ts"
+  },
+  "dependencies": {
+    "zod": "4.6.5",
+    "@noble/hashes": "2.4.0"
+  }
 }

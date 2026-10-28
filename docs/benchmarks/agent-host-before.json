@@ -1,0 +1,52 @@
+{
+  "measuredAt": "2026-10-22T14:38:29.343Z",
+  "node": "v22.23.2",
+  "cpu": "Intel(R) Core(TM) i5-14600KF",
+  "network": false,
+  "workload": {
+    "knowledge": 1000,
+    "documents": 500,
+    "historicalRuns": 3285,
+    "warmup": 1,
+    "measuredRuns": 5
+  },
+  "measurements": [
+    {
+      "elapsedMs": 1157,
+      "preparationMs": 16,
+      "savingMs": 669,
+      "fullReads": 3,
+      "transactions": 5
+    },
+    {
+      "elapsedMs": 1117,
+      "preparationMs": 16,
+      "savingMs": 634,
+      "fullReads": 3,
+      "transactions": 5
+    },
+    {
+      "elapsedMs": 1120,
+      "preparationMs": 16,
+      "savingMs": 638,
+      "fullReads": 3,
+      "transactions": 5
+    },
+    {
+      "elapsedMs": 1141,
+      "preparationMs": 16,
+      "savingMs": 664,
+      "fullReads": 3,
+      "transactions": 5
+    },
+    {
+      "elapsedMs": 1122,
+      "preparationMs": 15,
+      "savingMs": 638,
+      "fullReads": 3,
+      "transactions": 5
+    }
+  ],
+  "medianMs": 1122,
+  "maxMs": 1157
+}

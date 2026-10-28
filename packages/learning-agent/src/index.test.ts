@@ -1,4 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { openRepository, readBackupWithoutMigration, type Repository } from '@sanxing/database';
+import { taskContractCases } from '../../../tests/fixtures/task-contract.ts';
 import { LIMITS, type AiTask, type GeneratedQuestion } from '@sanxing/contracts';
 import type { FauxProviderHandle, FauxResponseStep } from '@earendil-works/pi-ai/providers/faux';
 import { fauxAssistantMessage, fauxToolCall } from '@earendil-works/pi-ai/providers/faux';
@@ -19,7 +24,7 @@ vi.mock('@earendil-works/pi-ai/providers/faux', async importOriginal => {
     return handle;
   } };
 });
-import { createLearningEngine, inspectLearningRequest, type EngineConfig } from './index.ts';
+import { createLearningEngine, inspectLearningRequest, describeLearningPrompt, type EngineConfig } from './index.ts';
 
 const extract: AiTask = { kind: 'extract', recitation: { learned: '缓存穿透是查询不存在的数据。布隆过滤器可减少无效请求。', unclear: '误判如何处理', application: '保护数据库', topic: '缓存' }, sources: [{ id: 's1', name: '笔记', text: '缓存穿透是查询不存在的数据' }] };
 const point = { id: 'k1', title: '缓存穿透', description: '查询不存在的数据导致请求到达数据库', sourceIds: ['s1'] };
@@ -34,6 +39,85 @@ afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); vi.useRealTimers(); 
 describe('learning engine: real Pi Agent + faux provider, no network', () => {
   beforeEach(() => { vi.stubGlobal('fetch', vi.fn(() => { throw new Error('Network forbidden'); })); });
   afterEach(() => { expect(fetch).not.toHaveBeenCalled(); vi.unstubAllGlobals(); });
+
+  it('carries all task variants through physical storage, reopen, backup restore and real SDK requests', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'sanxing-task-contract-'));
+    const repositories: Repository[] = [];
+    const engine = createLearningEngine();
+    try {
+      const repository = await openRepository(directory, 'mock'); repositories.push(repository);
+      await repository.transact(data => {
+        const now = '2026-10-23T00:00:00.000Z';
+        for (const id of ['k1', 'k2']) data.knowledge[id] = { id, title: id, description: id, sourceIds: ['s1'], version: 1, contentVersion: 1, understanding: '', createdAt: now, updatedAt: now };
+        for (const { id, task } of taskContractCases) {
+          const binding = describeLearningPrompt(task);
+          data.runs[id] = { id, task: structuredClone(task), status: 'pending', sessionId: null, reviewSessionId: null, quizId: null, questionId: null,
+            attempt: 0, attemptId: null, expectedVersion: 0, createdAt: now, startedAt: null, finishedAt: null, error: null, usage: null,
+            reservationUsd: 0, promptVersion: binding.version, promptHash: binding.hash, inputPrepared: true };
+        }
+      });
+      await repository.close();
+      const backup = await readBackupWithoutMigration(directory, 'mock');
+      const reopened = await openRepository(directory, 'mock'); repositories.push(reopened);
+      expect(await reopened.read()).toEqual(backup);
+      const restored = await openRepository(':memory:', 'mock'); repositories.push(restored);
+      await restored.replace(JSON.parse(JSON.stringify(backup)));
+      const data = await restored.read();
+      for (const { id, task } of taskContractCases) {
+        const run = data.runs[id]!;
+        expect(run.task).toEqual(task);
+        await engine.execute(run.task, { signal: new AbortController().signal, expectedPrompt: { version: run.promptVersion, hash: run.promptHash } });
+        const expected = inspectLearningRequest(task, { maxOutputTokens: 4096 });
+        expect(probe.handle!.state.callCount).toBe(1);
+        expect(probe.context).toMatchObject({ messages: [
+          { role: 'system', content: expected.systemPrompt },
+          { role: 'user', content: expected.blocks.map(text => ({ type: 'text', text })) },
+        ] });
+        expect((probe.context as { tools?: unknown[] }).tools ?? []).toEqual([]);
+      }
+    } finally {
+      await engine.close?.();
+      for (const repository of repositories.reverse()) await repository.close();
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it.each(['version', 'hash', 'input'] as const)('checks the queued %s binding before constructing a provider request', async change => {
+    const expectedPrompt = describeLearningPrompt(extract);
+    const task = structuredClone(extract);
+    if (change === 'version') expectedPrompt.version = 'learning-v5';
+    if (change === 'hash') expectedPrompt.hash = '0'.repeat(64);
+    if (change === 'input' && task.kind === 'extract') task.recitation.learned += ' changed';
+    await expect(createLearningEngine().execute(task, { signal: new AbortController().signal, expectedPrompt })).rejects.toMatchObject({ code: 'PROMPT_CHANGED', usage: null });
+    expect(probe.handle).toBeUndefined();
+  });
+
+  it('executes a matching persisted binding and leaves its provenance out of model messages', async () => {
+    const expectedPrompt = describeLearningPrompt(extract);
+    await createLearningEngine().execute(extract, { signal: new AbortController().signal, expectedPrompt });
+    expect(probe.handle!.state.callCount).toBe(1);
+    expect(JSON.stringify(probe.context)).not.toContain(expectedPrompt.hash);
+  });
+
+  it.each([extract, quiz, { kind: 'followup', points: [point], turns: [], sources: extract.sources }, { kind: 'grade', question, answer: '回答' }] as Exclude<AiTask, { kind: 'connection_test' }>[])('sends $kind imported instructions through the real Pi SDK with one request and no tools', async base => {
+    const task: AiTask = { ...base, skills: [{ id: '00000000-0000-4000-8000-000000000001', version: 1, name: 'example-method', description: '举例方法', instructions: 'IMPORTED_SKILL_INSTRUCTION: 使用简短例子。' }] };
+    await createLearningEngine().execute(task, { signal: new AbortController().signal, expectedPrompt: describeLearningPrompt(task) });
+    expect(probe.handle!.state.callCount).toBe(1);
+    expect(probe.context).toMatchObject({ messages: expect.arrayContaining([expect.objectContaining({ role: 'system', content: expect.stringContaining('IMPORTED_SKILL_INSTRUCTION') })]) });
+    expect((probe.context as { tools?: unknown[] }).tools ?? []).toEqual([]);
+    expect(JSON.stringify(probe.context)).not.toContain('00000000-0000-4000-8000-000000000001');
+  });
+
+  it.each([extract, quiz, { kind: 'grade', question, answer: '回答' },
+    { kind: 'followup', points: [point], sources: extract.sources, turns: [{ id: 't', question: '问题', answer: '回答', feedback: null, assisted: false, scopeVersion: 1 }] },
+  ] as AiTask[])('keeps the $kind binding valid after stored object keys are reordered', async task => {
+    const reordered = (value: unknown): unknown => Array.isArray(value) ? value.map(reordered)
+      : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).reverse().map(([key, item]) => [key, reordered(item)])) : value;
+    const stored = reordered(task) as AiTask;
+    expect(describeLearningPrompt(stored)).toEqual(describeLearningPrompt(task));
+    await createLearningEngine().execute(stored, { signal: new AbortController().signal, expectedPrompt: describeLearningPrompt(stored) });
+    expect(probe.handle!.state.callCount).toBe(1);
+  });
 
   it('extracts repeatable input-based candidates through a real provider request', async () => {
     const first = await execute(extract);
@@ -152,7 +236,7 @@ describe('learning engine: real Pi Agent + faux provider, no network', () => {
 
   it.each(['error', 'aborted', 'length'] as const)('never repairs or retries a %s connection response', async stopReason => {
     probe.override = fauxAssistantMessage('{"kind":"connection_test","ok":true}', { stopReason });
-    await expect(execute(connectionTest)).rejects.toMatchObject({ code: stopReason === 'aborted' ? 'CANCELLED' : 'MODEL_FAILED' });
+    await expect(execute(connectionTest)).rejects.toMatchObject({ code: stopReason === 'aborted' ? 'CANCELLED' : stopReason === 'length' ? 'OUTPUT_LIMIT' : 'MODEL_FAILED' });
     expect(probe.handle!.state.callCount).toBe(1);
   });
 
@@ -274,7 +358,7 @@ describe('learning engine: real Pi Agent + faux provider, no network', () => {
   it.each(['quiz', 'followup'] as const)('keeps retrieved fragments and related references outside new assessment scope for %s', async kind => {
     await execute(kind === 'quiz' ? quiz : { kind, points: [point], sources: extract.sources, turns: [] });
     const context = JSON.stringify(probe.context);
-    for (const text of ['learning-v6', 'related', '不新增考核范围', '本地检索节选', '原文行号', '不声称已阅读完整原文', '不为结合而牵强关联']) expect(context).toContain(text);
+    for (const text of ['learning-v8', '追问历史', 'weaknesses', '薄弱评分维度', 'related', '不新增考核范围', '本地检索节选', '原文行号', '不声称已阅读完整原文', '不为结合而牵强关联']) expect(context).toContain(text);
   });
 
   it('accepts combined questions only for supplied related knowledge, still scoped to the main point sources', async () => {
@@ -370,7 +454,7 @@ describe('learning engine: real Pi Agent + faux provider, no network', () => {
 
   it.each(['error', 'aborted', 'length'] as const)('does not treat %s stopReason as success', async stopReason => {
     probe.override = fauxAssistantMessage('{"kind":"extract","candidates":[{"title":"x","description":"x","sourceIds":[]}]}', { stopReason });
-    await expect(execute(extract)).rejects.toMatchObject({ code: stopReason === 'aborted' ? 'CANCELLED' : 'MODEL_FAILED' });
+    await expect(execute(extract)).rejects.toMatchObject({ code: stopReason === 'aborted' ? 'CANCELLED' : stopReason === 'length' ? 'OUTPUT_LIMIT' : 'MODEL_FAILED' });
     expect(probe.handle!.state.callCount).toBe(1);
   });
 

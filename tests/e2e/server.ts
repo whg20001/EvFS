@@ -5,11 +5,11 @@ import { fauxProvider } from '@earendil-works/pi-ai/providers/faux';
 import { createAiAccessController } from '@sanxing/ai-access';
 import { createApp } from '../../apps/api/src/app.ts';
 import { readConfig } from '../../apps/api/src/config.ts';
-import { webOrigin, password, sessionSecret } from './settings.ts';
+import { apiOrigin, webOrigin, password, sessionSecret } from './settings.ts';
 
 // Intentionally never load .env, personal data, live credentials or a paid model.
 const config = readConfig({ AI_MODE: 'mock', NODE_ENV: 'test', API_PORT: '4107', APP_ORIGIN: webOrigin,
-  OWNER_PASSWORD: password, SESSION_SECRET: sessionSecret });
+  OWNER_PASSWORD: password, SESSION_SECRET: sessionSecret, SKILL_CATALOG_URL: `${apiOrigin}/cloud-skills/catalog.json` });
 const repository = await openRepository(':memory:', 'mock');
 const engine = createLearningEngine({ mode: 'mock' });
 // A deliberately offline OAuth driver exercises the real Pi login bridge without an upstream account.
@@ -24,6 +24,12 @@ const aiAccess = createAiAccessController({ credentials: new InMemoryCredentialS
   } } },
 }] });
 const { app } = await createApp({ config, repository, engine, aiAccess });
+// Local catalog fixtures exercise actual HTTP downloads without an external server.
+app.get('/cloud-skills/catalog.json', async () => ({ skills: [{ name: 'remote-examples', description: '云端学习教学方法',
+  version: '1.0.0', author: '测试目录', url: 'remote-examples/SKILL.md' }] }));
+app.get('/cloud-skills/remote-examples/SKILL.md', async (_request, reply) => reply.type('text/markdown; charset=utf-8').send(
+  '---\nname: remote-examples\ndescription: 云端学习教学方法\n---\n先举例，再检查理解。<script>window.cloudSkillExecuted = true</script>'
+));
 let closing = false;
 async function shutdown() {
   if (closing) return; closing = true;

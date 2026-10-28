@@ -2,16 +2,20 @@ import { expect, test, type Page } from '@playwright/test';
 import { tokenUsageHeatmap } from '@sanxing/ai-usage';
 import type { AiAccessOverview, AiConnectionTestView, AiModelConfiguration, AiModelSelection, TokenUsageHeatmap } from '@sanxing/contracts';
 import { password } from './settings.ts';
-import { answerDialog, autoAcceptDialogs } from './dialog.ts';
+import { acknowledgeFeedback, answerDialog, autoAcceptDialogs } from './dialog.ts';
 
 test.use({ actionTimeout: 20_000 });
 
+async function openModule(page: Page, name: string) {
+  await page.getByRole('button', { name: '全部模块', exact: true }).click();
+  await page.getByRole('dialog', { name: '全部模块', exact: true }).getByRole('button', { name: new RegExp(`^${name} `) }).click();
+}
 async function login(page: Page) {
   await page.goto('/recite'); await page.getByLabel('访问密码').fill(password);
   await page.getByRole('button', { name: '进入我的学习空间' }).click();
   await expect(page.getByRole('heading', { name: '今日复述', exact: true })).toBeVisible();
-  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'AI 配置', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'AI 配置', exact: true })).toBeVisible();
+  await openModule(page, 'AI 配置');
+  await expect(page.locator('.journal-stage h1')).toHaveText('AI 配置');
 }
 async function openAuthorization(page: Page) {
   await page.getByRole('button', { name: /^添加授权/ }).click();
@@ -34,7 +38,9 @@ test('AI settings choose models explicitly, preserve conflicts, and use the offl
   page.on('request', request => { if (request.method() === 'GET' && request.url().endsWith('/api/ai/configuration')) modelReads++; });
   await login(page);
   await expect(page.getByLabel('Provider', { exact: true })).toHaveValue('');
-  await expect(page.getByText('未设置应用预算', { exact: true })).toBeVisible();
+  await expect(page.getByText('未设置应用预算', { exact: true })).toHaveCount(0);
+  await expect(page.getByText(/选择存于当前模式的学习数据库/)).toHaveCount(0);
+  await expect(page.getByText(/所有真实模型调用都会向所选厂商发送任务资料/)).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Anthropic（离线测试）', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '开始授权', exact: true })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: '浏览器与 WSL 授权提示', exact: true })).toHaveCount(0);
@@ -44,7 +50,7 @@ test('AI settings choose models explicitly, preserve conflicts, and use the offl
   await page.getByLabel('Provider', { exact: true }).selectOption(codex.id);
   await page.getByLabel('认证方式', { exact: true }).selectOption('oauth');
   await page.getByLabel('模型', { exact: true }).selectOption(codex.models[0]!.id);
-  await expect(page.getByRole('checkbox', { name: /上游输出token硬上限/ })).not.toBeChecked();
+  await expect(page.getByRole('checkbox', { name: /上游输出token硬上限/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '保存候选模型', exact: true })).toBeDisabled();
   await page.getByLabel('Provider', { exact: true }).selectOption(anthropic.id);
   await expect(page.getByLabel('模型', { exact: true })).toHaveValue('');
@@ -69,7 +75,7 @@ test('AI settings choose models explicitly, preserve conflicts, and use the offl
   await expect(page.getByLabel('模型', { exact: true })).toHaveValue(anthropic.models[0]!.id);
   const save = page.getByRole('button', { name: '保存候选模型', exact: true });
   await expect(save).toBeEnabled(); await save.click();
-  await expect(page.getByText('候选模型已保存；实际任务仍使用 faux，不会启用真实调用。', { exact: true })).toBeVisible();
+  await expect(save).toBeEnabled();
   expect((await (await page.request.get('/api/ai/configuration')).json() as AiModelConfiguration).selection).toMatchObject({ providerId: 'anthropic', modelId: anthropic.models[0]!.id, authMethod: 'oauth' });
   await page.getByLabel('模型', { exact: true }).selectOption(anthropic.models[1]!.id);
   const state = await (await page.request.get('/api/state')).json() as { csrfToken: string };
@@ -77,7 +83,8 @@ test('AI settings choose models explicitly, preserve conflicts, and use the offl
   const revisionChange = await page.request.post('/api/ai/configuration', { data: { expectedRevision: otherWindow.revision, ...otherWindow.selection! }, headers: { origin: new URL(page.url()).origin, 'x-csrf-token': state.csrfToken, 'idempotency-key': `model-revision-test-${Date.now()}` } });
   expect(revisionChange.status()).toBe(200);
   await save.click();
-  await expect(page.getByRole('alert').filter({ hasText: '输入已保留，不会自动更新版本重试' })).toBeVisible();
+  await expect(save).toBeDisabled();
+  await expect(page.getByText('模型配置保存成功', { exact: true })).toHaveCount(0);
   await expect(page.getByLabel('模型', { exact: true })).toHaveValue(anthropic.models[1]!.id);
   await expect(save).toBeDisabled();
   const reads = modelReads;
@@ -95,9 +102,9 @@ test('AI settings choose models explicitly, preserve conflicts, and use the offl
   await expect(page.getByText('尚无已连接的 Provider，可展开“添加授权”。', { exact: true })).toBeVisible();
   await requestCode(page);
   await page.getByLabel('测试授权码', { exact: true }).fill('never-persist-this-code');
-  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '今日复述' }).click();
+  await openModule(page, '今日复述');
   await expect(page.getByRole('button', { name: '开始今天的三省' })).toBeEnabled();
-  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'AI 配置', exact: true }).click();
+  await openModule(page, 'AI 配置');
   await openAuthorization(page);
   await expect(page.getByLabel('测试授权码', { exact: true })).toHaveValue('');
   expect(await page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }))).not.toContain('never-persist-this-code');
@@ -201,10 +208,19 @@ test('mobile heatmap supports leap days, unknown usage and year switching withou
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
 });
 
-test('a model listed by an unauthorized provider points to the authorized provider that also offers it', async ({ page }) => {
+test('a model listed by an unauthorized provider points to the authorized provider and saves its output capability', async ({ page }) => {
   // Browser-only fixture: Codex is authorized, and its models are also listed under OpenAI with a separate authorization.
+  let original: AiModelConfiguration;
+  let saved: AiModelSelection | null = null;
   await page.route('**/api/ai/configuration', async route => {
-    const original = await (await route.fetch()).json() as AiModelConfiguration;
+    if (route.request().method() === 'POST') {
+      const body = route.request().postDataJSON() as AiModelSelection & { expectedRevision: number };
+      saved = { providerId: body.providerId, modelId: body.modelId, authMethod: body.authMethod, allowUnboundedOutput: body.allowUnboundedOutput };
+      await route.fulfill({ json: { ...original, selection: saved, ready: true, source: 'saved', problem: null, revision: original.revision + 1,
+        providers: original.providers.map(provider => ({ ...provider, oauthConnected: provider.id === 'openai-codex' })) } satisfies AiModelConfiguration });
+      return;
+    }
+    original = await (await route.fetch()).json() as AiModelConfiguration;
     await route.fulfill({ json: { ...original, providers: original.providers.map(provider => ({ ...provider, oauthConnected: provider.id === 'openai-codex' })) } satisfies AiModelConfiguration });
   });
   await login(page);
@@ -214,14 +230,56 @@ test('a model listed by an unauthorized provider points to the authorized provid
   await expect(providerSelect.locator('option[value="openai-codex"]')).toHaveText(/OAuth 已授权$/);
   await expect(providerSelect.locator('option[value="openai"]')).not.toHaveText(/已授权/);
   await providerSelect.selectOption('openai');
-  await page.getByLabel('认证方式', { exact: true }).selectOption('oauth');
   await page.getByLabel('模型', { exact: true }).selectOption(shared);
+  await page.getByLabel('认证方式', { exact: true }).selectOption('oauth');
   await expect(page.getByText(/授权不可互换/)).toBeVisible();
   await page.getByRole('button', { name: /^改用已授权的 / }).click();
   await expect(providerSelect).toHaveValue('openai-codex');
   await expect(page.getByLabel('模型', { exact: true })).toHaveValue(shared);
   await expect(page.getByLabel('认证方式', { exact: true })).toHaveValue('oauth');
   await expect(page.getByText(/尚未 OAuth 授权/)).toHaveCount(0);
-  await page.getByRole('checkbox', { name: /上游输出token硬上限/ }).check();
+  await expect(page.getByRole('checkbox', { name: /上游输出token硬上限/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '保存候选模型', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: '保存候选模型', exact: true }).click();
+  await acknowledgeFeedback(page, ['候选模型已保存']);
+  expect(saved).toEqual({ providerId: 'openai-codex', modelId: shared, authMethod: 'oauth', allowUnboundedOutput: true });
+  await page.screenshot({ path: 'test-results/ai-access-desktop.png', fullPage: true });
+});
+
+test('combines model and provider settings and announces success only after the live selection is saved', async ({ page }) => {
+  let saved: AiModelSelection | null = null; let release!: () => void; let current: AiModelConfiguration;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  await page.route('**/api/ai/configuration', async route => {
+    if (route.request().method() === 'POST') {
+      const body = route.request().postDataJSON() as AiModelSelection;
+      await gate; saved = { providerId: body.providerId, modelId: body.modelId, authMethod: body.authMethod, allowUnboundedOutput: body.allowUnboundedOutput };
+    } else current = await (await route.fetch()).json() as AiModelConfiguration;
+    await route.fulfill({ json: { ...current, mode: 'live', selection: saved, source: saved ? 'saved' : 'none', ready: !!saved, revision: current.revision + (saved ? 1 : 0),
+      providers: current.providers.map(provider => ({ ...provider, apiKeyAvailable: true })) } satisfies AiModelConfiguration });
+  });
+  await login(page);
+  await acknowledgeFeedback(page, ['尚不能提交模型任务']);
+  const module = page.locator('section.card').filter({ has: page.getByRole('heading', { name: '模型与授权', exact: true }) });
+  await expect(module.getByRole('heading', { name: '模型选择', exact: true })).toBeVisible();
+  await expect(module.getByRole('heading', { name: 'Provider 授权', exact: true })).toBeVisible();
+  const original = await (await page.request.get('/api/ai/configuration')).json() as AiModelConfiguration;
+  const provider = original.providers.find(provider => provider.models.length > 0)!;
+  await page.getByLabel('Provider', { exact: true }).selectOption(provider.id);
+  await page.getByLabel('认证方式', { exact: true }).selectOption('api_key');
+  await page.getByLabel('模型', { exact: true }).selectOption(provider.models[0]!.id);
+  await page.getByRole('button', { name: '保存模型配置', exact: true }).click();
+  try {
+    await expect(page.getByRole('button', { name: '保存模型配置', exact: true })).toBeDisabled();
+    await expect(page.getByText('模型配置保存成功', { exact: true })).toHaveCount(0);
+  } finally { release(); }
+  await expect(page.getByRole('alertdialog', { name: '模型配置保存成功', exact: true })).toBeVisible();
+  await page.screenshot({ path: 'test-results/model-save-success-notice.png' });
+  await acknowledgeFeedback(page);
+  expect(saved).toMatchObject({ providerId: provider.id });
+  await module.screenshot({ path: 'test-results/model-authorization-desktop.png' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+  await module.screenshot({ path: 'test-results/model-authorization-mobile.png' });
+  await page.getByLabel('模型', { exact: true }).selectOption(provider.models[0]!.id);
+  await expect(page.getByText('模型配置保存成功', { exact: true })).toHaveCount(0);
 });

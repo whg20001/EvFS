@@ -7,6 +7,7 @@ import type { AiConnectionTestView, AiModelConfiguration, AiModelSelection, Lear
 import { AiModelRuntime } from '../src/ai-runtime.ts';
 import { createApp } from '../src/app.ts';
 import { readConfig, type ApiConfig } from '../src/config.ts';
+import { EVALUATION_VERSION, evaluationCases } from '@sanxing/learning-agent/evaluations';
 
 const password = 'connection-test-only-password';
 const endpoint = '/api/ai/providers/openai-codex/test';
@@ -21,6 +22,7 @@ const execute = vi.fn<LearningEngine['execute']>();
 const get = (url: string) => instance.app.inject({ url, headers: { cookie } });
 const post = (url: string, payload: object, key = randomUUID()) => instance.app.inject({ method: 'POST', url, payload, headers: { cookie, origin: config.appOrigin, 'x-csrf-token': csrf, 'idempotency-key': key } });
 const input = () => ({ confirm: true, expectedSelection: selection });
+const evaluationInput = (caseId = 'cache-grade-correct', batchId = randomUUID()) => ({ ...input(), suite: EVALUATION_VERSION, caseId, batchId });
 async function assemble() {
   const access = createAiAccessController({ credentials, deviceId: randomUUID() });
   const runtime = new AiModelRuntime({ config, repository, credentials, engineFactory: () => ({ mode: config.mode, execute }) });
@@ -45,6 +47,62 @@ beforeEach(() => {
   execute.mockReset(); execute.mockImplementation(async (_task, options) => {
     await options.onUsage?.(usage); return { output: { kind: 'connection_test', ok: true }, usage };
   });
+});
+it('runs a fixed synthetic evaluation through app OAuth without touching learning records, and deduplicates after restart', async () => {
+  await setup();
+  const output = { kind: 'grade' as const, status: 'graded' as const, scores: [{ rubricId: 'r1', score: 1, evidence: '明确说明空结果' }, { rubricId: 'r2', score: 1, evidence: '说明 TTL 与失效' }], feedback: '正确' };
+  execute.mockResolvedValue({ output, usage });
+  const body = evaluationInput(); const key = randomUUID(); const before = await repository.read();
+  const response = await post('/api/ai/evaluations', body, key); expect(response.statusCode).toBe(202);
+  await instance.worker.tick(); const id = response.json().runId;
+  const view = (await get(`/api/ai/evaluations/${id}`)).json();
+  expect(view).toMatchObject({ status: 'succeeded', evaluation: { suite: EVALUATION_VERSION, caseId: body.caseId, output }, usage });
+  expect(execute.mock.calls[0]![0]).toEqual({ ...evaluationCases.find(item => item.id === body.caseId)!.task, skills: [] });
+  const after = await repository.read();
+  for (const map of ['recitations', 'documents', 'sessions', 'quizzes', 'knowledge', 'cards', 'evidence', 'reviewSessions', 'reviewEvents'] as const) expect(after[map]).toEqual(before[map]);
+  await repository.replace(after); // export/import schema accepts synthetic references and outputs
+  await instance.app.close(); await assemble();
+  expect((await post('/api/ai/evaluations', body, key)).json().runId).toBe(id); await instance.worker.tick();
+  expect(execute).toHaveBeenCalledTimes(1);
+  expect((await post('/api/ai/evaluations', body)).statusCode).toBe(409);
+  expect((await post(`/api/runs/${id}/retry`, {})).statusCode).toBe(409);
+  expect(JSON.stringify(view)).not.toContain('PRIVATE_ACCESS_SENTINEL');
+});
+it('reads one evaluation without the aggregate and reports final diagnostics still being saved', async () => {
+  await setup();
+  const request = { provider: selection.providerId, model: selection.modelId, authMethod: 'oauth' as const, cacheRetention: 'none' as const,
+    inputChars: 10, inputBytes: 20, estimatedInputTokens: 5, contextWindow: 1000, maxOutputTokens: 100, timeoutMs: 1000, firstResponseTimeoutMs: 500, streamIdleTimeoutMs: 500 };
+  const transport = { policy: 'fresh' as const, phase: 'complete' as const, reusedSocket: false, requestCount: 1, bytesWritten: 80, bytesRead: 120, httpStatus: 200 };
+  execute.mockImplementationOnce(async (_task, options) => {
+    expect(options.connectionPolicy).toBe('fresh'); options.onTransport?.(transport);
+    options.onRequest?.(request); options.onProgress?.('request'); options.onProgress?.('text'); options.onProgress?.('generated'); options.onProgress?.('validated');
+    return { output: { kind: 'grade', status: 'needs_verification', scores: [], feedback: 'test' }, usage };
+  });
+  let release!: () => void; const gate = new Promise<void>(resolve => { release = resolve; });
+  let reached!: () => void; const saving = new Promise<void>(resolve => { reached = resolve; });
+  const original = instance.service.recordRunProgress.bind(instance.service);
+  vi.spyOn(instance.service, 'recordRunProgress').mockImplementation(async (...args) => { reached(); await gate; return original(...args); });
+  const queued = await post('/api/ai/evaluations', { ...evaluationInput(), connectionPolicy: 'fresh' }); expect(queued.statusCode).toBe(202);
+  const id = queued.json().runId; await saving;
+  const read = vi.spyOn(repository, 'read');
+  try {
+    expect((await instance.app.inject(`/api/ai/evaluations/${id}`)).statusCode).toBe(401);
+    const pending = await get(`/api/ai/evaluations/${id}`);
+    expect(pending.json()).toMatchObject({ status: 'succeeded', diagnosticsPending: true, request, transport, evaluation: { connectionPolicy: 'fresh' }, progress: { phase: 'saving' } });
+    expect(read).not.toHaveBeenCalled();
+    release(); await instance.worker.tick();
+    expect((await get(`/api/ai/evaluations/${id}`)).json()).toMatchObject({ diagnosticsPending: false, request, transport, progress: { completedMs: expect.any(Number) } });
+    expect(read).not.toHaveBeenCalled();
+  } finally { release(); await instance.worker.tick(); read.mockRestore(); }
+});
+
+it('requires evaluation auth/CSRF/confirmation, rejects arbitrary inputs and pins the selected model', async () => {
+  await setup(); const body = evaluationInput();
+  expect((await instance.app.inject({ url: '/api/ai/evaluations' })).statusCode).toBe(401);
+  expect((await instance.app.inject({ method: 'POST', url: '/api/ai/evaluations', payload: body, headers: { cookie } })).statusCode).toBe(403);
+  for (const payload of [{ ...body, confirm: false }, { ...body, connectionPolicy: 'auto' }, { ...body, caseId: 'personal-notes' }, { ...body, task: evaluationCases[0]!.task }, { ...body, suite: 'unknown-version' }]) expect((await post('/api/ai/evaluations', payload)).statusCode).toBe(400);
+  expect((await post('/api/ai/evaluations', { ...body, expectedSelection: { ...selection, modelId: 'changed' } })).statusCode).toBe(409);
+  expect((await repository.read()).runs).toEqual({}); expect(execute).not.toHaveBeenCalled();
 });
 afterEach(async () => { await instance?.app.close(); await repository?.close(); expect(fetch).not.toHaveBeenCalled(); vi.unstubAllGlobals(); });
 

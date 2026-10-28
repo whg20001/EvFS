@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { PublicState } from '@sanxing/contracts';
 import { password } from './settings.ts';
-import { answerDialog, autoAcceptDialogs } from './dialog.ts';
+import { acknowledgeFeedback, answerDialog, autoAcceptDialogs } from './dialog.ts';
 const state = async (page: Page): Promise<PublicState> => (await page.request.get('/api/state')).json();
 
 test('mock 偏好→学习出代码题→移动端编辑运行→预检提交→模型反馈', async ({ page }) => {
@@ -16,7 +16,7 @@ test('mock 偏好→学习出代码题→移动端编辑运行→预检提交→
   await prefs.getByRole('button', { name: '确认保存设置' }).click(); await answerDialog(page, false, ['代码题：开启', 'JavaScript']);
   await expect(prefs.getByRole('button', { name: '确认保存设置' })).toBeEnabled();
   await prefs.getByRole('button', { name: '确认保存设置' }).click(); await answerDialog(page, true, ['代码题：开启', 'JavaScript']);
-  await expect(prefs.getByRole('status')).toContainText('设置已保存');
+  await acknowledgeFeedback(page, ['设置已保存']);
   await page.reload(); await page.locator('#learning-preferences summary').click();
   await expect(prefs.getByRole('checkbox', { name: '代码题', exact: true })).toBeChecked();
   await expect(prefs.getByRole('checkbox', { name: 'JavaScript', exact: true })).toBeChecked();
@@ -66,6 +66,8 @@ test('mock 偏好→学习出代码题→移动端编辑运行→预检提交→
   // Leave subsequent tests with the original opt-out default.
   await page.goto('/review'); await page.locator('#learning-preferences summary').click();
   await prefs.getByRole('checkbox', { name: '代码题', exact: true }).uncheck();
+  await page.removeLocatorHandler(page.getByRole('alertdialog'));
   await prefs.getByRole('button', { name: '确认保存设置' }).click();
-  await expect(prefs.getByRole('status')).toContainText('设置已保存');
+  await answerDialog(page, true); await acknowledgeFeedback(page, ['设置已保存']);
+  await expect.poll(async () => (await (await page.request.get('/api/learning/preferences')).json()).codeExercisesEnabled).toBe(false);
 });

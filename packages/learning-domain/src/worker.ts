@@ -1,26 +1,29 @@
-import { usageSchema, type LearningEngine } from '@sanxing/contracts';
+import { taskTimeoutMs, usageSchema, runTransportSchema, runRequestSchema, updateRunProgress, type LearningEngine, type LearningProgressEvent, type RunErrorCode, type RunProgress, type RunProgressMap, type RunRequest, type RunTransport } from '@sanxing/contracts';
 import type { LearningService } from './service.ts';
-
-function connectionFailure(error: unknown, aborted: boolean): string {
-  // Only recognized codes select fixed messages. Never persist provider text or stacks.
-  const code = error && typeof error === 'object' && 'code' in error ? error.code : null;
-  if (aborted || code === 'TIMEOUT' || code === 'CANCELLED') return '连接测试已中断或超时；请求可能已计费。请到 Provider 授权重新点击确认测试。';
-  if (code === 'MODEL_NOT_AUTHORIZED') return '连接测试授权已失效或未完成，请到 Provider 授权重新连接后确认测试。';
-  if (code === 'INVALID_OUTPUT' || code === 'INVALID_MODEL_OUTPUT' || code === 'OUTPUT_LIMIT') return '连接测试的模型响应校验失败；请求可能已计费。请核对所选模型后重新确认测试。';
-  return '连接测试执行失败；请求可能已计费。请到 Provider 授权核对配置后重新确认测试。';
-}
+import { runFailure } from './run-failure.ts';
 
 /** One worker for the single-process PGlite deployment. All commits are attempt-fenced. */
 export class RunWorker {
   private active: Promise<void> | null = null;
   private wakeRequested = false;
   private controllers = new Map<string, AbortController>();
+  private liveProgress = new Map<string, { started: number; value: RunProgress; request?: RunRequest; transport?: RunTransport }>();
   private stopping = false;
   constructor(private readonly service: LearningService, private readonly engine: LearningEngine) {}
   async start() { await this.service.recoverRuns(); void this.tick(); }
-  cancel(id: string) { this.controllers.get(id)?.abort(); }
+  cancel(id: string) { this.controllers.get(id)?.abort('CANCELLED'); }
   /** The host may reconcile only these (at most one) runs inside a command transaction. */
   activeRunIds(): string[] { return [...this.controllers.keys()]; }
+  /** Transient progress never enters the repository's transaction/read queue. */
+  progress(): RunProgressMap {
+    return Object.fromEntries([...this.liveProgress].map(([id, { started, value }]) => [id,
+      { ...value, elapsedMs: value.completedMs ?? Math.max(value.elapsedMs, Math.floor(performance.now() - started)) },
+    ]));
+  }
+  diagnostics(id: string): { progress: RunProgress; request?: RunRequest; transport?: RunTransport } | undefined {
+    const current = this.liveProgress.get(id);
+    return current ? { progress: this.progress()[id]!, ...(current.request ? { request: { ...current.request } } : {}), ...(current.transport ? { transport: { ...current.transport } } : {}) } : undefined;
+  }
   async tick(): Promise<void> {
     if (this.stopping) return;
     this.wakeRequested = true;
@@ -40,38 +43,87 @@ export class RunWorker {
   }
   private async drain() {
     while (!this.stopping) {
-      if (!Object.values((await this.service.repository.read()).runs).some(run => run.status === 'pending')) return;
+      const repository = this.service.repository;
+      const pending = repository.hasPendingRuns ? await repository.hasPendingRuns()
+        : Object.values((await repository.read()).runs).some(run => run.status === 'pending');
+      if (!pending) return;
       const run = await this.service.claimRun(); if (!run?.attemptId) return;
       const controller = new AbortController(); this.controllers.set(run.id, controller);
+      const started = performance.now();
+      const totalTimeoutMs = taskTimeoutMs(run.task.kind, this.service.config);
+      const value: RunProgress = { phase: 'preparing', elapsedMs: 0, totalTimeoutMs,
+        queuedMs: Math.max(0, this.service.now().getTime() - Date.parse(run.createdAt)) };
+      const diagnostics: { started: number; value: RunProgress; request?: RunRequest; transport?: RunTransport } = { started, value };
+      this.liveProgress.set(run.id, diagnostics);
       let timeout: ReturnType<typeof setTimeout> | undefined;
       let rejectAbort: (() => void) | undefined;
+      let acceptProgress = true;
+      // Coalesce callback/return/error delivery. A failed save remains retryable locally.
+      let usageDelivery: Promise<void> | undefined;
+      const recordUsage = (input: unknown): Promise<void> => {
+        const usage = usageSchema.parse(input);
+        usageDelivery ??= this.service.recordUsage(run.id, run.attempt, usage).catch(error => {
+          usageDelivery = undefined; throw error;
+        });
+        return usageDelivery;
+      };
+      const onProgress = (event: LearningProgressEvent) => {
+        if (!acceptProgress || controller.signal.aborted) return;
+        updateRunProgress(value, event, performance.now() - started);
+        if (event === 'validated') clearTimeout(timeout);
+      };
       try {
         const deadline = new Promise<never>((_, reject) => {
           rejectAbort = () => reject(new Error('Task aborted'));
           controller.signal.addEventListener('abort', rejectAbort, { once: true });
-          timeout = setTimeout(() => controller.abort(), this.service.config.runTimeoutMs);
+          timeout = setTimeout(() => controller.abort('TIMEOUT'), totalTimeoutMs);
         });
         const response = await Promise.race([this.engine.execute(run.task, { signal: controller.signal,
           cacheScope: run.sessionId ?? run.reviewSessionId ?? run.id,
-          onUsage: usage => this.service.recordUsage(run.id, run.attempt, usage),
+          expectedPrompt: { version: run.promptVersion, ...(run.promptHash ? { hash: run.promptHash } : {}) },
+          ...(run.evaluation?.connectionPolicy ? { connectionPolicy: run.evaluation.connectionPolicy } : {}),
+          onTransport: transport => {
+            if (!acceptProgress || controller.signal.aborted) return;
+            const parsed = runTransportSchema.safeParse(transport);
+            if (parsed.success) diagnostics.transport = parsed.data;
+          },
+          onUsage: recordUsage,
+          onProgress,
+          onRequest: request => {
+            if (!acceptProgress || controller.signal.aborted || diagnostics.request) return;
+            const parsed = runRequestSchema.safeParse(request);
+            if (parsed.success) diagnostics.request = parsed.data;
+          },
         }), deadline]);
-        if (response.usage !== null) await this.service.recordUsage(run.id, run.attempt, response.usage);
+        // Custom engines may not emit events; their returned result still starts saving.
+        onProgress('validated');
+        if (response.usage !== null) await recordUsage(response.usage);
         await this.service.finishRun(run.id, run.attemptId, response);
       } catch (error) {
+        // Failure accounting is storage work too; preserve the original failure category.
+        clearTimeout(timeout); acceptProgress = false;
+        const interruption = controller.signal.aborted ? controller.signal.reason as RunErrorCode : undefined;
         // Preserve validated counters, never expose provider exception messages or credentials.
         const usage = usageSchema.safeParse(error && typeof error === 'object' && 'usage' in error ? error.usage : null);
-        if (usage.success) await this.service.recordUsage(run.id, run.attempt, usage.data);
-        await this.service.failRun(run.id, run.attemptId, run.task.kind === 'connection_test' ? connectionFailure(error, controller.signal.aborted) : undefined);
+        if (usage.success) await recordUsage(usage.data);
+        const failure = runFailure(error, run, interruption);
+        await this.service.failRun(run.id, run.attemptId, failure.message, failure.code);
       } finally {
+        acceptProgress = false;
         if (timeout) clearTimeout(timeout);
         if (rejectAbort) controller.signal.removeEventListener('abort', rejectAbort);
         this.controllers.delete(run.id);
+        value.elapsedMs = Math.max(value.elapsedMs, Math.floor(performance.now() - started));
+        value.completedMs = value.elapsedMs;
+        try { await this.service.recordRunProgress(run.id, run.attempt, value, diagnostics.request, diagnostics.transport); }
+        catch { /* Telemetry failure cannot roll back a committed learning result. */ }
+        finally { this.liveProgress.delete(run.id); }
       }
     }
   }
   async stop() {
     this.stopping = true; this.wakeRequested = false;
-    for (const controller of this.controllers.values()) controller.abort();
+    for (const controller of this.controllers.values()) controller.abort('SERVICE_RESTARTED');
     await this.active;
   }
 }

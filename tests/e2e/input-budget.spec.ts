@@ -1,6 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { LIMITS, type PublicState, type TaskInputPreview } from '@sanxing/contracts';
-import { answerDialog } from './dialog.ts';
+import { acknowledgeFeedback, answerDialog } from './dialog.ts';
 
 // Offline UI contract fixtures, NOT proof of the host's accounting or privacy.
 // Every API request is intercepted, including unexpected requests (fail closed).
@@ -28,6 +28,7 @@ async function offline(page: Page, data: PublicState, preflight: (route: Route) 
   await page.route('**/api/**', async route => {
     const request = route.request(); const path = new URL(request.url()).pathname;
     if (path === '/api/auth/status') return json(route, { authenticated: true });
+    if (path === '/api/ai/skills' && request.method() === 'GET') return json(route, { mode: data.mode, items: [] });
     if (path === '/api/state') return json(route, data);
     if (path.endsWith('/input-preview')) {
       expect(request.method()).toBe('POST');
@@ -73,25 +74,20 @@ test('upload invalidates the old budget and refreshes accounting including sourc
     return json(route, preview(data));
   });
   await page.goto('/recite');
-  await expect(budget(page)).toContainText('实际 JSON 已用 1,000 / 48,000');
-  await page.getByLabel('上传 TXT 或 Markdown 笔记').setInputFiles({ name: '完整笔记.md', mimeType: 'text/markdown', buffer: Buffer.from('离线笔记原文') });
+  await expect(submit(page)).toBeEnabled();
+  await expect(budget(page)).toHaveCount(0);
+  await page.getByLabel('上传笔记、PDF 或图片').setInputFiles({ name: '完整笔记.md', mimeType: 'text/markdown', buffer: Buffer.from('离线笔记原文') });
   await expect.poll(() => Boolean(uploaded)).toBe(true);
   await expect(submit(page)).toBeDisabled();
-  await expect(budget(page)).not.toContainText('实际 JSON 已用 1,000');
+  await expect(budget(page)).toHaveCount(0);
   await json(uploaded!, preview(data, { originalChars: 9900, sentChars: 9900 }));
-  await expect(budget(page)).toContainText('包含 1 份资料原文及元数据');
-  await expect(budget(page)).toContainText('实际 JSON 已用 9,900 / 48,000');
-  await expect(budget(page)).toContainText('预算足够，本次全文发送');
-  await expect(budget(page)).toContainText('完整输入保守估算 1,200 tokens');
-  await expect(budget(page)).toContainText('安全余量 512');
-  await expect(budget(page)).toContainText('不是精确分词，也不是费用承诺');
-  await expect(budget(page)).toContainText('OpenAI/Codex OAuth 不保证上游输出硬上限');
+  await expect(budget(page)).toHaveCount(0);
   await expect(submit(page)).toBeEnabled();
   expect(observed.requests.filter(item => item.path.endsWith('/input-preview'))).toHaveLength(2);
   expect(observed.errors).toEqual([]);
 });
 
-test('long input shows affected fields and selection caveats without replacing the draft', async ({ page }) => {
+test('long input remains complete without displaying preflight descriptions', async ({ page }) => {
   const data = fixture();
   const text = '长'.repeat(LIMITS.recitationFieldChars);
   const observed = await offline(page, data, route => json(route, preview(data, {
@@ -99,9 +95,8 @@ test('long input shows affected fields and selection caveats without replacing t
     fields: [{ path: 'learned', label: '今天学了什么', originalChars: text.length, sentChars: 9000, truncated: true }],
   })));
   await page.goto('/recite'); await learned(page).fill(text);
-  await expect(budget(page)).toContainText(`今天学了什么：原文 ${text.length.toLocaleString('zh-CN')} 字符 → 发送片段 9,000 字符（含节选标记）`);
-  await expect(budget(page)).toContainText('分布 / 相关选段，不是摘要，也不是全文评估');
-  await expect(budget(page)).toContainText('截断字符数不代表遗漏知识的比例或准确率');
+  await expect(budget(page)).toHaveCount(0);
+  await expect(submit(page)).toBeEnabled();
   await page.getByRole('button', { name: '保存草稿', exact: true }).click();
   await expect(learned(page)).toHaveValue(text);
   expect(data.recitations[0]!.learned).toBe(text);
@@ -111,8 +106,9 @@ test('long input shows affected fields and selection caveats without replacing t
 test('low budget blocks submission but draft save and upload stay available', async ({ page }) => {
   const data = fixture();
   const observed = await offline(page, data, route => json(route, preview(data, { canSubmit: false, reason: '输出预留后无足够输入预算', remainingInputTokens: -100 })));
-  await page.goto('/recite'); await learned(page).fill('预算不足也要保留我的草稿');
-  await expect(budget(page)).toContainText('输出预留后无足够输入预算');
+  await page.goto('/recite'); await acknowledgeFeedback(page, ['输出预留后无足够输入预算']);
+  await learned(page).fill('预算不足也要保留我的草稿');
+  await acknowledgeFeedback(page, ['输出预留后无足够输入预算']);
   await expect(submit(page)).toBeDisabled();
   await page.getByRole('button', { name: '保存草稿', exact: true }).click();
   expect(data.recitations[0]!.learned).toBe('预算不足也要保留我的草稿');
@@ -129,19 +125,19 @@ test('late preview cannot replace new input, and failures never reuse a previous
     if (fail) return json(route, { error: { code: 'PREVIEW_FAILED', message: '离线预检失败' } }, 503);
     return json(route, preview(data, { sentChars: text === '最新输入' ? 2222 : 1111 }));
   });
-  await page.goto('/recite'); await expect(budget(page)).toContainText('实际 JSON 已用 1,111');
+  await page.goto('/recite'); await expect(submit(page)).toBeEnabled();
+  await expect(budget(page)).toHaveCount(0);
   await learned(page).fill('迟到旧输入'); await expect.poll(() => Boolean(late)).toBe(true);
   await learned(page).fill('最新输入');
-  await expect(budget(page)).not.toContainText('实际 JSON 已用 1,111');
-  await expect(budget(page)).toContainText('实际 JSON 已用 2,222');
-  await json(late!, preview(data, { sentChars: 44444 }));
-  await expect(budget(page)).not.toContainText('44,444');
+  await expect(submit(page)).toBeEnabled();
+  await json(late!, preview(data, { canSubmit: false, reason: '过时的检查结果' }));
+  await expect(page.getByRole('alertdialog').filter({ hasText: '过时的检查结果' })).toHaveCount(0);
+  await expect(submit(page)).toBeEnabled();
   fail = true; await learned(page).fill('失败输入');
-  await expect(budget(page)).toContainText('当前预算未知');
-  await expect(budget(page)).toContainText('离线预检失败');
-  await expect(budget(page)).not.toContainText('2,222');
-  await expect(submit(page)).toBeDisabled();
-  fail = false; await page.getByRole('button', { name: '重试预算预检' }).click();
+  await expect(page.getByRole('alertdialog')).toContainText('离线预检失败');
+  await expect(budget(page)).toHaveCount(0);
+  await expect(page.locator('.submit-bar button.primary')).toBeDisabled();
+  fail = false; await page.getByRole('button', { name: '重试检查' }).click();
   await expect(submit(page)).toBeEnabled();
   expect(observed.errors).toEqual([]);
 });
@@ -152,7 +148,7 @@ test('submit saves first then rechecks, and a newly refused budget prevents enqu
   await page.goto('/recite'); await learned(page).fill('提交前的新内容');
   await expect(submit(page)).toBeEnabled();
   refuse = true; await submit(page).click();
-  await expect(budget(page)).toContainText('模型预算已变化');
+  await expect(page.getByRole('alertdialog')).toContainText('模型预算已变化');
   expect(data.recitations[0]!.learned).toBe('提交前的新内容');
   const saveIndex = observed.requests.findIndex(item => item.path.endsWith('/draft'));
   expect(saveIndex).toBeGreaterThanOrEqual(0);
@@ -180,7 +176,9 @@ test('unmount aborts an outstanding preview rather than retaining its response',
   page.on('requestfailed', request => { if (request.url().endsWith('/input-preview')) failures.push(request.url()); });
   const observed = await offline(page, data, async route => { held = route; });
   await page.goto('/recite'); await expect.poll(() => Boolean(held)).toBe(true);
-  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '我的知识库' }).click();
+  await page.getByRole('button', { name: '全部模块', exact: true }).click();
+  await page.getByRole('dialog', { name: '全部模块' }).getByRole('button', { name: /^我的知识库 / }).click();
+  await expect(page.getByRole('heading', { name: '我的知识库', exact: true })).toBeVisible();
   await expect(budget(page)).toHaveCount(0);
   await json(held!, preview(data));
   await expect.poll(() => failures.length).toBe(1);
@@ -197,7 +195,9 @@ test('short-answer numeric preview never requests private answers; low budget pe
   await page.getByRole('button', { name: '暂存答案' }).click();
   expect(data.quizzes[0]!.questions[0]!.draft).toBe('我的独立回答');
   await expect(page.getByRole('heading', { name: '参考讲解', exact: true })).toHaveCount(0);
-  expect(observed.requests.filter(item => item.path.endsWith('/input-preview')).every(item => Object.keys(item.body).join() === 'text')).toBe(true);
+  const previews = observed.requests.filter(item => item.path.endsWith('/input-preview'));
+  expect(previews.length).toBeGreaterThan(0);
+  for (const item of previews) { expect(Object.keys(item.body).sort()).toEqual(['skillSelections', 'text']); expect(item.body.skillSelections).toEqual([]); }
   await page.getByRole('button', { name: '跳过这题' }).click(); await answerDialog(page, true, ['跳过不计为答错']);
   await expect.poll(() => observed.requests.filter(item => item.path.endsWith('/answers')).length).toBe(1);
   expect(observed.requests.filter(item => item.path.endsWith('/answers'))).toEqual([expect.objectContaining({ body: expect.objectContaining({ action: 'skip' }) })]);

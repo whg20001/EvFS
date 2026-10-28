@@ -16,6 +16,8 @@
     "dev": "concurrently -k -n api,web 'npm run dev -w @sanxing/api' 'npm run dev -w @sanxing/web'",
     "check": "npm run check:boundaries && tsc --noEmit && npm run check -w @sanxing/web",
     "check:boundaries": "node scripts/check-boundaries.mjs",
+    "verify": "node scripts/verify.mjs",
+    "test:tooling": "node --test scripts/*.test.mjs",
     "test:unit": "vitest run packages apps/web/src",
     "test:integration": "vitest run apps/api && npm run test:proxy",
     "test:proxy": "node --test apps/web/server.test.mjs",
@@ -26,7 +28,12 @@
     "data:import": "tsx scripts/database.ts import",
     "data:delete": "tsx scripts/database.ts delete",
     "code-runner:build": "npm run code-runner:build -w @sanxing/web",
-    "code-runner:packages": "node scripts/fetch-pyodide-packages.mjs"
+    "code-runner:packages": "node scripts/fetch-pyodide-packages.mjs",
+    "benchmark:storage": "tsx scripts/benchmark-storage.ts",
+    "benchmark:reads": "tsx scripts/benchmark-reads.ts",
+    "evaluate:learning": "tsx scripts/evaluate-learning.ts",
+    "ocr": "node scripts/serve-ocr.mjs",
+    "dev:ocr": "concurrently -k -n ocr,api,web 'npm run ocr' 'npm run dev -w @sanxing/api' 'npm run dev -w @sanxing/web'"
   },
   "dependencies": {
     "@earendil-works/pi-agent-core": "1.0.4",

@@ -1,0 +1,145 @@
+/* 每日三省 v3 design tokens — 由 tools/generate.js 从 figma-plugin/code.src.js 生成，请勿手改 */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500&family=Noto+Serif+SC:wght@500;600;700&family=Ma+Shan+Zheng&display=swap');
+
+:root {
+  --color-bg-base: #FFFFFF; /* 纯白：页面底色 */
+  --color-bg-surface: #FFFFFF; /* 输入框、弹出菜单（白色，靠描边和投影区分） */
+  --color-bg-surface-2: #F3EFE7; /* 选中的菜单项 */
+  --color-bg-panel: #F4F0E7; /* 熟宣浅底 */
+  --color-bg-silk: #F1EADA; /* 页脚绢纹的底色 */
+  --color-line-default: #E7E0D3; /* 分隔细线、描边 */
+  --color-fill-default: rgba(70, 52, 28, 0.051); /* 极浅的底 */
+  --color-fill-strong: rgba(70, 52, 28, 0.09); /* 未激活的发送按钮 */
+  --color-label-primary: #23211D; /* 浓墨：标题、正文 */
+  --color-label-secondary: #6A6357; /* 淡墨：说明文字 */
+  --color-label-tertiary: #8C8475; /* 小标签、占位文字、坐标轴 */
+  --color-accent-ambient: #AEC5F3; /* 天青（主色 rgb 174,197,243）：进度、数据、预测曲线 */
+  --color-accent-ambient-soft: #E2E8F2; /* 天青浅底 */
+  --color-accent-action: #23211D; /* 主按钮：墨 */
+  --color-accent-on-action: #F6F2E9; /* 主按钮文字 */
+  --color-seal-red: #B33B2E; /* 朱砂：印章、竖排日期与时辰 */
+  --color-seal-on: #FBF3E6; /* 印面上的字与内框 */
+  --color-status-green: #4E7D5B; /* 竹青：正确、已确认、已掌握 */
+  --color-status-orange: #B7742C; /* 赭石：待巩固、逾期 */
+  --color-status-red: #B33B2E; /* 朱砂：错误、有误解 */
+  --color-heat-0: #EFEAE0; /* 热力图：无记录 */
+  --color-heat-1: #D4DDEE;
+  --color-heat-2: #AEC5F3;
+  --color-heat-3: #7E98CF;
+  --color-heat-4: #4A639C; /* 热力图：最多 */
+
+  /* 字体 */
+  --font-brush: 'Ma Shan Zheng', 'Songti SC', 'Noto Serif SC', serif;
+  --font-serif: 'Songti SC', 'Noto Serif SC', serif;
+  --font-sans: 'JetBrains Mono', 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* 圆角 */
+  --radius-xs: 2px; /* 柱状图、热力图格子 */
+  --radius-sm: 4px; /* 小按钮、文件标签、印章 */
+  --radius-md: 6px; /* 按钮、菜单项 */
+  --radius-lg: 8px; /* 测验选项 */
+  --radius-xl: 10px; /* 弹出菜单、全部模块面板 */
+  --radius-input: 14px; /* 输入框 */
+
+  /* 阴影 */
+  --shadow-soft: 0 1px 1px rgba(60, 40, 20, 0.03), 0 8px 28px rgba(60, 40, 20, 0.07); /* 输入框 */
+  --shadow-pop: 0 1px 2px rgba(60, 40, 20, 0.05), 0 20px 60px rgba(60, 40, 20, 0.14); /* 弹出菜单、全部模块面板 */
+  --shadow-roundel: 0 10px 36px rgba(60, 40, 20, 0.1); /* 首页圆画 */
+
+  /* 布局 */
+  --layout-frame-width: 1440px; /* 设计宽度 */
+  --layout-brief-width: 880px; /* 首页内容宽度（出处、导语、输入框） */
+  --layout-column-width: 640px; /* 模块页内容宽度 */
+  --layout-roundel-size: 61.8vw; /* 首页圆画直径 = 屏宽 × 0.618（1440 宽时 890） */
+  --layout-silk-height: max(96px, 14vh); /* 页脚绢纹高度 */
+  --layout-perch-size: 56px × 42px; /* 输入框上沿的鸟 / 花装饰（手机 46 × 35） */
+  --layout-breakpoint-narrow: 640px; /* 手机：单列、缩小印章与鸟 / 花 */
+  --layout-breakpoint-vertical: 760px; /* 窄于此宽度时竖排日期改为导语下方横排一行 */
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg-base: #15140F;
+    --color-bg-surface: #1E1C17;
+    --color-bg-surface-2: #27241E;
+    --color-bg-panel: #1C1A15;
+    --color-bg-silk: #2A251B;
+    --color-line-default: #36322A;
+    --color-fill-default: rgba(237, 230, 214, 0.059);
+    --color-fill-strong: rgba(237, 230, 214, 0.102);
+    --color-label-primary: #EDE6D6;
+    --color-label-secondary: #B3AA98;
+    --color-label-tertiary: #8E8676;
+    --color-accent-ambient: #AEC5F3;
+    --color-accent-ambient-soft: rgba(174, 197, 243, 0.161);
+    --color-accent-action: #EDE6D6;
+    --color-accent-on-action: #15140F;
+    --color-seal-red: #C2493A;
+    --color-seal-on: #FBF3E6;
+    --color-status-green: #7FB08A;
+    --color-status-orange: #D9A05B;
+    --color-status-red: #E07A6B;
+    --color-heat-0: #24211B;
+    --color-heat-1: rgba(174, 197, 243, 0.22);
+    --color-heat-2: rgba(174, 197, 243, 0.451);
+    --color-heat-3: rgba(174, 197, 243, 0.702);
+    --color-heat-4: #AEC5F3;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --color-bg-base: #15140F;
+  --color-bg-surface: #1E1C17;
+  --color-bg-surface-2: #27241E;
+  --color-bg-panel: #1C1A15;
+  --color-bg-silk: #2A251B;
+  --color-line-default: #36322A;
+  --color-fill-default: rgba(237, 230, 214, 0.059);
+  --color-fill-strong: rgba(237, 230, 214, 0.102);
+  --color-label-primary: #EDE6D6;
+  --color-label-secondary: #B3AA98;
+  --color-label-tertiary: #8E8676;
+  --color-accent-ambient: #AEC5F3;
+  --color-accent-ambient-soft: rgba(174, 197, 243, 0.161);
+  --color-accent-action: #EDE6D6;
+  --color-accent-on-action: #15140F;
+  --color-seal-red: #C2493A;
+  --color-seal-on: #FBF3E6;
+  --color-status-green: #7FB08A;
+  --color-status-orange: #D9A05B;
+  --color-status-red: #E07A6B;
+  --color-heat-0: #24211B;
+  --color-heat-1: rgba(174, 197, 243, 0.22);
+  --color-heat-2: rgba(174, 197, 243, 0.451);
+  --color-heat-3: rgba(174, 197, 243, 0.702);
+  --color-heat-4: #AEC5F3;
+  color-scheme: dark;
+}
+
+/* 文字样式：与 Figma 文字样式同名（v3/Title 1 → .text-title-1） */
+.text-brand { font-family: var(--font-brush); font-weight: 400; font-size: 22px; line-height: 1.2; letter-spacing: 0.06em; }
+.text-vertical { font-family: var(--font-serif); font-weight: 600; font-size: 33px; line-height: 1.1; }
+.text-title-1 { font-family: var(--font-serif); font-weight: 600; font-size: 34px; line-height: 1.25; letter-spacing: 0.01em; }
+.text-title-2 { font-family: var(--font-serif); font-weight: 600; font-size: 26px; line-height: 1.5; letter-spacing: 0.01em; }
+.text-lede { font-family: var(--font-serif); font-weight: 400; font-size: 17px; line-height: 1.75; }
+.text-seal { font-family: var(--font-serif); font-weight: 700; font-size: 25px; line-height: 1.15; letter-spacing: 0.08em; }
+.text-seal-small { font-family: var(--font-serif); font-weight: 700; font-size: 13px; line-height: 1.05; }
+.text-headline { font-family: var(--font-sans); font-weight: 500; font-size: 16px; line-height: 1.5; }
+.text-body { font-family: var(--font-sans); font-weight: 400; font-size: 18px; line-height: 1.85; }
+.text-callout { font-family: var(--font-sans); font-weight: 400; font-size: 16px; line-height: 1.7; }
+.text-subhead { font-family: var(--font-sans); font-weight: 400; font-size: 15px; line-height: 1.6; }
+.text-footnote { font-family: var(--font-sans); font-weight: 400; font-size: 13px; line-height: 1.5; }
+.text-label { font-family: var(--font-sans); font-weight: 500; font-size: 13px; line-height: 1.4; letter-spacing: 0.04em; }
+.text-button { font-family: var(--font-sans); font-weight: 500; font-size: 15px; line-height: 1.4; }
+.text-caption { font-family: var(--font-sans); font-weight: 400; font-size: 12px; line-height: 1.4; }
+.text-credit { font-family: var(--font-serif); font-weight: 400; font-size: 12px; line-height: 1.4; letter-spacing: 0.08em; }
+.text-stat { font-family: var(--font-mono); font-weight: 300; font-size: 46px; line-height: 1; letter-spacing: -0.04em; }
+.text-num-large { font-family: var(--font-mono); font-weight: 400; font-size: 30px; line-height: 1.15; letter-spacing: -0.02em; }
+.text-num { font-family: var(--font-mono); font-weight: 400; font-size: 13px; line-height: 1.4; }
+
+/* 竖排（首页圆画两侧的农历与时辰、印文） */
+.vertical { writing-mode: vertical-rl; }
+
+/* 全局基础 */
+body { margin: 0; background: var(--color-bg-base); color: var(--color-label-primary); font-family: var(--font-sans); word-spacing: -0.25em; }
+:focus-visible { outline: 2px solid var(--color-accent-ambient); outline-offset: 3px; }

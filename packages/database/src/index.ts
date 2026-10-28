@@ -4,18 +4,28 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { PGlite } from '@electric-sql/pglite';
 import { and, eq, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/pglite';
-import type { AppData, Mode } from '@sanxing/contracts';
-import { aggregate, documents, runTasks } from './schema.js';
+import { usageSchema, type AgentRun, type AppData, type Mode, type Usage } from '@sanxing/contracts';
+import { aggregate, documents, runTasks, learningRecords } from './schema.js';
 import type { StoredData } from './schema.js';
 import { validateData } from './validation.js';
 import { acquireDirectoryLock } from '@sanxing/local-storage';
+import { emptyData } from './empty.ts';
+export { emptyData } from './empty.ts';
 
 const OWNER_ID = 'local';
 const openPaths = new Set<string>();
 
 export interface Repository {
   read(): Promise<AppData>;
+  /** Detached fields from one committed revision; missing optional fields stay absent. */
+  readFields?<K extends keyof AppData>(fields: readonly K[]): Promise<Pick<AppData, K>>;
+  readEntity?<K extends 'documents' | 'quizzes'>(collection: K, id: string): Promise<AppData[K][string] | undefined>;
   revision(): Promise<number>;
+  aiSettings?(): Promise<Pick<AppData, 'ownerId' | 'mode' | 'revision' | 'aiModel' | 'learningPreferences'>>;
+  run?(id: string): Promise<AgentRun | undefined>;
+  hasPendingRuns?(): Promise<boolean>;
+  /** Atomic attempt check before cloning/writing; duplicate notifications are read-only. */
+  recordRunUsage?(id: string, attempt: number, usage: Usage): Promise<void>;
   /** Tiny committed projection, avoiding aggregate cloning for /api/me. */
   learningPreferences?(): Promise<AppData['learningPreferences']>;
   transact<T>(fn: (data: AppData) => T | Promise<T>): Promise<T>;
@@ -23,18 +33,11 @@ export interface Repository {
   close(): Promise<void>;
 }
 
-export function emptyData(mode: Mode): AppData {
-  if (mode !== 'mock' && mode !== 'live') throw new Error('Invalid database mode');
-  return {
-    schemaVersion: 1, ownerId: OWNER_ID, mode, revision: 0, aiModel: null,
-    recitations: {}, documents: {}, sessions: {}, knowledge: {}, quizzes: {}, cards: {},
-    reviewSessions: {}, reviewEvents: {}, evidence: {}, runs: {}, receipts: {},
-  };
-}
-
 function storedData(data: AppData): StoredData {
   return {
     ...data,
+    quizzes: Object.fromEntries(Object.keys(data.quizzes).map(id => [id, { id }])),
+    evidence: Object.fromEntries(Object.keys(data.evidence).map(id => [id, { id }])),
     documents: Object.fromEntries(Object.entries(data.documents).map(([id, document]) => {
       const { text: _text, originalBase64: _original, ...metadata } = document;
       return [id, metadata];
@@ -66,8 +69,8 @@ function sameJson(left: unknown, right: unknown): boolean {
     Object.hasOwn(right, key) && sameJson((left as Record<string, unknown>)[key], (right as Record<string, unknown>)[key]));
 }
 
-type SchemaVersion = 1 | 2 | 3;
-const CURRENT_SCHEMA_VERSION = 3;
+type SchemaVersion = 1 | 2 | 3 | 4;
+const CURRENT_SCHEMA_VERSION = 4;
 
 type Transaction = Parameters<Parameters<ReturnType<typeof drizzle>['transaction']>[0]>[0];
 
@@ -111,7 +114,7 @@ function checkedRow(rows: (typeof aggregate.$inferSelect)[], mode: Mode, data?: 
 async function schemaVersion(tx: Transaction): Promise<SchemaVersion> {
   const versions = await tx.execute<{ id: number; version: number }>(sql`SELECT id, version FROM app_schema_version`);
   const version = versions.rows[0];
-  if (versions.rows.length !== 1 || version?.id !== 1 || ![1, 2, 3].includes(version.version)) {
+  if (versions.rows.length !== 1 || version?.id !== 1 || ![1, 2, 3, 4].includes(version.version)) {
     throw new Error('Unsupported database schema version');
   }
   return version.version as SchemaVersion;
@@ -143,14 +146,25 @@ async function load(tx: Transaction, mode: Mode, version: SchemaVersion): Promis
   const data: Record<string, unknown> = { ...row.data };
   data.documents = attach(row.data?.documents, await tx.select().from(documents), 'document', ['text', 'originalBase64'],
     (document, body) => ({ ...document, text: body.text, originalBase64: body.originalBase64 }));
-  if (version === 3) {
+  if (version >= 3) {
     data.runs = attach(row.data?.runs, await tx.select().from(runTasks), 'run task', ['task'],
       (run, body) => ({ ...run, task: body.task }));
+  }
+  if (version >= 4) {
+    const records = await tx.select().from(learningRecords);
+    if (records.some(row => !['quizzes', 'evidence'].includes(row.kind))) throw new Error('Invalid aggregate: unknown learning record kind');
+    for (const kind of ['quizzes', 'evidence'] as const) {
+      data[kind] = attach(row.data[kind], records.filter(body => body.kind === kind), kind, kind === 'quizzes' ? ['questions', 'answers'] : ['answer'],
+        (metadata, body) => {
+          if (Object.keys(metadata).length !== 1 || !('id' in metadata) || metadata.id !== body.id) throw new Error('Invalid aggregate: inline or mismatched learning record');
+          return body.value;
+        });
+    }
   }
   return checkedRow(rows, mode, data);
 }
 
-/** Export an existing physical v1/v2/v3 database without logical writes or migration.
+/** Export an existing physical v1/v2/v3/v4 database without logical writes or migration.
  * PGlite may perform WAL recovery and other engine filesystem writes on opening.
  */
 export async function readBackupWithoutMigration(path: string, mode: Mode): Promise<AppData> {
@@ -188,6 +202,7 @@ export async function openRepository(path: string, mode: Mode): Promise<Reposito
     id text PRIMARY KEY, text text NOT NULL, original_base64 text NOT NULL
   )`;
   const createRunTasks = sql`CREATE TABLE app_run_tasks (id text PRIMARY KEY, task jsonb NOT NULL)`;
+  const createLearningRecords = sql`CREATE TABLE app_learning_records (kind text NOT NULL CHECK (kind IN ('quizzes', 'evidence')), id text NOT NULL, value jsonb NOT NULL, PRIMARY KEY (kind, id))`;
   let snapshot: AppData;
   try {
     // Both the migration and its final full validation must commit before the
@@ -207,13 +222,13 @@ export async function openRepository(path: string, mode: Mode): Promise<Reposito
         )`);
         await tx.execute(createDocuments);
         await tx.execute(createRunTasks);
+        await tx.execute(createLearningRecords);
         await tx.insert(aggregate).values({ id: OWNER_ID, revision: 0, data: storedData(initial) });
         await tx.execute(sql`INSERT INTO app_schema_version (id, version) VALUES (1, ${CURRENT_SCHEMA_VERSION})`);
       } else {
         const version = await schemaVersion(tx);
         if (version !== CURRENT_SCHEMA_VERSION) {
-          // v1 -> v3 and v2 -> v3 run in this one transaction: either every
-          // body moves out of the aggregate and the ledger advances, or nothing does.
+          // All legacy upgrades and their validation commit atomically.
           const legacy = await load(tx, mode, version);
           if (version === 1) {
             await tx.execute(createDocuments);
@@ -221,8 +236,15 @@ export async function openRepository(path: string, mode: Mode): Promise<Reposito
               await tx.insert(documents).values({ id: document.id, text: document.text, originalBase64: document.originalBase64 });
             }
           }
-          await tx.execute(createRunTasks);
-          for (const run of Object.values(legacy.runs)) await tx.insert(runTasks).values({ id: run.id, task: run.task });
+          if (version < 3) {
+            await tx.execute(createRunTasks);
+            for (const run of Object.values(legacy.runs)) await tx.insert(runTasks).values({ id: run.id, task: run.task });
+          }
+          await tx.execute(createLearningRecords);
+          for (const kind of ['quizzes', 'evidence'] as const) {
+            const rows = Object.values(legacy[kind]).map(value => ({ kind, id: value.id, value }));
+            for (let offset = 0; offset < rows.length; offset += 100) await tx.insert(learningRecords).values(rows.slice(offset, offset + 100));
+          }
           const migrated = await tx.update(aggregate).set({ data: storedData(legacy) })
             .where(and(eq(aggregate.id, OWNER_ID), eq(aggregate.revision, legacy.revision))).returning({ id: aggregate.id });
           if (migrated.length !== 1) throw new Error('Aggregate revision conflict during migration');
@@ -275,6 +297,23 @@ export async function openRepository(path: string, mode: Mode): Promise<Reposito
         .where(and(eq(aggregate.id, OWNER_ID), eq(aggregate.revision, revision)))
         .returning({ id: aggregate.id });
       if (rows.length !== 1) throw new Error('Aggregate revision conflict');
+      for (const kind of ['quizzes', 'evidence'] as const) {
+        for (const id of Object.keys(current[kind])) if (!Object.hasOwn(committed[kind], id)) {
+          const removed = await tx.delete(learningRecords).where(and(eq(learningRecords.kind, kind), eq(learningRecords.id, id))).returning({ id: learningRecords.id });
+          if (removed.length !== 1) throw new Error('Learning record deletion conflict');
+        }
+        const inserted: (typeof learningRecords.$inferInsert)[] = [];
+        for (const value of Object.values(committed[kind])) {
+          const before = current[kind][value.id];
+          if (before && sameJson(before, value)) continue;
+          if (!before) inserted.push({ kind, id: value.id, value });
+          else {
+            const written = await tx.update(learningRecords).set({ value }).where(and(eq(learningRecords.kind, kind), eq(learningRecords.id, value.id))).returning({ id: learningRecords.id });
+            if (written.length !== 1) throw new Error('Learning record write conflict');
+          }
+        }
+        for (let offset = 0; offset < inserted.length; offset += 100) await tx.insert(learningRecords).values(inserted.slice(offset, offset + 100));
+      }
       for (const id of Object.keys(current.documents)) {
         if (!Object.hasOwn(committed.documents, id)) {
           const removed = await tx.delete(documents).where(eq(documents.id, id)).returning({ id: documents.id });
@@ -313,7 +352,26 @@ export async function openRepository(path: string, mode: Mode): Promise<Reposito
 
   return {
     read: () => enqueue(async () => cloneJson(snapshot)),
+    readFields: fields => {
+      // Capture the selection now, and the committed values inside the queue.
+      const selected = [...fields];
+      return enqueue(async () => cloneJson(Object.fromEntries(selected.filter(key => Object.hasOwn(snapshot, key)).map(key => [key, snapshot[key]]))) as Pick<AppData, typeof fields[number]>);
+    },
+    readEntity: <K extends 'documents' | 'quizzes'>(collection: K, id: string) => enqueue(async () =>
+      cloneJson(Object.hasOwn(snapshot[collection], id) ? snapshot[collection][id] : undefined) as AppData[K][string] | undefined),
     revision: () => enqueue(async () => snapshot.revision),
+    aiSettings: () => enqueue(async () => cloneJson({ ownerId: snapshot.ownerId, mode: snapshot.mode,
+      revision: snapshot.revision, aiModel: snapshot.aiModel, learningPreferences: snapshot.learningPreferences })),
+    run: id => enqueue(async () => cloneJson(Object.hasOwn(snapshot.runs, id) ? snapshot.runs[id] : undefined)),
+    hasPendingRuns: () => enqueue(async () => Object.values(snapshot.runs).some(run => run.status === 'pending')),
+    recordRunUsage(id, attempt, value) {
+      const usage = usageSchema.parse(value);
+      return enqueue(async () => {
+        const run = Object.hasOwn(snapshot.runs, id) ? snapshot.runs[id] : undefined;
+        if (!Number.isSafeInteger(attempt) || attempt < 1 || !run || run.attempt !== attempt || run.usage !== null) return;
+        await commit(data => { data.runs[id]!.usage = usage; });
+      });
+    },
     learningPreferences: () => enqueue(async () => cloneJson(snapshot.learningPreferences)),
     transact: (fn) => enqueue(() => commit(fn)),
     async replace(data) {

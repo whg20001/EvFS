@@ -1,4 +1,5 @@
 node_modules/
+apps/web/public/pdfjs/
 .next/
 .next-e2e/
 .next-validation/
@@ -9,9 +10,11 @@ data/
 coverage/
 test-results/
 playwright-report/
+/artifacts/
 *.tsbuildinfo
 pi/
 /sanxing-design-handoff.zip
+/sanxing-handoff-v3.zip
 /backups/
 /backup*.json
 *.enc
@@ -19,3 +22,4 @@ pi/
 .DS_Store
 
 /apps/web/public/code-runner/
+/apps/web/public/skill-archive/

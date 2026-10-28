@@ -1,0 +1,32 @@
+/* Typography from the updated v3 handoff; artwork details from specs/visual.md. */
+:root {
+  --text-brand: 22px;
+  --text-vertical: 33px;
+  --text-title-1: 34px;
+  --text-title-2: 26px;
+  --text-lede: 17px;
+  --text-seal: 25px;
+  --text-seal-small: 13px;
+  --text-headline: 16px;
+  --text-body: 18px;
+  --text-callout: 16px;
+  --text-subhead: 15px;
+  --text-footnote: 13px;
+  --text-label: 13px;
+  --text-button: 15px;
+  --text-caption: 12px;
+  --text-credit: 12px;
+  --text-stat: 46px;
+  --text-num-large: 30px;
+  --text-num: 13px;
+  --text-roundel-date: clamp(18px, 2.3vw, 34px);
+  --color-artwork-credit: #8A6A2E;
+  --color-artwork-placeholder: #C9B48A;
+  --color-artwork-outline: rgba(110, 88, 56, .1);
+  --radius-roundel: 50%;
+  --layout-roundel-gap: clamp(24px, 3.5vw, 56px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --color-artwork-credit: #C9A866; }
+}
+:root[data-theme="dark"] { --color-artwork-credit: #C9A866; }

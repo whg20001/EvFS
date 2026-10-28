@@ -1,0 +1,61 @@
+{
+  "batchId": "ab228877-47dc-4894-b10a-89db5173a0da",
+  "inFlight": {
+    "caseId": "cache-extract",
+    "key": "08df66fd-5f20-4a9e-8f13-4ea07fa90355",
+    "runId": "7dce63ee-4441-45ca-a128-47785d55db77"
+  },
+  "suite": "learning-quality-v1",
+  "promptVersion": "learning-v6",
+  "mode": "live",
+  "auth": "oauth",
+  "provider": "openai-codex",
+  "model": "gpt-6.1-sol",
+  "createdAt": "2026-10-21T14:13:08.183Z",
+  "casesHash": "da0402b1e0fd2e6e4ccb56e1d54f573c5bfc30305e1a56c7891695ccedb993ba",
+  "limit": 30,
+  "maxOutputTokens": 4096,
+  "allowUnboundedOAuthOutput": true,
+  "costStopThresholdUsd": null,
+  "knownCostUsd": 0,
+  "unknownUsageAttempts": 1,
+  "stopped": "request_failed",
+  "results": [
+    {
+      "topic": "空值缓存",
+      "reference": "对不存在的键也缓存空结果，可以减少重复查询数据库。空结果必须设置有限 TTL；新增数据后若不失效旧空值，可能暂时读不到新数据。",
+      "id": "cache-extract",
+      "task": {
+        "kind": "extract",
+        "recitation": {
+          "learned": "缓存不存在键的空结果，减少数据库查询；设置有限 TTL，新增数据时使旧空值失效，避免短期读取不到新数据。",
+          "unclear": "适用条件是什么？",
+          "application": "用一个小例子检验",
+          "topic": "空值缓存"
+        },
+        "sources": [
+          {
+            "id": "source-cache",
+            "name": "空值缓存.txt",
+            "text": "对不存在的键也缓存空结果，可以减少重复查询数据库。空结果必须设置有限 TTL；新增数据后若不失效旧空值，可能暂时读不到新数据。"
+          }
+        ]
+      },
+      "checks": [
+        "仅引用给定来源",
+        "提取结论及适用条件",
+        "不扩展未提供的考核范围"
+      ],
+      "response": null,
+      "usage": null,
+      "promptHash": "6d84c59b312267a237b68be8e40f46f2cf360f4cd86874506886cc4f6b7b2777",
+      "error": "APP_RUN_FAILED",
+      "durationMs": 1101,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    }
+  ]
+}

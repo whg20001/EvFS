@@ -1,0 +1,4275 @@
+{
+  "reportVersion": 2,
+  "performance": {
+    "attempted": 30,
+    "succeeded": 24,
+    "failed": 6,
+    "failureRate": 0.2,
+    "timeoutCount": 0,
+    "errors": {
+      "MODEL_FAILED": 6
+    },
+    "failurePhases": {
+      "waiting": 5,
+      "generating": 1
+    },
+    "totalDuration": {
+      "samples": 30,
+      "missing": 0,
+      "p50Ms": 10072,
+      "p95Ms": 30144,
+      "maxMs": 32169
+    },
+    "successfulDuration": {
+      "samples": 24,
+      "missing": 0,
+      "p50Ms": 12071,
+      "p95Ms": 30144,
+      "maxMs": 32169
+    },
+    "stages": {
+      "queueMs": {
+        "samples": 30,
+        "missing": 0,
+        "p50Ms": 14,
+        "p95Ms": 17,
+        "maxMs": 22
+      },
+      "preparationMs": {
+        "samples": 30,
+        "missing": 0,
+        "p50Ms": 0,
+        "p95Ms": 2,
+        "maxMs": 4
+      },
+      "firstResponseWaitMs": {
+        "samples": 25,
+        "missing": 5,
+        "p50Ms": 5165,
+        "p95Ms": 9283,
+        "maxMs": 9563
+      },
+      "firstTextWaitMs": {
+        "samples": 25,
+        "missing": 5,
+        "p50Ms": 7325,
+        "p95Ms": 11557,
+        "maxMs": 12535
+      },
+      "generationMs": {
+        "samples": 24,
+        "missing": 6,
+        "p50Ms": 3302,
+        "p95Ms": 18984,
+        "maxMs": 22914
+      },
+      "validationMs": {
+        "samples": 24,
+        "missing": 6,
+        "p50Ms": 4,
+        "p95Ms": 7,
+        "maxMs": 7
+      },
+      "savingMs": {
+        "samples": 24,
+        "missing": 6,
+        "p50Ms": 12,
+        "p95Ms": 14,
+        "maxMs": 14
+      },
+      "executionMs": {
+        "samples": 30,
+        "missing": 0,
+        "p50Ms": 9644,
+        "p95Ms": 29863,
+        "maxMs": 31958
+      },
+      "observedElapsedMs": {
+        "samples": 30,
+        "missing": 0,
+        "p50Ms": 9644,
+        "p95Ms": 29863,
+        "maxMs": 31958
+      }
+    },
+    "usage": {
+      "inputTokens": {
+        "observedTotal": 36325,
+        "knownSamples": 24,
+        "unknownSamples": 6
+      },
+      "outputTokens": {
+        "observedTotal": 5200,
+        "knownSamples": 24,
+        "unknownSamples": 6
+      },
+      "cacheReadTokens": {
+        "observedTotal": 0,
+        "knownSamples": 24,
+        "unknownSamples": 6
+      },
+      "cacheWriteTokens": {
+        "observedTotal": 0,
+        "knownSamples": 24,
+        "unknownSamples": 6
+      },
+      "cost": {
+        "observedTotal": 0.12465000000000004,
+        "knownSamples": 24,
+        "unknownSamples": 6
+      }
+    },
+    "requestsWithMetadata": 30,
+    "byTask": {
+      "extract": {
+        "attempted": 6,
+        "succeeded": 4,
+        "failed": 2,
+        "failureRate": 0.3333333333333333,
+        "timeoutCount": 0,
+        "errors": {
+          "MODEL_FAILED": 2
+        },
+        "failurePhases": {
+          "generating": 1,
+          "waiting": 1
+        },
+        "totalDuration": {
+          "samples": 6,
+          "missing": 0,
+          "p50Ms": 9058,
+          "p95Ms": 16092,
+          "maxMs": 16092
+        },
+        "successfulDuration": {
+          "samples": 4,
+          "missing": 0,
+          "p50Ms": 9058,
+          "p95Ms": 16092,
+          "maxMs": 16092
+        },
+        "stages": {
+          "queueMs": {
+            "samples": 6,
+            "missing": 0,
+            "p50Ms": 16,
+            "p95Ms": 22,
+            "maxMs": 22
+          },
+          "preparationMs": {
+            "samples": 6,
+            "missing": 0,
+            "p50Ms": 0,
+            "p95Ms": 4,
+            "maxMs": 4
+          },
+          "firstResponseWaitMs": {
+            "samples": 5,
+            "missing": 1,
+            "p50Ms": 4308,
+            "p95Ms": 5583,
+            "maxMs": 5583
+          },
+          "firstTextWaitMs": {
+            "samples": 5,
+            "missing": 1,
+            "p50Ms": 5027,
+            "p95Ms": 8359,
+            "maxMs": 8359
+          },
+          "generationMs": {
+            "samples": 4,
+            "missing": 2,
+            "p50Ms": 3943,
+            "p95Ms": 8573,
+            "maxMs": 8573
+          },
+          "validationMs": {
+            "samples": 4,
+            "missing": 2,
+            "p50Ms": 4,
+            "p95Ms": 5,
+            "maxMs": 5
+          },
+          "savingMs": {
+            "samples": 4,
+            "missing": 2,
+            "p50Ms": 12,
+            "p95Ms": 13,
+            "maxMs": 13
+          },
+          "executionMs": {
+            "samples": 6,
+            "missing": 0,
+            "p50Ms": 8368,
+            "p95Ms": 15441,
+            "maxMs": 15441
+          },
+          "observedElapsedMs": {
+            "samples": 6,
+            "missing": 0,
+            "p50Ms": 8368,
+            "p95Ms": 15441,
+            "maxMs": 15441
+          }
+        },
+        "usage": {
+          "inputTokens": {
+            "observedTotal": 3138,
+            "knownSamples": 4,
+            "unknownSamples": 2
+          },
+          "outputTokens": {
+            "observedTotal": 665,
+            "knownSamples": 4,
+            "unknownSamples": 2
+          },
+          "cacheReadTokens": {
+            "observedTotal": 0,
+            "knownSamples": 4,
+            "unknownSamples": 2
+          },
+          "cacheWriteTokens": {
+            "observedTotal": 0,
+            "knownSamples": 4,
+            "unknownSamples": 2
+          },
+          "cost": {
+            "observedTotal": 0.012926,
+            "knownSamples": 4,
+            "unknownSamples": 2
+          }
+        },
+        "requestsWithMetadata": 6
+      },
+      "followup": {
+        "attempted": 6,
+        "succeeded": 6,
+        "failed": 0,
+        "failureRate": 0,
+        "timeoutCount": 0,
+        "errors": {},
+        "failurePhases": {},
+        "totalDuration": {
+          "samples": 6,
+          "missing": 0,
+          "p50Ms": 12071,
+          "p95Ms": 18101,
+          "maxMs": 18101
+        },
+        "successfulDuration": {
+          "samples": 6,
+          "missing": 0,
+          "p50Ms": 12071,
+          "p95Ms": 18101,
+          "maxMs": 18101
+        },
+        "stages": {
+          "queueMs": {
+            "samples": 6,
+            "missing": 0,
+            "p50Ms": 14,
+            "p95Ms": 16,
+            "maxMs": 16
+          },
+          "preparationMs": {
+            "samples": 6,
+            "missing": 0,
+            "p50Ms": 0,
+            "p95Ms": 2,
+            "maxMs": 2
+          },
+          "firstResponseWaitMs": {
+            "samples": 6,
+            "missing": 0,
+            "p50Ms": 5827,
+            "p95Ms": 9563,
+            "maxMs": 9563
+          },
+          "firstTextWaitMs": {
+            "samples": 6,
+            "missing": 0,
+            "p50Ms": 6083,
+            "p95Ms": 11557,
+            "maxMs": 11557
+          },
+          "generationMs": {
+            "samples": 6,
+            "missing": 0,
+            "p50Ms": 2777,
+            "p95Ms": 7660,
+            "maxMs": 7660
+          },
+          "validationMs": {
+            "samples": 6,
+            "missing": 0,
+            "p50Ms": 4,
+            "p95Ms": 7,
+            "maxMs": 7
+          },
+          "savingMs": {
+            "samples": 6,
+            "missing": 0,
+            "p50Ms": 12,
+            "p95Ms": 14,
+            "maxMs": 14
+          },
+          "executionMs": {
+            "samples": 6,
+            "missing": 0,
+            "p50Ms": 11541,
+            "p95Ms": 17822,
+            "maxMs": 17822
+          },
+          "observedElapsedMs": {
+            "samples": 6,
+            "missing": 0,
+            "p50Ms": 11541,
+            "p95Ms": 17822,
+            "maxMs": 17822
+          }
+        },
+        "usage": {
+          "inputTokens": {
+            "observedTotal": 13671,
+            "knownSamples": 6,
+            "unknownSamples": 0
+          },
+          "outputTokens": {
+            "observedTotal": 567,
+            "knownSamples": 6,
+            "unknownSamples": 0
+          },
+          "cacheReadTokens": {
+            "observedTotal": 0,
+            "knownSamples": 6,
+            "unknownSamples": 0
+          },
+          "cacheWriteTokens": {
+            "observedTotal": 0,
+            "knownSamples": 6,
+            "unknownSamples": 0
+          },
+          "cost": {
+            "observedTotal": 0.033012,
+            "knownSamples": 6,
+            "unknownSamples": 0
+          }
+        },
+        "requestsWithMetadata": 6
+      },
+      "grade": {
+        "attempted": 12,
+        "succeeded": 9,
+        "failed": 3,
+        "failureRate": 0.25,
+        "timeoutCount": 0,
+        "errors": {
+          "MODEL_FAILED": 3
+        },
+        "failurePhases": {
+          "waiting": 3
+        },
+        "totalDuration": {
+          "samples": 12,
+          "missing": 0,
+          "p50Ms": 9057,
+          "p95Ms": 16088,
+          "maxMs": 16088
+        },
+        "successfulDuration": {
+          "samples": 9,
+          "missing": 0,
+          "p50Ms": 11060,
+          "p95Ms": 16088,
+          "maxMs": 16088
+        },
+        "stages": {
+          "queueMs": {
+            "samples": 12,
+            "missing": 0,
+            "p50Ms": 14,
+            "p95Ms": 17,
+            "maxMs": 17
+          },
+          "preparationMs": {
+            "samples": 12,
+            "missing": 0,
+            "p50Ms": 0,
+            "p95Ms": 1,
+            "maxMs": 1
+          },
+          "firstResponseWaitMs": {
+            "samples": 9,
+            "missing": 3,
+            "p50Ms": 5323,
+            "p95Ms": 9283,
+            "maxMs": 9283
+          },
+          "firstTextWaitMs": {
+            "samples": 9,
+            "missing": 3,
+            "p50Ms": 7325,
+            "p95Ms": 12535,
+            "maxMs": 12535
+          },
+          "generationMs": {
+            "samples": 9,
+            "missing": 3,
+            "p50Ms": 2699,
+            "p95Ms": 4155,
+            "maxMs": 4155
+          },
+          "validationMs": {
+            "samples": 9,
+            "missing": 3,
+            "p50Ms": 3,
+            "p95Ms": 7,
+            "maxMs": 7
+          },
+          "savingMs": {
+            "samples": 9,
+            "missing": 3,
+            "p50Ms": 11,
+            "p95Ms": 13,
+            "maxMs": 13
+          },
+          "executionMs": {
+            "samples": 12,
+            "missing": 0,
+            "p50Ms": 8101,
+            "p95Ms": 15295,
+            "maxMs": 15295
+          },
+          "observedElapsedMs": {
+            "samples": 12,
+            "missing": 0,
+            "p50Ms": 8101,
+            "p95Ms": 15295,
+            "maxMs": 15295
+          }
+        },
+        "usage": {
+          "inputTokens": {
+            "observedTotal": 8433,
+            "knownSamples": 9,
+            "unknownSamples": 3
+          },
+          "outputTokens": {
+            "observedTotal": 1224,
+            "knownSamples": 9,
+            "unknownSamples": 3
+          },
+          "cacheReadTokens": {
+            "observedTotal": 0,
+            "knownSamples": 9,
+            "unknownSamples": 3
+          },
+          "cacheWriteTokens": {
+            "observedTotal": 0,
+            "knownSamples": 9,
+            "unknownSamples": 3
+          },
+          "cost": {
+            "observedTotal": 0.029106,
+            "knownSamples": 9,
+            "unknownSamples": 3
+          }
+        },
+        "requestsWithMetadata": 12
+      },
+      "quiz": {
+        "attempted": 6,
+        "succeeded": 5,
+        "failed": 1,
+        "failureRate": 0.16666666666666666,
+        "timeoutCount": 0,
+        "errors": {
+          "MODEL_FAILED": 1
+        },
+        "failurePhases": {
+          "waiting": 1
+        },
+        "totalDuration": {
+          "samples": 6,
+          "missing": 0,
+          "p50Ms": 19108,
+          "p95Ms": 32169,
+          "maxMs": 32169
+        },
+        "successfulDuration": {
+          "samples": 5,
+          "missing": 0,
+          "p50Ms": 20097,
+          "p95Ms": 32169,
+          "maxMs": 32169
+        },
+        "stages": {
+          "queueMs": {
+            "samples": 6,
+            "missing": 0,
+            "p50Ms": 14,
+            "p95Ms": 17,
+            "maxMs": 17
+          },
+          "preparationMs": {
+            "samples": 6,
+            "missing": 0,
+            "p50Ms": 0,
+            "p95Ms": 1,
+            "maxMs": 1
+          },
+          "firstResponseWaitMs": {
+            "samples": 5,
+            "missing": 1,
+            "p50Ms": 4931,
+            "p95Ms": 7525,
+            "maxMs": 7525
+          },
+          "firstTextWaitMs": {
+            "samples": 5,
+            "missing": 1,
+            "p50Ms": 8450,
+            "p95Ms": 10864,
+            "maxMs": 10864
+          },
+          "generationMs": {
+            "samples": 5,
+            "missing": 1,
+            "p50Ms": 11620,
+            "p95Ms": 22914,
+            "maxMs": 22914
+          },
+          "validationMs": {
+            "samples": 5,
+            "missing": 1,
+            "p50Ms": 4,
+            "p95Ms": 4,
+            "maxMs": 4
+          },
+          "savingMs": {
+            "samples": 5,
+            "missing": 1,
+            "p50Ms": 11,
+            "p95Ms": 13,
+            "maxMs": 13
+          },
+          "executionMs": {
+            "samples": 6,
+            "missing": 0,
+            "p50Ms": 18985,
+            "p95Ms": 31958,
+            "maxMs": 31958
+          },
+          "observedElapsedMs": {
+            "samples": 6,
+            "missing": 0,
+            "p50Ms": 18985,
+            "p95Ms": 31958,
+            "maxMs": 31958
+          }
+        },
+        "usage": {
+          "inputTokens": {
+            "observedTotal": 11083,
+            "knownSamples": 5,
+            "unknownSamples": 1
+          },
+          "outputTokens": {
+            "observedTotal": 2744,
+            "knownSamples": 5,
+            "unknownSamples": 1
+          },
+          "cacheReadTokens": {
+            "observedTotal": 0,
+            "knownSamples": 5,
+            "unknownSamples": 1
+          },
+          "cacheWriteTokens": {
+            "observedTotal": 0,
+            "knownSamples": 5,
+            "unknownSamples": 1
+          },
+          "cost": {
+            "observedTotal": 0.049606000000000004,
+            "knownSamples": 5,
+            "unknownSamples": 1
+          }
+        },
+        "requestsWithMetadata": 6
+      }
+    },
+    "byModel": {
+      "{\"provider\":\"openai-codex\",\"model\":\"gpt-6.1-sol\",\"authMethod\":\"oauth\"}": {
+        "attempted": 30,
+        "succeeded": 24,
+        "failed": 6,
+        "failureRate": 0.2,
+        "timeoutCount": 0,
+        "errors": {
+          "MODEL_FAILED": 6
+        },
+        "failurePhases": {
+          "waiting": 5,
+          "generating": 1
+        },
+        "totalDuration": {
+          "samples": 30,
+          "missing": 0,
+          "p50Ms": 10072,
+          "p95Ms": 30144,
+          "maxMs": 32169
+        },
+        "successfulDuration": {
+          "samples": 24,
+          "missing": 0,
+          "p50Ms": 12071,
+          "p95Ms": 30144,
+          "maxMs": 32169
+        },
+        "stages": {
+          "queueMs": {
+            "samples": 30,
+            "missing": 0,
+            "p50Ms": 14,
+            "p95Ms": 17,
+            "maxMs": 22
+          },
+          "preparationMs": {
+            "samples": 30,
+            "missing": 0,
+            "p50Ms": 0,
+            "p95Ms": 2,
+            "maxMs": 4
+          },
+          "firstResponseWaitMs": {
+            "samples": 25,
+            "missing": 5,
+            "p50Ms": 5165,
+            "p95Ms": 9283,
+            "maxMs": 9563
+          },
+          "firstTextWaitMs": {
+            "samples": 25,
+            "missing": 5,
+            "p50Ms": 7325,
+            "p95Ms": 11557,
+            "maxMs": 12535
+          },
+          "generationMs": {
+            "samples": 24,
+            "missing": 6,
+            "p50Ms": 3302,
+            "p95Ms": 18984,
+            "maxMs": 22914
+          },
+          "validationMs": {
+            "samples": 24,
+            "missing": 6,
+            "p50Ms": 4,
+            "p95Ms": 7,
+            "maxMs": 7
+          },
+          "savingMs": {
+            "samples": 24,
+            "missing": 6,
+            "p50Ms": 12,
+            "p95Ms": 14,
+            "maxMs": 14
+          },
+          "executionMs": {
+            "samples": 30,
+            "missing": 0,
+            "p50Ms": 9644,
+            "p95Ms": 29863,
+            "maxMs": 31958
+          },
+          "observedElapsedMs": {
+            "samples": 30,
+            "missing": 0,
+            "p50Ms": 9644,
+            "p95Ms": 29863,
+            "maxMs": 31958
+          }
+        },
+        "usage": {
+          "inputTokens": {
+            "observedTotal": 36325,
+            "knownSamples": 24,
+            "unknownSamples": 6
+          },
+          "outputTokens": {
+            "observedTotal": 5200,
+            "knownSamples": 24,
+            "unknownSamples": 6
+          },
+          "cacheReadTokens": {
+            "observedTotal": 0,
+            "knownSamples": 24,
+            "unknownSamples": 6
+          },
+          "cacheWriteTokens": {
+            "observedTotal": 0,
+            "knownSamples": 24,
+            "unknownSamples": 6
+          },
+          "cost": {
+            "observedTotal": 0.12465000000000004,
+            "knownSamples": 24,
+            "unknownSamples": 6
+          }
+        },
+        "requestsWithMetadata": 30
+      }
+    }
+  },
+  "batchId": "73f32258-0cf1-44a1-9fa3-18374ecfa514",
+  "inFlight": null,
+  "suite": "learning-quality-v1",
+  "promptVersion": "learning-v8",
+  "mode": "live",
+  "auth": "oauth",
+  "provider": "openai-codex",
+  "model": "gpt-6.1-sol",
+  "createdAt": "2026-10-22T15:01:26.312Z",
+  "casesHash": "da0402b1e0fd2e6e4ccb56e1d54f573c5bfc30305e1a56c7891695ccedb993ba",
+  "offset": 0,
+  "limit": 30,
+  "maxOutputTokens": 4096,
+  "allowUnboundedOAuthOutput": true,
+  "continueOnError": true,
+  "costStopThresholdUsd": null,
+  "knownCostUsd": 0.12465000000000004,
+  "unknownUsageAttempts": 6,
+  "stopped": null,
+  "results": [
+    {
+      "topic": "空值缓存",
+      "reference": "对不存在的键也缓存空结果，可以减少重复查询数据库。空结果必须设置有限 TTL；新增数据后若不失效旧空值，可能暂时读不到新数据。",
+      "id": "cache-extract",
+      "task": {
+        "kind": "extract",
+        "recitation": {
+          "learned": "缓存不存在键的空结果，减少数据库查询；设置有限 TTL，新增数据时使旧空值失效，避免短期读取不到新数据。",
+          "unclear": "适用条件是什么？",
+          "application": "用一个小例子检验",
+          "topic": "空值缓存"
+        },
+        "sources": [
+          {
+            "id": "source-cache",
+            "name": "空值缓存.txt",
+            "text": "对不存在的键也缓存空结果，可以减少重复查询数据库。空结果必须设置有限 TTL；新增数据后若不失效旧空值，可能暂时读不到新数据。"
+          }
+        ]
+      },
+      "checks": [
+        "仅引用给定来源",
+        "提取结论及适用条件",
+        "不扩展未提供的考核范围"
+      ],
+      "response": {
+        "output": {
+          "kind": "extract",
+          "candidates": [
+            {
+              "title": "空值缓存的用途",
+              "description": "对不存在的键缓存空结果，可以减少重复查询数据库。用户复述与资料一致；资料仅说明这一用途，具体适用条件仍待核对。",
+              "sourceIds": [
+                "source-cache"
+              ]
+            },
+            {
+              "title": "空值缓存的过期与失效",
+              "description": "空结果必须设置有限 TTL。新增数据后若未使旧空值失效，可能暂时读不到新数据；用户提出新增时使旧空值失效，与资料提示的风险相符。",
+              "sourceIds": [
+                "source-cache"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 771,
+          "outputTokens": 134,
+          "cost": 0.002882,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 771,
+        "outputTokens": 134,
+        "cost": 0.002882,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "d8b45385e0cafcbec1613d662c8cdb5d83752e47fdfb257364db45dce7a0e6eb",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 7270,
+        "queuedMs": 22,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 4,
+        "firstResponseMs": 2863,
+        "firstTextMs": 4036,
+        "lastContentMs": 7148,
+        "generationCompletedMs": 7256,
+        "saveStartedMs": 7259,
+        "completedMs": 7270
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 1712,
+        "inputBytes": 3150,
+        "estimatedInputTokens": 3150,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "c932ea0add7d242a84ef460e66d822b90094426544ca14c366bd8d6d4a2c39f0",
+      "stages": {
+        "queueMs": 22,
+        "preparationMs": 4,
+        "firstResponseWaitMs": 2859,
+        "firstTextWaitMs": 4032,
+        "generationMs": 3220,
+        "validationMs": 3,
+        "savingMs": 11,
+        "executionMs": 7270,
+        "observedElapsedMs": 7270
+      },
+      "durationMs": 8123,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "空值缓存",
+      "reference": "对不存在的键也缓存空结果，可以减少重复查询数据库。空结果必须设置有限 TTL；新增数据后若不失效旧空值，可能暂时读不到新数据。",
+      "id": "cache-followup",
+      "task": {
+        "kind": "followup",
+        "points": [
+          {
+            "id": "point-cache",
+            "title": "空值缓存",
+            "description": "对不存在的键也缓存空结果，可以减少重复查询数据库。空结果必须设置有限 TTL；新增数据后若不失效旧空值，可能暂时读不到新数据。",
+            "sourceIds": [
+              "source-cache"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "turns": [
+          {
+            "id": "turn-1",
+            "question": "空值缓存解决什么问题，有什么限制？",
+            "answer": "缓存空结果能减少数据库查询。",
+            "feedback": null,
+            "assisted": false,
+            "scopeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-cache",
+            "name": "空值缓存.txt",
+            "text": "对不存在的键也缓存空结果，可以减少重复查询数据库。空结果必须设置有限 TTL；新增数据后若不失效旧空值，可能暂时读不到新数据。"
+          }
+        ]
+      },
+      "checks": [
+        "针对回答中的遗漏或错误反馈",
+        "一次提出一个可回答的追问",
+        "不把未提及内容直接判为不会"
+      ],
+      "response": {
+        "output": {
+          "kind": "followup",
+          "question": "如果某个键已缓存为空，随后数据库新增了这个键对应的数据，空值缓存需要怎样处理？不处理可能有什么影响？",
+          "feedback": "你已说明缓存空结果能减少数据库查询；新增数据时的缓存处理及其影响尚待澄清。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 2242,
+          "outputTokens": 72,
+          "cost": 0.005204,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 2242,
+        "outputTokens": 72,
+        "cost": 0.005204,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "476a1cc5f50b4ceebc2d3af9d469d3052cc1e6752e83897e2f7ee5676e879124",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 9084,
+        "queuedMs": 13,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 2,
+        "firstResponseMs": 5829,
+        "firstTextMs": 6048,
+        "lastContentMs": 8565,
+        "generationCompletedMs": 9072,
+        "saveStartedMs": 9074,
+        "completedMs": 9084
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 5442,
+        "inputBytes": 9004,
+        "estimatedInputTokens": 9004,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "9288dc610e0ca4817be8e023da99411dddb3e34e52e6aa9dec7f361bf68234cd",
+      "stages": {
+        "queueMs": 13,
+        "preparationMs": 2,
+        "firstResponseWaitMs": 5827,
+        "firstTextWaitMs": 6046,
+        "generationMs": 3024,
+        "validationMs": 2,
+        "savingMs": 10,
+        "executionMs": 9084,
+        "observedElapsedMs": 9084
+      },
+      "durationMs": 10068,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "空值缓存",
+      "reference": "对不存在的键也缓存空结果，可以减少重复查询数据库。空结果必须设置有限 TTL；新增数据后若不失效旧空值，可能暂时读不到新数据。",
+      "id": "cache-quiz",
+      "task": {
+        "kind": "quiz",
+        "points": [
+          {
+            "id": "point-cache",
+            "title": "空值缓存",
+            "description": "对不存在的键也缓存空结果，可以减少重复查询数据库。空结果必须设置有限 TTL；新增数据后若不失效旧空值，可能暂时读不到新数据。",
+            "sourceIds": [
+              "source-cache"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-cache",
+            "name": "空值缓存.txt",
+            "text": "对不存在的键也缓存空结果，可以减少重复查询数据库。空结果必须设置有限 TTL；新增数据后若不失效旧空值，可能暂时读不到新数据。"
+          }
+        ],
+        "count": 2
+      },
+      "checks": [
+        "两道题均在给定范围内",
+        "参考答案和评分细则正确",
+        "题目有明确可判定答案"
+      ],
+      "response": {
+        "output": {
+          "kind": "quiz",
+          "questions": [
+            {
+              "knowledgeId": "point-cache",
+              "kind": "single",
+              "prompt": "某个不存在的键被频繁查询。将它的空结果缓存起来，主要能带来什么效果？",
+              "options": [
+                "减少对数据库的重复查询",
+                "使该键对应的数据自动在数据库中创建",
+                "保证以后新增的数据立即可见"
+              ],
+              "correctIndex": 0,
+              "referenceAnswer": "缓存空结果可以减少对数据库的重复查询，但不会创建数据，也不能保证新增数据立即可见。",
+              "rubric": [
+                {
+                  "id": "r1",
+                  "description": "选择减少对数据库的重复查询。",
+                  "maxScore": 1
+                }
+              ],
+              "sourceIds": [
+                "source-cache"
+              ]
+            },
+            {
+              "knowledgeId": "point-cache",
+              "kind": "short",
+              "prompt": "某键的空结果被缓存后，数据库新增了该键对应的数据，但查询仍返回空结果。请解释可能的原因，并说明空结果缓存的有效期要求，以及新增数据时应如何处理旧空值。",
+              "options": [],
+              "correctIndex": null,
+              "referenceAnswer": "旧的空结果缓存可能尚未失效，查询仍命中它，因此暂时读不到新增数据。空结果必须设置有限 TTL；新增数据后应使对应的旧空值缓存失效，避免继续返回旧空结果。",
+              "rubric": [
+                {
+                  "id": "r1",
+                  "description": "说明旧空值缓存未失效，查询命中它可能导致暂时读不到新数据。",
+                  "maxScore": 2
+                },
+                {
+                  "id": "r2",
+                  "description": "明确空结果必须设置有限 TTL。",
+                  "maxScore": 2
+                },
+                {
+                  "id": "r3",
+                  "description": "指出新增数据后应使对应的旧空值缓存失效。",
+                  "maxScore": 2
+                }
+              ],
+              "sourceIds": [
+                "source-cache"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 2196,
+          "outputTokens": 366,
+          "cost": 0.008052,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 2196,
+        "outputTokens": 366,
+        "cost": 0.008052,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "b400865ddfdd78cf3920ad9ab3f5cd926d7d9ad55fcc7dc238e928ced3e37a6c",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 18985,
+        "queuedMs": 12,
+        "totalTimeoutMs": 120000,
+        "requestStartedMs": 1,
+        "firstResponseMs": 7526,
+        "firstTextMs": 8394,
+        "lastContentMs": 18103,
+        "generationCompletedMs": 18970,
+        "saveStartedMs": 18974,
+        "completedMs": 18985
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 5315,
+        "inputBytes": 8815,
+        "estimatedInputTokens": 8815,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 120000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "40560085605608d0bfdf2311c1f2d93afd8af0e2e90b510f580bbb015da3a5ea",
+      "stages": {
+        "queueMs": 12,
+        "preparationMs": 1,
+        "firstResponseWaitMs": 7525,
+        "firstTextWaitMs": 8393,
+        "generationMs": 10576,
+        "validationMs": 4,
+        "savingMs": 11,
+        "executionMs": 18985,
+        "observedElapsedMs": 18985
+      },
+      "durationMs": 19108,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "空值缓存",
+      "reference": "对不存在的键也缓存空结果，可以减少重复查询数据库。空结果必须设置有限 TTL；新增数据后若不失效旧空值，可能暂时读不到新数据。",
+      "id": "cache-grade-correct",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-cache",
+          "kind": "short",
+          "prompt": "空值缓存解决什么问题，有什么限制？",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "缓存不存在键的空结果，减少数据库查询；设置有限 TTL，新增数据时使旧空值失效，避免短期读取不到新数据。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "说明缓存不存在键的空结果",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "说明有限 TTL 和新增数据后的失效问题",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-cache"
+          ]
+        },
+        "answer": "缓存不存在键的空结果，减少数据库查询；设置有限 TTL，新增数据时使旧空值失效，避免短期读取不到新数据。"
+      },
+      "checks": [
+        "完整正确回答应得满分",
+        "每项依据来自答案内容"
+      ],
+      "expectedScore": {
+        "min": 2,
+        "max": 2
+      },
+      "response": null,
+      "usage": null,
+      "promptHash": "6e227b85e01a19720b65c786d42e3abdbd48b23602455415962c3aaf01722aa3",
+      "error": "MODEL_FAILED",
+      "progress": {
+        "phase": "waiting",
+        "elapsedMs": 723,
+        "queuedMs": 14,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "completedMs": 723
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 2205,
+        "inputBytes": 3915,
+        "estimatedInputTokens": 3915,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "e1d87000bcdec8c87039fdf637481c7c4235f4a4b6ff18b825f0aff14912f06f",
+      "stages": {
+        "queueMs": 14,
+        "preparationMs": 0,
+        "firstResponseWaitMs": null,
+        "firstTextWaitMs": null,
+        "generationMs": null,
+        "validationMs": null,
+        "savingMs": null,
+        "executionMs": 723,
+        "observedElapsedMs": 723
+      },
+      "durationMs": 1038,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "空值缓存",
+      "reference": "对不存在的键也缓存空结果，可以减少重复查询数据库。空结果必须设置有限 TTL；新增数据后若不失效旧空值，可能暂时读不到新数据。",
+      "id": "cache-grade-incomplete",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-cache",
+          "kind": "short",
+          "prompt": "空值缓存解决什么问题，有什么限制？",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "缓存不存在键的空结果，减少数据库查询；设置有限 TTL，新增数据时使旧空值失效，避免短期读取不到新数据。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "说明缓存不存在键的空结果",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "说明有限 TTL 和新增数据后的失效问题",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-cache"
+          ]
+        },
+        "answer": "缓存空结果能减少数据库查询。"
+      },
+      "checks": [
+        "不能给遗漏条件或错误答案满分",
+        "扣分对应原评分细则"
+      ],
+      "expectedScore": {
+        "min": 1,
+        "max": 1
+      },
+      "response": {
+        "output": {
+          "kind": "grade",
+          "status": "graded",
+          "scores": [
+            {
+              "rubricId": "r1",
+              "score": 1,
+              "evidence": "回答“缓存空结果能减少数据库查询”，表达了缓存空结果及其作用。"
+            },
+            {
+              "rubricId": "r2",
+              "score": 0,
+              "evidence": "回答未说明有限 TTL，也未说明新增数据后需要使旧空值缓存失效。"
+            }
+          ],
+          "feedback": "核心作用正确。需补充：为空值缓存设置有限 TTL，新增数据时使旧空值失效，避免短期读取不到新数据。AI 评价可能出错。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 922,
+          "outputTokens": 159,
+          "cost": 0.003434,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 922,
+        "outputTokens": 159,
+        "cost": 0.003434,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "cd21debe4d53165c0e2538887ddeae42e29bb974f7c58de940b383dbd8615a64",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 15295,
+        "queuedMs": 12,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 1,
+        "firstResponseMs": 7398,
+        "firstTextMs": 11201,
+        "lastContentMs": 15281,
+        "generationCompletedMs": 15282,
+        "saveStartedMs": 15285,
+        "completedMs": 15295
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 2167,
+        "inputBytes": 3809,
+        "estimatedInputTokens": 3809,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "017792a70226c88e6ad093374c5c3407618956a871b51951e202b6e2a9bda398",
+      "stages": {
+        "queueMs": 12,
+        "preparationMs": 1,
+        "firstResponseWaitMs": 7397,
+        "firstTextWaitMs": 11200,
+        "generationMs": 4081,
+        "validationMs": 3,
+        "savingMs": 10,
+        "executionMs": 15295,
+        "observedElapsedMs": 15295
+      },
+      "durationMs": 16088,
+      "scoreMatchesReference": true,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "先进先出队列",
+      "reference": "FIFO 队列从队尾入队，从队头出队。依次入队 A、B、C 后，第一次出队得到 A，剩余 B、C。栈是后进先出。",
+      "id": "queue-extract",
+      "task": {
+        "kind": "extract",
+        "recitation": {
+          "learned": "第一次得到 A，因为队列先进先出，从队头取最早入队的元素，剩余 B、C。",
+          "unclear": "适用条件是什么？",
+          "application": "用一个小例子检验",
+          "topic": "先进先出队列"
+        },
+        "sources": [
+          {
+            "id": "source-queue",
+            "name": "先进先出队列.txt",
+            "text": "FIFO 队列从队尾入队，从队头出队。依次入队 A、B、C 后，第一次出队得到 A，剩余 B、C。栈是后进先出。"
+          }
+        ]
+      },
+      "checks": [
+        "仅引用给定来源",
+        "提取结论及适用条件",
+        "不扩展未提供的考核范围"
+      ],
+      "response": null,
+      "usage": null,
+      "promptHash": "21a84b20833c0a05c0433e25c8464b8803a3ef21b6414a3cd4f6f7b509dbd5b7",
+      "error": "MODEL_FAILED",
+      "progress": {
+        "phase": "generating",
+        "elapsedMs": 8368,
+        "queuedMs": 14,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 5165,
+        "firstTextMs": 8359,
+        "lastContentMs": 8359,
+        "completedMs": 8368
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 1693,
+        "inputBytes": 3069,
+        "estimatedInputTokens": 3069,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "a3ef3ef597f3bb2822b3ce838eac685bc7008d71d7653c55e96e10ee50ee992d",
+      "stages": {
+        "queueMs": 14,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 5165,
+        "firstTextWaitMs": 8359,
+        "generationMs": null,
+        "validationMs": null,
+        "savingMs": null,
+        "executionMs": 8368,
+        "observedElapsedMs": 8368
+      },
+      "durationMs": 9073,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "先进先出队列",
+      "reference": "FIFO 队列从队尾入队，从队头出队。依次入队 A、B、C 后，第一次出队得到 A，剩余 B、C。栈是后进先出。",
+      "id": "queue-followup",
+      "task": {
+        "kind": "followup",
+        "points": [
+          {
+            "id": "point-queue",
+            "title": "先进先出队列",
+            "description": "FIFO 队列从队尾入队，从队头出队。依次入队 A、B、C 后，第一次出队得到 A，剩余 B、C。栈是后进先出。",
+            "sourceIds": [
+              "source-queue"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "turns": [
+          {
+            "id": "turn-1",
+            "question": "A、B、C 依次入队后第一次出队是什么？为什么？",
+            "answer": "第一次得到 C，因为最后加入的先取出。",
+            "feedback": null,
+            "assisted": false,
+            "scopeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-queue",
+            "name": "先进先出队列.txt",
+            "text": "FIFO 队列从队尾入队，从队头出队。依次入队 A、B、C 后，第一次出队得到 A，剩余 B、C。栈是后进先出。"
+          }
+        ]
+      },
+      "checks": [
+        "针对回答中的遗漏或错误反馈",
+        "一次提出一个可回答的追问",
+        "不把未提及内容直接判为不会"
+      ],
+      "response": {
+        "output": {
+          "kind": "followup",
+          "question": "你提到“最后加入的先取出”，这是队列还是栈的规则？队列的入队和出队分别发生在哪一端？",
+          "feedback": "你回答第一次取出 C，并用“最后加入的先取出”解释；目前需要澄清你是否区分了队列与栈的规则。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 2272,
+          "outputTokens": 86,
+          "cost": 0.005403999999999999,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 2272,
+        "outputTokens": 86,
+        "cost": 0.005403999999999999,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "af3aa28ab5db349a62e94a136fec5b1ac87d666998bbd4bf5ec034a1d66b3c56",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 11780,
+        "queuedMs": 16,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 8129,
+        "firstTextMs": 9487,
+        "lastContentMs": 11763,
+        "generationCompletedMs": 11764,
+        "saveStartedMs": 11768,
+        "completedMs": 11780
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 5444,
+        "inputBytes": 8954,
+        "estimatedInputTokens": 8954,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "826f929038844743100ad9af29d4097e3530f4284faf6d1a0cc0798f9a7a235f",
+      "stages": {
+        "queueMs": 16,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 8129,
+        "firstTextWaitMs": 9487,
+        "generationMs": 2277,
+        "validationMs": 4,
+        "savingMs": 12,
+        "executionMs": 11780,
+        "observedElapsedMs": 11780
+      },
+      "durationMs": 12071,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "先进先出队列",
+      "reference": "FIFO 队列从队尾入队，从队头出队。依次入队 A、B、C 后，第一次出队得到 A，剩余 B、C。栈是后进先出。",
+      "id": "queue-quiz",
+      "task": {
+        "kind": "quiz",
+        "points": [
+          {
+            "id": "point-queue",
+            "title": "先进先出队列",
+            "description": "FIFO 队列从队尾入队，从队头出队。依次入队 A、B、C 后，第一次出队得到 A，剩余 B、C。栈是后进先出。",
+            "sourceIds": [
+              "source-queue"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-queue",
+            "name": "先进先出队列.txt",
+            "text": "FIFO 队列从队尾入队，从队头出队。依次入队 A、B、C 后，第一次出队得到 A，剩余 B、C。栈是后进先出。"
+          }
+        ],
+        "count": 2
+      },
+      "checks": [
+        "两道题均在给定范围内",
+        "参考答案和评分细则正确",
+        "题目有明确可判定答案"
+      ],
+      "response": {
+        "output": {
+          "kind": "quiz",
+          "questions": [
+            {
+              "knowledgeId": "point-queue",
+              "kind": "single",
+              "prompt": "关于 FIFO 队列与栈，下列哪项正确？",
+              "options": [
+                "队列从队尾入队、从队头出队；栈是后进先出",
+                "队列从队头入队、从队尾出队；栈是后进先出",
+                "队列从队尾入队、从队头出队；栈是先进先出"
+              ],
+              "correctIndex": 0,
+              "referenceAnswer": "队列从队尾入队、从队头出队，遵循先进先出；栈遵循后进先出。",
+              "rubric": [
+                {
+                  "id": "r1",
+                  "description": "选出同时正确描述队列操作位置及栈顺序的选项。",
+                  "maxScore": 1
+                }
+              ],
+              "sourceIds": [
+                "source-queue"
+              ]
+            },
+            {
+              "knowledgeId": "point-queue",
+              "kind": "short",
+              "prompt": "一个空的 FIFO 队列依次入队 A、B、C，随后出队一次，再将 D 入队。下一次出队得到什么？此次出队后，队列从队头到队尾的元素顺序是什么？请简述理由。",
+              "options": [],
+              "correctIndex": null,
+              "referenceAnswer": "下一次出队得到 B；此次出队后，从队头到队尾依次为 C、D。第一次出队移除 A，D 从队尾加入后队列为 B、C、D；按先进先出规则，接着移除 B。",
+              "rubric": [
+                {
+                  "id": "r1",
+                  "description": "正确指出下一次出队得到 B。",
+                  "maxScore": 1
+                },
+                {
+                  "id": "r2",
+                  "description": "正确写出此次出队后从队头到队尾为 C、D。",
+                  "maxScore": 1
+                },
+                {
+                  "id": "r3",
+                  "description": "依据队尾入队、队头出队或先进先出规则解释操作过程。",
+                  "maxScore": 1
+                }
+              ],
+              "sourceIds": [
+                "source-queue"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 2215,
+          "outputTokens": 431,
+          "cost": 0.008740000000000001,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 2215,
+        "outputTokens": 431,
+        "cost": 0.008740000000000001,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "17570a002f12bf3b620349580118ec66484e16d8c79395485e2b3b2418951d43",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 19730,
+        "queuedMs": 14,
+        "totalTimeoutMs": 120000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 6040,
+        "firstTextMs": 8450,
+        "lastContentMs": 19069,
+        "generationCompletedMs": 19716,
+        "saveStartedMs": 19720,
+        "completedMs": 19730
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 5305,
+        "inputBytes": 8741,
+        "estimatedInputTokens": 8741,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 120000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "939d9b66f3a6dfaf10ba2294b5cfe42f2104c6e04ca90771c6778ecdcd501d02",
+      "stages": {
+        "queueMs": 14,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 6040,
+        "firstTextWaitMs": 8450,
+        "generationMs": 11266,
+        "validationMs": 4,
+        "savingMs": 10,
+        "executionMs": 19730,
+        "observedElapsedMs": 19730
+      },
+      "durationMs": 20097,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "先进先出队列",
+      "reference": "FIFO 队列从队尾入队，从队头出队。依次入队 A、B、C 后，第一次出队得到 A，剩余 B、C。栈是后进先出。",
+      "id": "queue-grade-correct",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-queue",
+          "kind": "short",
+          "prompt": "A、B、C 依次入队后第一次出队是什么？为什么？",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "第一次得到 A，因为队列先进先出，从队头取最早入队的元素，剩余 B、C。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "结果为 A",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "理由是先进先出，而非后进先出",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-queue"
+          ]
+        },
+        "answer": "第一次得到 A，因为队列先进先出，从队头取最早入队的元素，剩余 B、C。"
+      },
+      "checks": [
+        "完整正确回答应得满分",
+        "每项依据来自答案内容"
+      ],
+      "expectedScore": {
+        "min": 2,
+        "max": 2
+      },
+      "response": {
+        "output": {
+          "kind": "grade",
+          "status": "graded",
+          "scores": [
+            {
+              "rubricId": "r1",
+              "score": 1,
+              "evidence": "回答明确指出“第一次得到 A”。"
+            },
+            {
+              "rubricId": "r2",
+              "score": 1,
+              "evidence": "回答说明“队列先进先出，从队头取最早入队的元素”。"
+            }
+          ],
+          "feedback": "结果和理由均正确，符合参考答案。AI 评价可能出错。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 940,
+          "outputTokens": 94,
+          "cost": 0.00282,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 940,
+        "outputTokens": 94,
+        "cost": 0.00282,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "8244a101334acd0b4e560a1ad797fbb929f18a7d483d5c2913cb4ff8df237a51",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 6453,
+        "queuedMs": 14,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 3596,
+        "firstTextMs": 4394,
+        "lastContentMs": 6427,
+        "generationCompletedMs": 6439,
+        "saveStartedMs": 6442,
+        "completedMs": 6453
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 2167,
+        "inputBytes": 3795,
+        "estimatedInputTokens": 3795,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "32262119fef6a13ecbb328219b2ff6bbb8b887ce04e889216e6e631e9886eafc",
+      "stages": {
+        "queueMs": 14,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 3596,
+        "firstTextWaitMs": 4394,
+        "generationMs": 2045,
+        "validationMs": 3,
+        "savingMs": 11,
+        "executionMs": 6453,
+        "observedElapsedMs": 6453
+      },
+      "durationMs": 7055,
+      "scoreMatchesReference": true,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "先进先出队列",
+      "reference": "FIFO 队列从队尾入队，从队头出队。依次入队 A、B、C 后，第一次出队得到 A，剩余 B、C。栈是后进先出。",
+      "id": "queue-grade-incomplete",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-queue",
+          "kind": "short",
+          "prompt": "A、B、C 依次入队后第一次出队是什么？为什么？",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "第一次得到 A，因为队列先进先出，从队头取最早入队的元素，剩余 B、C。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "结果为 A",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "理由是先进先出，而非后进先出",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-queue"
+          ]
+        },
+        "answer": "第一次得到 C，因为最后加入的先取出。"
+      },
+      "checks": [
+        "不能给遗漏条件或错误答案满分",
+        "扣分对应原评分细则"
+      ],
+      "expectedScore": {
+        "min": 0,
+        "max": 0
+      },
+      "response": {
+        "output": {
+          "kind": "grade",
+          "status": "graded",
+          "scores": [
+            {
+              "rubricId": "r1",
+              "score": 0,
+              "evidence": "回答“第一次得到 C”，与参考答案 A 不符。"
+            },
+            {
+              "rubricId": "r2",
+              "score": 0,
+              "evidence": "回答“最后加入的先取出”，描述的是后进先出，而非队列的先进先出。"
+            }
+          ],
+          "feedback": "第一次应得到 A：队列先进先出，A 最早入队，所以先出队，剩余 B、C。你把队列与栈的后进先出规则混淆了。AI 评价可能出错。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 925,
+          "outputTokens": 139,
+          "cost": 0.00324,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 925,
+        "outputTokens": 139,
+        "cost": 0.00324,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "010c6921fd5b9f66b555e0833db840f64979dc3b0797be5538f52857545b3476",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 12466,
+        "queuedMs": 13,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 7926,
+        "firstTextMs": 9644,
+        "lastContentMs": 12385,
+        "generationCompletedMs": 12452,
+        "saveStartedMs": 12455,
+        "completedMs": 12466
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 2150,
+        "inputBytes": 3750,
+        "estimatedInputTokens": 3750,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "1939fd9c8d9341d37d35356a550e2fc0684a976a25459af4f9f6ef16d74b77cc",
+      "stages": {
+        "queueMs": 13,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 7926,
+        "firstTextWaitMs": 9644,
+        "generationMs": 2808,
+        "validationMs": 3,
+        "savingMs": 11,
+        "executionMs": 12466,
+        "observedElapsedMs": 12466
+      },
+      "durationMs": 13077,
+      "scoreMatchesReference": true,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "二分查找",
+      "reference": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。",
+      "id": "search-extract",
+      "task": {
+        "kind": "extract",
+        "recitation": {
+          "learned": "数据需要有序，每次根据中间值的比较排除一半区间，所以查询时间 O(log n)。",
+          "unclear": "适用条件是什么？",
+          "application": "用一个小例子检验",
+          "topic": "二分查找"
+        },
+        "sources": [
+          {
+            "id": "source-search",
+            "name": "二分查找.txt",
+            "text": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。"
+          }
+        ]
+      },
+      "checks": [
+        "仅引用给定来源",
+        "提取结论及适用条件",
+        "不扩展未提供的考核范围"
+      ],
+      "response": null,
+      "usage": null,
+      "promptHash": "8d2e92295c35652ff6a0c64e4aeb8fe58c926cd734f791a24b74ec1e9c2beaa1",
+      "error": "MODEL_FAILED",
+      "progress": {
+        "phase": "waiting",
+        "elapsedMs": 1900,
+        "queuedMs": 16,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "completedMs": 1900
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 1711,
+        "inputBytes": 3125,
+        "estimatedInputTokens": 3125,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "72061203d2014a92458c70394920339295fb72e445fbe60478702ec8ec5964d4",
+      "stages": {
+        "queueMs": 16,
+        "preparationMs": 0,
+        "firstResponseWaitMs": null,
+        "firstTextWaitMs": null,
+        "generationMs": null,
+        "validationMs": null,
+        "savingMs": null,
+        "executionMs": 1900,
+        "observedElapsedMs": 1900
+      },
+      "durationMs": 2041,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "二分查找",
+      "reference": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。",
+      "id": "search-followup",
+      "task": {
+        "kind": "followup",
+        "points": [
+          {
+            "id": "point-search",
+            "title": "二分查找",
+            "description": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。",
+            "sourceIds": [
+              "source-search"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "turns": [
+          {
+            "id": "turn-1",
+            "question": "二分查找为什么快，使用前需要什么条件？",
+            "answer": "任意无序数组都可以直接二分，因为每次随机去掉一半。",
+            "feedback": null,
+            "assisted": false,
+            "scopeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-search",
+            "name": "二分查找.txt",
+            "text": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。"
+          }
+        ]
+      },
+      "checks": [
+        "针对回答中的遗漏或错误反馈",
+        "一次提出一个可回答的追问",
+        "不把未提及内容直接判为不会"
+      ],
+      "response": {
+        "output": {
+          "kind": "followup",
+          "question": "对于无序数组 [8, 1, 6, 3, 9]，若查找 8，第一次与中间元素 6 比较后，按普通二分查找规则会保留哪一侧？这一步能否保证没有排除目标？请说明理由。",
+          "feedback": "你把二分查找描述为“随机去掉一半”，并认为任意无序数组都能直接使用。需要进一步核对：排除区间的依据是什么，以及这种排除能否保证保留目标。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 2278,
+          "outputTokens": 131,
+          "cost": 0.0058660000000000006,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 2278,
+        "outputTokens": 131,
+        "cost": 0.0058660000000000006,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "54e8c509d75efc6048a3f1a7ca61647f1ed711c9ac3fd350e844fadc64e1f18f",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 11541,
+        "queuedMs": 14,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 4945,
+        "firstTextMs": 5982,
+        "lastContentMs": 10174,
+        "generationCompletedMs": 11528,
+        "saveStartedMs": 11531,
+        "completedMs": 11541
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 5478,
+        "inputBytes": 9086,
+        "estimatedInputTokens": 9086,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "25e6e8161c4cde212d83d23e05dc88132b2538471c13de85c54ab8693b00b10b",
+      "stages": {
+        "queueMs": 14,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 4945,
+        "firstTextWaitMs": 5982,
+        "generationMs": 5546,
+        "validationMs": 3,
+        "savingMs": 10,
+        "executionMs": 11541,
+        "observedElapsedMs": 11541
+      },
+      "durationMs": 12071,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "二分查找",
+      "reference": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。",
+      "id": "search-quiz",
+      "task": {
+        "kind": "quiz",
+        "points": [
+          {
+            "id": "point-search",
+            "title": "二分查找",
+            "description": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。",
+            "sourceIds": [
+              "source-search"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-search",
+            "name": "二分查找.txt",
+            "text": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。"
+          }
+        ],
+        "count": 2
+      },
+      "checks": [
+        "两道题均在给定范围内",
+        "参考答案和评分细则正确",
+        "题目有明确可判定答案"
+      ],
+      "response": {
+        "output": {
+          "kind": "quiz",
+          "questions": [
+            {
+              "knowledgeId": "point-search",
+              "kind": "single",
+              "prompt": "对一个未排序的数组直接执行普通二分查找，下列判断哪项正确？",
+              "options": [
+                "只要目标存在，就一定能找到",
+                "不能保证正确，因为比较中间元素后未必能安全排除一半区间",
+                "结果一定正确，只是时间复杂度变为 O(log n)"
+              ],
+              "correctIndex": 1,
+              "referenceAnswer": "应选第二项。普通二分查找依赖数据按比较规则有序；无序时，比较中间元素无法保证被排除的区间不含目标。",
+              "rubric": [
+                {
+                  "id": "validity",
+                  "description": "选择第二项，正确判断无序数组上直接使用普通二分查找不能保证正确。",
+                  "maxScore": 1
+                }
+              ],
+              "sourceIds": [
+                "source-search"
+              ]
+            },
+            {
+              "knowledgeId": "point-search",
+              "kind": "short",
+              "prompt": "在满足二分查找前提的数据上，每次比较后，待查区间如何变化？据此说明其时间复杂度。",
+              "options": [],
+              "correctIndex": null,
+              "referenceAnswer": "每次比较中间元素后，可排除一半待查区间，使剩余区间约减半。因此所需比较次数随数据规模呈对数增长，时间复杂度为 O(log n)。",
+              "rubric": [
+                {
+                  "id": "mechanism",
+                  "description": "说明比较中间元素后排除一半区间，剩余待查区间约减半。",
+                  "maxScore": 2
+                },
+                {
+                  "id": "complexity",
+                  "description": "指出时间复杂度为 O(log n)，并将其与区间反复减半联系起来。",
+                  "maxScore": 2
+                }
+              ],
+              "sourceIds": [
+                "source-search"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 2218,
+          "outputTokens": 370,
+          "cost": 0.008136000000000001,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 2218,
+        "outputTokens": 370,
+        "cost": 0.008136000000000001,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "d40d11ab88c805cbcc18684e657d9ac8c43d842bfe3256226d4ff0b28cf89bbc",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 16700,
+        "queuedMs": 13,
+        "totalTimeoutMs": 120000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 3161,
+        "firstTextMs": 5063,
+        "lastContentMs": 16666,
+        "generationCompletedMs": 16683,
+        "saveStartedMs": 16687,
+        "completedMs": 16700
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 5338,
+        "inputBytes": 8858,
+        "estimatedInputTokens": 8858,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 120000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "fe9be9bb08753bd4c89503254496b79a283f55944ba0b92e50e2ac741f9e97b3",
+      "stages": {
+        "queueMs": 13,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 3161,
+        "firstTextWaitMs": 5063,
+        "generationMs": 11620,
+        "validationMs": 4,
+        "savingMs": 13,
+        "executionMs": 16700,
+        "observedElapsedMs": 16700
+      },
+      "durationMs": 17092,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "二分查找",
+      "reference": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。",
+      "id": "search-grade-correct",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-search",
+          "kind": "short",
+          "prompt": "二分查找为什么快，使用前需要什么条件？",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "数据需要有序，每次根据中间值的比较排除一半区间，所以查询时间 O(log n)。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "明确有序条件",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "解释减半与 O(log n)",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-search"
+          ]
+        },
+        "answer": "数据需要有序，每次根据中间值的比较排除一半区间，所以查询时间 O(log n)。"
+      },
+      "checks": [
+        "完整正确回答应得满分",
+        "每项依据来自答案内容"
+      ],
+      "expectedScore": {
+        "min": 2,
+        "max": 2
+      },
+      "response": {
+        "output": {
+          "kind": "grade",
+          "status": "graded",
+          "scores": [
+            {
+              "rubricId": "r1",
+              "score": 1,
+              "evidence": "回答明确指出“数据需要有序”。"
+            },
+            {
+              "rubricId": "r2",
+              "score": 1,
+              "evidence": "回答说明“每次根据中间值的比较排除一半区间”，并指出查询时间为 O(log n)。"
+            }
+          ],
+          "feedback": "回答符合参考答案：明确了有序条件，并解释了区间减半与 O(log n) 时间复杂度。AI 评价可能出错。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 929,
+          "outputTokens": 119,
+          "cost": 0.003048,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 929,
+        "outputTokens": 119,
+        "cost": 0.003048,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "4ce6d2bdfe642e650ccbc5798c82267260a965ee284ce268ecff9411c3b0e606",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 8101,
+        "queuedMs": 14,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 4287,
+        "firstTextMs": 5387,
+        "lastContentMs": 7323,
+        "generationCompletedMs": 8086,
+        "saveStartedMs": 8090,
+        "completedMs": 8101
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 2173,
+        "inputBytes": 3787,
+        "estimatedInputTokens": 3787,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "2f06722ef7134852e5822ed1a69ef2078bcbb2032d153f141ffa9a4eb0c8e1ce",
+      "stages": {
+        "queueMs": 14,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 4287,
+        "firstTextWaitMs": 5387,
+        "generationMs": 2699,
+        "validationMs": 4,
+        "savingMs": 11,
+        "executionMs": 8101,
+        "observedElapsedMs": 8101
+      },
+      "durationMs": 9057,
+      "scoreMatchesReference": true,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "二分查找",
+      "reference": "二分查找要求可按比较规则有序访问的数据。每次比较中间元素并排除一半区间，时间复杂度 O(log n)。对无序数组直接使用普通二分查找不能保证正确。",
+      "id": "search-grade-incomplete",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-search",
+          "kind": "short",
+          "prompt": "二分查找为什么快，使用前需要什么条件？",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "数据需要有序，每次根据中间值的比较排除一半区间，所以查询时间 O(log n)。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "明确有序条件",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "解释减半与 O(log n)",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-search"
+          ]
+        },
+        "answer": "任意无序数组都可以直接二分，因为每次随机去掉一半。"
+      },
+      "checks": [
+        "不能给遗漏条件或错误答案满分",
+        "扣分对应原评分细则"
+      ],
+      "expectedScore": {
+        "min": 0,
+        "max": 0
+      },
+      "response": {
+        "output": {
+          "kind": "grade",
+          "status": "graded",
+          "scores": [
+            {
+              "rubricId": "r1",
+              "score": 0,
+              "evidence": "回答称“任意无序数组都可以直接二分”，与需要数据有序的条件相反。"
+            },
+            {
+              "rubricId": "r2",
+              "score": 0,
+              "evidence": "回答称“每次随机去掉一半”，未说明根据中间值比较排除一半区间，也未指出 O(log n)。随机排除可能丢掉目标。"
+            }
+          ],
+          "feedback": "二分查找要求数据有序；每次比较目标与中间值，排除不可能包含目标的一半区间，因此查询时间为 O(log n)，不是随机丢弃一半。AI 评价可能出错。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 923,
+          "outputTokens": 165,
+          "cost": 0.003496,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 923,
+        "outputTokens": 165,
+        "cost": 0.003496,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "6b27e820a4e44aa0e0719146a4fe9207bb63e1bed332a7876aab6aa2ec8bc689",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 14816,
+        "queuedMs": 13,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 9283,
+        "firstTextMs": 12535,
+        "lastContentMs": 14797,
+        "generationCompletedMs": 14798,
+        "saveStartedMs": 14805,
+        "completedMs": 14816
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 2158,
+        "inputBytes": 3760,
+        "estimatedInputTokens": 3760,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "83a4588ef8c708c8a920bc4a7512f5b91bb8a8252b8518aa92acbaf89d061f76",
+      "stages": {
+        "queueMs": 13,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 9283,
+        "firstTextWaitMs": 12535,
+        "generationMs": 2263,
+        "validationMs": 7,
+        "savingMs": 11,
+        "executionMs": 14816,
+        "observedElapsedMs": 14816
+      },
+      "durationMs": 15084,
+      "scoreMatchesReference": true,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "独立事件乘法规则",
+      "reference": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。",
+      "id": "probability-extract",
+      "task": {
+        "kind": "extract",
+        "recitation": {
+          "learned": "A 与 B 独立时相乘得到 0.2；没有独立性等条件，不能仅凭这两个边缘概率确定交集。",
+          "unclear": "适用条件是什么？",
+          "application": "用一个小例子检验",
+          "topic": "独立事件乘法规则"
+        },
+        "sources": [
+          {
+            "id": "source-probability",
+            "name": "独立事件乘法规则.txt",
+            "text": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。"
+          }
+        ]
+      },
+      "checks": [
+        "仅引用给定来源",
+        "提取结论及适用条件",
+        "不扩展未提供的考核范围"
+      ],
+      "response": {
+        "output": {
+          "kind": "extract",
+          "candidates": [
+            {
+              "title": "独立事件乘法规则及适用条件",
+              "description": "资料指出：当 A、B 独立时，P(A 且 B)=P(A)P(B)。用户复述与资料一致，但仍追问适用条件；待确认其是否理解：独立性是本条乘法规则的适用前提，不能无条件相乘。",
+              "sourceIds": [
+                "source-probability"
+              ]
+            },
+            {
+              "title": "用数值例子检验规则与条件限制",
+              "description": "资料给出：若 A、B 独立，且 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。用户能复述该结果，并指出没有独立性等条件时，不能仅凭两个边缘概率确定交集；待确认其能否在具体例子中先检查条件，再决定是否相乘。",
+              "sourceIds": [
+                "source-probability"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 799,
+          "outputTokens": 212,
+          "cost": 0.0037180000000000004,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 799,
+        "outputTokens": 212,
+        "cost": 0.0037180000000000004,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "0db67ee8460571db9aa1babe09acb00d6e429658cf5d5f13a98bede19573d47b",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 15441,
+        "queuedMs": 16,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 5583,
+        "firstTextMs": 6851,
+        "lastContentMs": 14774,
+        "generationCompletedMs": 15424,
+        "saveStartedMs": 15429,
+        "completedMs": 15441
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 1732,
+        "inputBytes": 3114,
+        "estimatedInputTokens": 3114,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "09adbb4c8744cda51fd2445ab427df287bd612084f18fc3b637cdde81ce31182",
+      "stages": {
+        "queueMs": 16,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 5583,
+        "firstTextWaitMs": 6851,
+        "generationMs": 8573,
+        "validationMs": 5,
+        "savingMs": 12,
+        "executionMs": 15441,
+        "observedElapsedMs": 15441
+      },
+      "durationMs": 16092,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "独立事件乘法规则",
+      "reference": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。",
+      "id": "probability-followup",
+      "task": {
+        "kind": "followup",
+        "points": [
+          {
+            "id": "point-probability",
+            "title": "独立事件乘法规则",
+            "description": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。",
+            "sourceIds": [
+              "source-probability"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "turns": [
+          {
+            "id": "turn-1",
+            "question": "已知 P(A)=0.5、P(B)=0.4，什么时候交集为 0.2？",
+            "answer": "任何情况下交集都等于 0.2。",
+            "feedback": null,
+            "assisted": false,
+            "scopeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-probability",
+            "name": "独立事件乘法规则.txt",
+            "text": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。"
+          }
+        ]
+      },
+      "checks": [
+        "针对回答中的遗漏或错误反馈",
+        "一次提出一个可回答的追问",
+        "不把未提及内容直接判为不会"
+      ],
+      "response": {
+        "output": {
+          "kind": "followup",
+          "question": "你说“任何情况下”交集都等于 0.2；如果没有说明 A、B 是否独立，你认为仅凭这两个概率就能确定交集概率吗？请说明理由。",
+          "feedback": "你给出了交集概率为 0.2 的判断，并将其适用于任何情况；这一判断所需的条件仍待澄清。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 2311,
+          "outputTokens": 93,
+          "cost": 0.005552,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 2311,
+        "outputTokens": 93,
+        "cost": 0.005552,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "8acaf38a6e8c660fba2337504cd7b4b4165e8ef6e1cade9965730fcb001c9c21",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 17822,
+        "queuedMs": 14,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 9563,
+        "firstTextMs": 10142,
+        "lastContentMs": 12675,
+        "generationCompletedMs": 17802,
+        "saveStartedMs": 17809,
+        "completedMs": 17822
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 5515,
+        "inputBytes": 8989,
+        "estimatedInputTokens": 8989,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "12ce14047d69ffbf6eb1b57e530473d71302c301a50fa71ae3ae5a8baa9c587d",
+      "stages": {
+        "queueMs": 14,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 9563,
+        "firstTextWaitMs": 10142,
+        "generationMs": 7660,
+        "validationMs": 7,
+        "savingMs": 13,
+        "executionMs": 17822,
+        "observedElapsedMs": 17822
+      },
+      "durationMs": 18101,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "独立事件乘法规则",
+      "reference": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。",
+      "id": "probability-quiz",
+      "task": {
+        "kind": "quiz",
+        "points": [
+          {
+            "id": "point-probability",
+            "title": "独立事件乘法规则",
+            "description": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。",
+            "sourceIds": [
+              "source-probability"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-probability",
+            "name": "独立事件乘法规则.txt",
+            "text": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。"
+          }
+        ],
+        "count": 2
+      },
+      "checks": [
+        "两道题均在给定范围内",
+        "参考答案和评分细则正确",
+        "题目有明确可判定答案"
+      ],
+      "response": null,
+      "usage": null,
+      "promptHash": "eae34224088cfe977fb5975fc431e2196dce953b7b3adee97f5a9d31eabe5e41",
+      "error": "MODEL_FAILED",
+      "progress": {
+        "phase": "waiting",
+        "elapsedMs": 2585,
+        "queuedMs": 16,
+        "totalTimeoutMs": 120000,
+        "requestStartedMs": 0,
+        "completedMs": 2585
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 5371,
+        "inputBytes": 8799,
+        "estimatedInputTokens": 8799,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 120000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "d09e5d44885bf882be057ee87c7bdd3d57715451e5da044f7b45a833dfec5dbb",
+      "stages": {
+        "queueMs": 16,
+        "preparationMs": 0,
+        "firstResponseWaitMs": null,
+        "firstTextWaitMs": null,
+        "generationMs": null,
+        "validationMs": null,
+        "savingMs": null,
+        "executionMs": 2585,
+        "observedElapsedMs": 2585
+      },
+      "durationMs": 3048,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "独立事件乘法规则",
+      "reference": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。",
+      "id": "probability-grade-correct",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-probability",
+          "kind": "short",
+          "prompt": "已知 P(A)=0.5、P(B)=0.4，什么时候交集为 0.2？",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "A 与 B 独立时相乘得到 0.2；没有独立性等条件，不能仅凭这两个边缘概率确定交集。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "明确独立条件",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "不把边缘概率乘法推广到任意事件",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-probability"
+          ]
+        },
+        "answer": "A 与 B 独立时相乘得到 0.2；没有独立性等条件，不能仅凭这两个边缘概率确定交集。"
+      },
+      "checks": [
+        "完整正确回答应得满分",
+        "每项依据来自答案内容"
+      ],
+      "expectedScore": {
+        "min": 2,
+        "max": 2
+      },
+      "response": {
+        "output": {
+          "kind": "grade",
+          "status": "graded",
+          "scores": [
+            {
+              "rubricId": "r1",
+              "score": 1,
+              "evidence": "回答明确指出“A 与 B 独立时相乘得到 0.2”。"
+            },
+            {
+              "rubricId": "r2",
+              "score": 1,
+              "evidence": "回答指出“没有独立性等条件，不能仅凭这两个边缘概率确定交集”，未将乘法推广到任意事件。"
+            }
+          ],
+          "feedback": "回答符合参考答案，两项要求均已满足。AI 评价可能出错。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 967,
+          "outputTokens": 118,
+          "cost": 0.003114,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 967,
+        "outputTokens": 118,
+        "cost": 0.003114,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "afec1605a45793be910bc848dfc6b264abb631ea7f50a70d5318eec7231c17b0",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 7976,
+        "queuedMs": 13,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 4991,
+        "firstTextMs": 5587,
+        "lastContentMs": 7806,
+        "generationCompletedMs": 7958,
+        "saveStartedMs": 7964,
+        "completedMs": 7976
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 2204,
+        "inputBytes": 3836,
+        "estimatedInputTokens": 3836,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "da6d0ddb276bf16d06e110b3df6bac65c541dd7d30fa248ee70038091aafd8b6",
+      "stages": {
+        "queueMs": 13,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 4991,
+        "firstTextWaitMs": 5587,
+        "generationMs": 2371,
+        "validationMs": 6,
+        "savingMs": 12,
+        "executionMs": 7976,
+        "observedElapsedMs": 7976
+      },
+      "durationMs": 8056,
+      "scoreMatchesReference": true,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "独立事件乘法规则",
+      "reference": "当 A、B 独立时，P(A 且 B)=P(A)P(B)。如果 P(A)=0.5、P(B)=0.4，则交集概率为 0.2。不独立时，不能仅凭两个边缘概率相乘。",
+      "id": "probability-grade-incomplete",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-probability",
+          "kind": "short",
+          "prompt": "已知 P(A)=0.5、P(B)=0.4，什么时候交集为 0.2？",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "A 与 B 独立时相乘得到 0.2；没有独立性等条件，不能仅凭这两个边缘概率确定交集。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "明确独立条件",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "不把边缘概率乘法推广到任意事件",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-probability"
+          ]
+        },
+        "answer": "任何情况下交集都等于 0.2。"
+      },
+      "checks": [
+        "不能给遗漏条件或错误答案满分",
+        "扣分对应原评分细则"
+      ],
+      "expectedScore": {
+        "min": 0,
+        "max": 0
+      },
+      "response": {
+        "output": {
+          "kind": "grade",
+          "status": "graded",
+          "scores": [
+            {
+              "rubricId": "r1",
+              "score": 0,
+              "evidence": "回答“任何情况下”未明确独立条件。"
+            },
+            {
+              "rubricId": "r2",
+              "score": 0,
+              "evidence": "回答“任何情况下交集都等于 0.2”，错误地将边缘概率相乘推广到任意事件。"
+            }
+          ],
+          "feedback": "应说明：A 与 B 独立时，P(A∩B)=0.5×0.4=0.2；仅凭这两个边缘概率，不能确定交集概率。AI 评价可能出错。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 945,
+          "outputTokens": 139,
+          "cost": 0.00328,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 945,
+        "outputTokens": 139,
+        "cost": 0.00328,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "4ba28f18c18b25b5779c4a92639b79bcbc3e992811d31dba3fab46211b11b9e0",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 10439,
+        "queuedMs": 15,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 5126,
+        "firstTextMs": 6269,
+        "lastContentMs": 10278,
+        "generationCompletedMs": 10424,
+        "saveStartedMs": 10427,
+        "completedMs": 10439
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 2176,
+        "inputBytes": 3762,
+        "estimatedInputTokens": 3762,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "9b1df9683cbc791f9e65088fe448c59c96e1ce206a1a4bdf12e37bc88be99287",
+      "stages": {
+        "queueMs": 15,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 5126,
+        "firstTextWaitMs": 6269,
+        "generationMs": 4155,
+        "validationMs": 3,
+        "savingMs": 12,
+        "executionMs": 10439,
+        "observedElapsedMs": 10439
+      },
+      "durationMs": 11065,
+      "scoreMatchesReference": true,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "保持顺序的去重",
+      "reference": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。",
+      "id": "unique-extract",
+      "task": {
+        "kind": "extract",
+        "recitation": {
+          "learned": "结果是 [2,1,3]。Set 去掉重复值并保持首次插入顺序，不修改原数组。",
+          "unclear": "适用条件是什么？",
+          "application": "用一个小例子检验",
+          "topic": "保持顺序的去重"
+        },
+        "sources": [
+          {
+            "id": "source-unique",
+            "name": "保持顺序的去重.txt",
+            "text": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。"
+          }
+        ]
+      },
+      "checks": [
+        "仅引用给定来源",
+        "提取结论及适用条件",
+        "不扩展未提供的考核范围"
+      ],
+      "response": {
+        "output": {
+          "kind": "extract",
+          "candidates": [
+            {
+              "title": "用 Set 按首次出现顺序去重",
+              "description": "资料说明 JavaScript 的 Set 按插入顺序迭代。用户复述与资料示例一致：对整数数组 [2,1,2,3,1]，展开 new Set 后得到 [2,1,3]，原数组不变。用户追问适用条件；当前资料只提供了整数数组示例，其他输入类型的适用条件仍待核对。",
+              "sourceIds": [
+                "source-unique"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 779,
+          "outputTokens": 125,
+          "cost": 0.0028079999999999997,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 779,
+        "outputTokens": 125,
+        "cost": 0.0028079999999999997,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "9d374e49a87653d7d8460ebfe9e36c645f3fe9de43319543a8ddc27a7d153bed",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 8988,
+        "queuedMs": 16,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 3199,
+        "firstTextMs": 5027,
+        "lastContentMs": 8825,
+        "generationCompletedMs": 8970,
+        "saveStartedMs": 8975,
+        "completedMs": 8988
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 1713,
+        "inputBytes": 3053,
+        "estimatedInputTokens": 3053,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "00f83187c835999864d9ba41d061cd1068896ba24e36ce3ee390ef024db48df8",
+      "stages": {
+        "queueMs": 16,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 3199,
+        "firstTextWaitMs": 5027,
+        "generationMs": 3943,
+        "validationMs": 5,
+        "savingMs": 13,
+        "executionMs": 8988,
+        "observedElapsedMs": 8988
+      },
+      "durationMs": 9058,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "保持顺序的去重",
+      "reference": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。",
+      "id": "unique-followup",
+      "task": {
+        "kind": "followup",
+        "points": [
+          {
+            "id": "point-unique",
+            "title": "保持顺序的去重",
+            "description": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。",
+            "sourceIds": [
+              "source-unique"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "turns": [
+          {
+            "id": "turn-1",
+            "question": "解释 [...new Set([2,1,2,3,1])] 的结果和顺序。",
+            "answer": "结果是 [1,2,3]，因为 Set 会自动排序。",
+            "feedback": null,
+            "assisted": false,
+            "scopeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-unique",
+            "name": "保持顺序的去重.txt",
+            "text": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。"
+          }
+        ]
+      },
+      "checks": [
+        "针对回答中的遗漏或错误反馈",
+        "一次提出一个可回答的追问",
+        "不把未提及内容直接判为不会"
+      ],
+      "response": {
+        "output": {
+          "kind": "followup",
+          "question": "如果将输入改为 [3,2,3,1,2]，你认为 [...new Set([3,2,3,1,2])] 会得到什么结果？请说明你判断元素顺序的依据。",
+          "feedback": "你上次给出了 [1,2,3]，并认为 Set 会自动排序；这一顺序判断与当前资料不一致，需要进一步澄清。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 2284,
+          "outputTokens": 99,
+          "cost": 0.0055580000000000004,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 2284,
+        "outputTokens": 99,
+        "cost": 0.0055580000000000004,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "bcc2f0f51c2bd7dd53512c0f369c9e2b0f037790d2a18ac844fbc1edfc4872ba",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 8497,
+        "queuedMs": 14,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 4674,
+        "firstTextMs": 6083,
+        "lastContentMs": 7609,
+        "generationCompletedMs": 8478,
+        "saveStartedMs": 8483,
+        "completedMs": 8497
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 5497,
+        "inputBytes": 8919,
+        "estimatedInputTokens": 8919,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "563436942dfda7b90dbb9d8fe249f9afbefd2b1af361df931cd082bc59e2b215",
+      "stages": {
+        "queueMs": 14,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 4674,
+        "firstTextWaitMs": 6083,
+        "generationMs": 2395,
+        "validationMs": 5,
+        "savingMs": 14,
+        "executionMs": 8497,
+        "observedElapsedMs": 8497
+      },
+      "durationMs": 9064,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "保持顺序的去重",
+      "reference": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。",
+      "id": "unique-quiz",
+      "task": {
+        "kind": "quiz",
+        "points": [
+          {
+            "id": "point-unique",
+            "title": "保持顺序的去重",
+            "description": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。",
+            "sourceIds": [
+              "source-unique"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-unique",
+            "name": "保持顺序的去重.txt",
+            "text": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。"
+          }
+        ],
+        "count": 2,
+        "code": {
+          "languages": [
+            "javascript"
+          ]
+        }
+      },
+      "checks": [
+        "两道题均在给定范围内",
+        "参考答案和评分细则正确",
+        "检查骨架不泄露答案、测试可执行且预期正确；代码题是否生成单独记录"
+      ],
+      "response": {
+        "output": {
+          "kind": "quiz",
+          "questions": [
+            {
+              "knowledgeId": "point-unique",
+              "kind": "code",
+              "prompt": "实现 uniqueInOrder(values)：接收整数数组，使用 Set 返回按首次出现顺序去重的新数组，不修改原数组。空数组应返回空数组。",
+              "options": [],
+              "correctIndex": null,
+              "referenceAnswer": "function uniqueInOrder(values) {\n  return [...new Set(values)];\n}\nSet 按插入顺序迭代，重复值不会新增元素；展开得到新数组，不修改输入数组。",
+              "rubric": [
+                {
+                  "id": "use-set",
+                  "description": "使用 Set 去除重复整数。",
+                  "maxScore": 3
+                },
+                {
+                  "id": "order",
+                  "description": "返回数组，且元素按首次出现顺序排列。",
+                  "maxScore": 3
+                },
+                {
+                  "id": "boundaries",
+                  "description": "不修改原数组，并正确处理空数组。",
+                  "maxScore": 2
+                }
+              ],
+              "sourceIds": [
+                "source-unique"
+              ],
+              "code": {
+                "language": "javascript",
+                "starter": "// 目标：使用 Set 对整数数组去重，保留首次出现的顺序。\n// 输入：整数数组 values；输出：去重后的新数组。\n// 关键步骤：构造去重集合，再生成结果数组。\n// 边界：空数组返回空数组；不得修改输入数组。\nfunction uniqueInOrder(values) {\n  // TODO：实现保持顺序的去重。\n  throw new Error('TODO');\n}",
+                "tests": [
+                  {
+                    "name": "重复元素与插入顺序",
+                    "code": "const input = [2, 1, 2, 3, 1];\nconst result = uniqueInOrder(input);\nassert(Array.isArray(result), '应返回数组');\nassertEqual(JSON.stringify(result), '[2,1,3]');\nassertEqual(JSON.stringify(input), '[2,1,2,3,1]');\nassert(result !== input, '应返回新数组');"
+                  },
+                  {
+                    "name": "空数组",
+                    "code": "const empty = [];\nconst emptyResult = uniqueInOrder(empty);\nassert(Array.isArray(emptyResult), '应返回数组');\nassertEqual(emptyResult.length, 0);\nassert(emptyResult !== empty, '空输入也应返回新数组');"
+                  },
+                  {
+                    "name": "不是数值排序",
+                    "code": "assertEqual(JSON.stringify(uniqueInOrder([7, -2, 7, 0, -2])), '[7,-2,0]');"
+                  }
+                ]
+              }
+            },
+            {
+              "knowledgeId": "point-unique",
+              "kind": "short",
+              "prompt": "有人认为：“整数数组经 Set 去重并展开后，无论原数组如何排列，结果都会按数值从小到大排列。”这一说法是否正确？请给出一个整数数组作为反例，写出展开结果并说明理由。",
+              "options": [],
+              "correctIndex": null,
+              "referenceAnswer": "不正确。例如输入 [3,1,3,2]，展开 new Set 后为 [3,1,2]，而不是 [1,2,3]。Set 按插入顺序迭代，所以去重结果保留各值首次出现的顺序，并非按数值排序。其他正确反例同样可接受。",
+              "rubric": [
+                {
+                  "id": "judgment",
+                  "description": "指出该说法不正确。",
+                  "maxScore": 1
+                },
+                {
+                  "id": "counterexample",
+                  "description": "提供能区分插入顺序与数值升序的整数数组，并正确写出去重展开结果。",
+                  "maxScore": 3
+                },
+                {
+                  "id": "reason",
+                  "description": "说明 Set 按插入顺序迭代，结果保留首次出现顺序而非数值排序。",
+                  "maxScore": 2
+                }
+              ],
+              "sourceIds": [
+                "source-unique"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 2226,
+          "outputTokens": 854,
+          "cost": 0.012992,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 2226,
+        "outputTokens": 854,
+        "cost": 0.012992,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "5531c1a4569061005a2228f028a9b8c6f41bba38637d98af96ca88e6839b70d0",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 31958,
+        "queuedMs": 15,
+        "totalTimeoutMs": 120000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 1587,
+        "firstTextMs": 9030,
+        "lastContentMs": 30843,
+        "generationCompletedMs": 31944,
+        "saveStartedMs": 31947,
+        "completedMs": 31958
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 5376,
+        "inputBytes": 8756,
+        "estimatedInputTokens": 8756,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 120000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "5453cdd479a4be22769c63a2763cb334177f7312a01135d474151fc3ded8f60d",
+      "stages": {
+        "queueMs": 15,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 1587,
+        "firstTextWaitMs": 9030,
+        "generationMs": 22914,
+        "validationMs": 3,
+        "savingMs": 11,
+        "executionMs": 31958,
+        "observedElapsedMs": 31958
+      },
+      "durationMs": 32169,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "保持顺序的去重",
+      "reference": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。",
+      "id": "unique-grade-correct",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-unique",
+          "kind": "short",
+          "prompt": "解释 [...new Set([2,1,2,3,1])] 的结果和顺序。",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "结果是 [2,1,3]。Set 去掉重复值并保持首次插入顺序，不修改原数组。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "结果为 [2,1,3]",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "顺序来自首次插入而不是排序",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-unique"
+          ]
+        },
+        "answer": "结果是 [2,1,3]。Set 去掉重复值并保持首次插入顺序，不修改原数组。"
+      },
+      "checks": [
+        "完整正确回答应得满分",
+        "每项依据来自答案内容"
+      ],
+      "expectedScore": {
+        "min": 2,
+        "max": 2
+      },
+      "response": null,
+      "usage": null,
+      "promptHash": "6ef2c82e133339cab07f176a2f4de4363a9d83160fc981d1190baf7892076ef5",
+      "error": "MODEL_FAILED",
+      "progress": {
+        "phase": "waiting",
+        "elapsedMs": 3913,
+        "queuedMs": 17,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "completedMs": 3913
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 2190,
+        "inputBytes": 3774,
+        "estimatedInputTokens": 3774,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "59637d17764e784b725737417bb7861d1593d4ec2d9e9a6dcad8f21a85d3b2ca",
+      "stages": {
+        "queueMs": 17,
+        "preparationMs": 0,
+        "firstResponseWaitMs": null,
+        "firstTextWaitMs": null,
+        "generationMs": null,
+        "validationMs": null,
+        "savingMs": null,
+        "executionMs": 3913,
+        "observedElapsedMs": 3913
+      },
+      "durationMs": 4054,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "保持顺序的去重",
+      "reference": "JavaScript 的 Set 按插入顺序迭代。对整数数组 [2,1,2,3,1]，展开 new Set 后为 [2,1,3]，原数组不变。",
+      "id": "unique-grade-incomplete",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-unique",
+          "kind": "short",
+          "prompt": "解释 [...new Set([2,1,2,3,1])] 的结果和顺序。",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "结果是 [2,1,3]。Set 去掉重复值并保持首次插入顺序，不修改原数组。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "结果为 [2,1,3]",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "顺序来自首次插入而不是排序",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-unique"
+          ]
+        },
+        "answer": "结果是 [1,2,3]，因为 Set 会自动排序。"
+      },
+      "checks": [
+        "不能给遗漏条件或错误答案满分",
+        "扣分对应原评分细则"
+      ],
+      "expectedScore": {
+        "min": 0,
+        "max": 0
+      },
+      "response": {
+        "output": {
+          "kind": "grade",
+          "status": "graded",
+          "scores": [
+            {
+              "rubricId": "r1",
+              "score": 0,
+              "evidence": "回答“结果是 [1,2,3]”，与参考结果 [2,1,3] 不符。"
+            },
+            {
+              "rubricId": "r2",
+              "score": 0,
+              "evidence": "回答“Set 会自动排序”，但 Set 保持首次插入顺序，不会自动排序。"
+            }
+          ],
+          "feedback": "正确结果是 [2,1,3]：依次保留首次出现的 2、1、3，跳过重复值。Set 去重但不排序，也不修改原数组。AI 评价可能出错。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 938,
+          "outputTokens": 145,
+          "cost": 0.003326,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 938,
+        "outputTokens": 145,
+        "cost": 0.003326,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "9c7e1f23c6f3febb5cfcd1738efd81c5e7fb73e761d0f42f18a9ddc1355f078a",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 9615,
+        "queuedMs": 15,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 5795,
+        "firstTextMs": 7473,
+        "lastContentMs": 9598,
+        "generationCompletedMs": 9599,
+        "saveStartedMs": 9602,
+        "completedMs": 9615
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 2177,
+        "inputBytes": 3733,
+        "estimatedInputTokens": 3733,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "7d2e2751f1c1b0f672e5a8a17e90c7702cbb222c8ff340a73ca5402d45c00893",
+      "stages": {
+        "queueMs": 15,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 5795,
+        "firstTextWaitMs": 7473,
+        "generationMs": 2126,
+        "validationMs": 3,
+        "savingMs": 13,
+        "executionMs": 9615,
+        "observedElapsedMs": 9615
+      },
+      "durationMs": 10072,
+      "scoreMatchesReference": true,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "算术平均值",
+      "reference": "非空数值列表的算术平均值为总和除以元素个数。[2,4,9] 的平均值为 5。空列表没有这里定义的平均值，函数应显式拒绝空输入。",
+      "id": "mean-extract",
+      "task": {
+        "kind": "extract",
+        "recitation": {
+          "learned": "总和 15 除以个数 3 得到 5。空列表应抛出明确错误，而不是直接除以零或假设均值为零。",
+          "unclear": "适用条件是什么？",
+          "application": "用一个小例子检验",
+          "topic": "算术平均值"
+        },
+        "sources": [
+          {
+            "id": "source-mean",
+            "name": "算术平均值.txt",
+            "text": "非空数值列表的算术平均值为总和除以元素个数。[2,4,9] 的平均值为 5。空列表没有这里定义的平均值，函数应显式拒绝空输入。"
+          }
+        ]
+      },
+      "checks": [
+        "仅引用给定来源",
+        "提取结论及适用条件",
+        "不扩展未提供的考核范围"
+      ],
+      "response": {
+        "output": {
+          "kind": "extract",
+          "candidates": [
+            {
+              "title": "算术平均值的计算与适用条件",
+              "description": "资料定义：非空数值列表的算术平均值等于元素总和除以元素个数。用户复述的“15÷3=5”与资料中列表 [2,4,9] 的示例一致。针对用户提出的适用条件，本资料明确限定为非空数值列表；此理解待用户确认。",
+              "sourceIds": [
+                "source-mean"
+              ]
+            },
+            {
+              "title": "空列表的处理",
+              "description": "资料指出，空列表没有这里定义的平均值，函数应显式拒绝空输入。用户将其表述为抛出明确错误，而不是直接除以零或假设均值为零；这与显式拒绝的要求一致，但资料未限定具体错误类型。",
+              "sourceIds": [
+                "source-mean"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 789,
+          "outputTokens": 194,
+          "cost": 0.0035180000000000003,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 789,
+        "outputTokens": 194,
+        "cost": 0.0035180000000000003,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "ed9a5af78f7b374671393232ece019ea9ecd46d9da83fa4384b35c3defb2d888",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 9644,
+        "queuedMs": 16,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 4308,
+        "firstTextMs": 4390,
+        "lastContentMs": 9444,
+        "generationCompletedMs": 9627,
+        "saveStartedMs": 9631,
+        "completedMs": 9644
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 1706,
+        "inputBytes": 3112,
+        "estimatedInputTokens": 3112,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "76a257be8a604b8ed04fe85905912763e9501faf81949d8ac10c28e692f4591e",
+      "stages": {
+        "queueMs": 16,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 4308,
+        "firstTextWaitMs": 4390,
+        "generationMs": 5237,
+        "validationMs": 4,
+        "savingMs": 13,
+        "executionMs": 9644,
+        "observedElapsedMs": 9644
+      },
+      "durationMs": 10066,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "算术平均值",
+      "reference": "非空数值列表的算术平均值为总和除以元素个数。[2,4,9] 的平均值为 5。空列表没有这里定义的平均值，函数应显式拒绝空输入。",
+      "id": "mean-followup",
+      "task": {
+        "kind": "followup",
+        "points": [
+          {
+            "id": "point-mean",
+            "title": "算术平均值",
+            "description": "非空数值列表的算术平均值为总和除以元素个数。[2,4,9] 的平均值为 5。空列表没有这里定义的平均值，函数应显式拒绝空输入。",
+            "sourceIds": [
+              "source-mean"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "turns": [
+          {
+            "id": "turn-1",
+            "question": "如何计算 [2,4,9] 的平均值，空列表应如何处理？",
+            "answer": "取中间元素 4 就是平均值，空列表返回零。",
+            "feedback": null,
+            "assisted": false,
+            "scopeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-mean",
+            "name": "算术平均值.txt",
+            "text": "非空数值列表的算术平均值为总和除以元素个数。[2,4,9] 的平均值为 5。空列表没有这里定义的平均值，函数应显式拒绝空输入。"
+          }
+        ]
+      },
+      "checks": [
+        "针对回答中的遗漏或错误反馈",
+        "一次提出一个可回答的追问",
+        "不把未提及内容直接判为不会"
+      ],
+      "response": {
+        "output": {
+          "kind": "followup",
+          "question": "你说“取中间元素就是平均值”，那么列表 [9,2,4] 的平均值会是多少？请说明你的计算依据。",
+          "feedback": "你将平均值理解为中间元素，并提出空列表返回零；这两点与当前资料存在冲突。本次先澄清你计算平均值的依据。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 2284,
+          "outputTokens": 86,
+          "cost": 0.0054280000000000005,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 2284,
+        "outputTokens": 86,
+        "cost": 0.0054280000000000005,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "7f2c23b97f2b2c39f65525a2f77b1c014a3895d21f5a3ce358c7ede6991412c1",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 14354,
+        "queuedMs": 15,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 9138,
+        "firstTextMs": 11557,
+        "lastContentMs": 13967,
+        "generationCompletedMs": 14334,
+        "saveStartedMs": 14340,
+        "completedMs": 14354
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 5458,
+        "inputBytes": 9010,
+        "estimatedInputTokens": 9010,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "11b50824fc7fe20bbebe321ba71255ac2aa4334225356973ee76923dafbdc483",
+      "stages": {
+        "queueMs": 15,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 9138,
+        "firstTextWaitMs": 11557,
+        "generationMs": 2777,
+        "validationMs": 6,
+        "savingMs": 14,
+        "executionMs": 14354,
+        "observedElapsedMs": 14354
+      },
+      "durationMs": 15091,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "算术平均值",
+      "reference": "非空数值列表的算术平均值为总和除以元素个数。[2,4,9] 的平均值为 5。空列表没有这里定义的平均值，函数应显式拒绝空输入。",
+      "id": "mean-quiz",
+      "task": {
+        "kind": "quiz",
+        "points": [
+          {
+            "id": "point-mean",
+            "title": "算术平均值",
+            "description": "非空数值列表的算术平均值为总和除以元素个数。[2,4,9] 的平均值为 5。空列表没有这里定义的平均值，函数应显式拒绝空输入。",
+            "sourceIds": [
+              "source-mean"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-mean",
+            "name": "算术平均值.txt",
+            "text": "非空数值列表的算术平均值为总和除以元素个数。[2,4,9] 的平均值为 5。空列表没有这里定义的平均值，函数应显式拒绝空输入。"
+          }
+        ],
+        "count": 2,
+        "code": {
+          "languages": [
+            "python"
+          ]
+        }
+      },
+      "checks": [
+        "两道题均在给定范围内",
+        "参考答案和评分细则正确",
+        "检查骨架不泄露答案、测试可执行且预期正确；代码题是否生成单独记录"
+      ],
+      "response": {
+        "output": {
+          "kind": "quiz",
+          "questions": [
+            {
+              "knowledgeId": "point-mean",
+              "kind": "code",
+              "prompt": "实现 arithmetic_mean(values)：接收数值列表，返回算术平均值；空列表必须抛出 ValueError。",
+              "options": [],
+              "correctIndex": null,
+              "referenceAnswer": "def arithmetic_mean(values):\n    if not values:\n        raise ValueError('空列表没有定义平均值')\n    return sum(values) / len(values)\n\n要点：先显式拒绝空列表，再用总和除以元素个数。",
+              "rubric": [
+                {
+                  "id": "calculation",
+                  "description": "对非空列表正确计算总和并除以元素个数。",
+                  "maxScore": 5
+                },
+                {
+                  "id": "empty",
+                  "description": "空列表显式抛出 ValueError，而非返回数值或意外触发除零异常。",
+                  "maxScore": 3
+                },
+                {
+                  "id": "boundaries",
+                  "description": "正确处理单元素、零值和非整数平均值。",
+                  "maxScore": 2
+                }
+              ],
+              "sourceIds": [
+                "source-mean"
+              ],
+              "code": {
+                "language": "python",
+                "starter": "def arithmetic_mean(values):\n    # 目标：计算数值列表的算术平均值。\n    # 输入：数值列表 values；输出：平均值。\n    # 关键步骤：检查输入边界，再按平均值定义计算。\n    # 边界：空列表必须抛出 ValueError；注意单元素和零值。\n    # TODO：完成实现。\n    raise NotImplementedError\n",
+                "tests": [
+                  {
+                    "name": "普通列表",
+                    "code": "assert arithmetic_mean([2, 4, 9]) == 5"
+                  },
+                  {
+                    "name": "单元素和零值",
+                    "code": "assert arithmetic_mean([7]) == 7\nassert arithmetic_mean([0, 0]) == 0"
+                  },
+                  {
+                    "name": "非整数结果",
+                    "code": "assert abs(arithmetic_mean([1, 2]) - 1.5) < 1e-9"
+                  },
+                  {
+                    "name": "拒绝空列表",
+                    "code": "try:\n    arithmetic_mean([])\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('空列表应抛出 ValueError')"
+                  }
+                ]
+              }
+            },
+            {
+              "knowledgeId": "point-mean",
+              "kind": "single",
+              "prompt": "某人计算列表 [0, 6] 的平均值时说：“0 不贡献总和，所以也不计入元素个数，平均值是 6。”以下判断哪项正确？",
+              "options": [
+                "正确，因为只需统计非零元素。",
+                "不正确，0 也是一个元素，平均值是 3。",
+                "不正确，只要列表含有 0，平均值就是 0。",
+                "该列表没有定义平均值。"
+              ],
+              "correctIndex": 1,
+              "referenceAnswer": "第二项正确。列表总和为 6，元素个数为 2，因此平均值为 6÷2=3。零值仍计入元素个数。",
+              "rubric": [
+                {
+                  "id": "zero-count",
+                  "description": "选择第二项，正确区分零对总和与元素个数的影响。",
+                  "maxScore": 2
+                }
+              ],
+              "sourceIds": [
+                "source-mean"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 2228,
+          "outputTokens": 723,
+          "cost": 0.011686,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 2228,
+        "outputTokens": 723,
+        "cost": 0.011686,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "3358dac4a0a69b58f26cea68a17893b4188dce346c06727d3d7b1f854bef826a",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 29863,
+        "queuedMs": 17,
+        "totalTimeoutMs": 120000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 4931,
+        "firstTextMs": 10864,
+        "lastContentMs": 29413,
+        "generationCompletedMs": 29848,
+        "saveStartedMs": 29851,
+        "completedMs": 29863
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 5346,
+        "inputBytes": 8826,
+        "estimatedInputTokens": 8826,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 120000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "934b5d13f1c3e8c6465c1e92463339242a335f259257ca702027a0dbf4b3fc96",
+      "stages": {
+        "queueMs": 17,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 4931,
+        "firstTextWaitMs": 10864,
+        "generationMs": 18984,
+        "validationMs": 3,
+        "savingMs": 12,
+        "executionMs": 29863,
+        "observedElapsedMs": 29863
+      },
+      "durationMs": 30144,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "算术平均值",
+      "reference": "非空数值列表的算术平均值为总和除以元素个数。[2,4,9] 的平均值为 5。空列表没有这里定义的平均值，函数应显式拒绝空输入。",
+      "id": "mean-grade-correct",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-mean",
+          "kind": "short",
+          "prompt": "如何计算 [2,4,9] 的平均值，空列表应如何处理？",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "总和 15 除以个数 3 得到 5。空列表应抛出明确错误，而不是直接除以零或假设均值为零。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "计算总和除以个数得到 5",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "明确拒绝空输入",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-mean"
+          ]
+        },
+        "answer": "总和 15 除以个数 3 得到 5。空列表应抛出明确错误，而不是直接除以零或假设均值为零。"
+      },
+      "checks": [
+        "完整正确回答应得满分",
+        "每项依据来自答案内容"
+      ],
+      "expectedScore": {
+        "min": 2,
+        "max": 2
+      },
+      "response": null,
+      "usage": null,
+      "promptHash": "0802d1471b1f09ce41bd9f9b920c04d49db0cbecda6dd410eb1f33f60ab114ab",
+      "error": "MODEL_FAILED",
+      "progress": {
+        "phase": "waiting",
+        "elapsedMs": 2675,
+        "queuedMs": 17,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "completedMs": 2675
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 2186,
+        "inputBytes": 3830,
+        "estimatedInputTokens": 3830,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "fe52c70464fad31d8e34d5a9181f302c2cf2ad5b08aa3847d5e499649c7354ea",
+      "stages": {
+        "queueMs": 17,
+        "preparationMs": 0,
+        "firstResponseWaitMs": null,
+        "firstTextWaitMs": null,
+        "generationMs": null,
+        "validationMs": null,
+        "savingMs": null,
+        "executionMs": 2675,
+        "observedElapsedMs": 2675
+      },
+      "durationMs": 3051,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "算术平均值",
+      "reference": "非空数值列表的算术平均值为总和除以元素个数。[2,4,9] 的平均值为 5。空列表没有这里定义的平均值，函数应显式拒绝空输入。",
+      "id": "mean-grade-incomplete",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-mean",
+          "kind": "short",
+          "prompt": "如何计算 [2,4,9] 的平均值，空列表应如何处理？",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "总和 15 除以个数 3 得到 5。空列表应抛出明确错误，而不是直接除以零或假设均值为零。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "计算总和除以个数得到 5",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "明确拒绝空输入",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-mean"
+          ]
+        },
+        "answer": "取中间元素 4 就是平均值，空列表返回零。"
+      },
+      "checks": [
+        "不能给遗漏条件或错误答案满分",
+        "扣分对应原评分细则"
+      ],
+      "expectedScore": {
+        "min": 0,
+        "max": 0
+      },
+      "response": {
+        "output": {
+          "kind": "grade",
+          "status": "graded",
+          "scores": [
+            {
+              "rubricId": "r1",
+              "score": 0,
+              "evidence": "回答“取中间元素 4 就是平均值”，未按总和 15 除以个数 3 得到 5。"
+            },
+            {
+              "rubricId": "r2",
+              "score": 0,
+              "evidence": "回答“空列表返回零”，与应明确拒绝空输入的标准不符。"
+            }
+          ],
+          "feedback": "平均值应为 (2+4+9)/3=5；取中间元素得到的是中位数。空列表应抛出明确错误，不能默认返回零。AI 评价可能出错。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 944,
+          "outputTokens": 146,
+          "cost": 0.0033480000000000003,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 944,
+        "outputTokens": 146,
+        "cost": 0.0033480000000000003,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "fafc7576b032089054eedd4c59c9cc3f0328e3af022ddb215c4363b403deaf6b",
+      "error": null,
+      "progress": {
+        "phase": "saving",
+        "elapsedMs": 10644,
+        "queuedMs": 16,
+        "totalTimeoutMs": 60000,
+        "requestStartedMs": 0,
+        "firstResponseMs": 5323,
+        "firstTextMs": 7325,
+        "lastContentMs": 10435,
+        "generationCompletedMs": 10627,
+        "saveStartedMs": 10631,
+        "completedMs": 10644
+      },
+      "request": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "authMethod": "oauth",
+        "cacheRetention": "none",
+        "inputChars": 2162,
+        "inputBytes": 3770,
+        "estimatedInputTokens": 3770,
+        "contextWindow": 272000,
+        "maxOutputTokens": 4096,
+        "timeoutMs": 60000,
+        "firstResponseTimeoutMs": 60000,
+        "streamIdleTimeoutMs": 45000
+      },
+      "boundPromptHash": "b971c2c3daac3eb5613fa407b3a76052a5f86dd6c2797452b8fb7307b1507b8a",
+      "stages": {
+        "queueMs": 16,
+        "preparationMs": 0,
+        "firstResponseWaitMs": 5323,
+        "firstTextWaitMs": 7325,
+        "generationMs": 3302,
+        "validationMs": 4,
+        "savingMs": 13,
+        "executionMs": 10644,
+        "observedElapsedMs": 10644
+      },
+      "durationMs": 11060,
+      "scoreMatchesReference": true,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    }
+  ]
+}

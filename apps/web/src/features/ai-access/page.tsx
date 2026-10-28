@@ -1,5 +1,6 @@
 'use client';
 
+import { Feedback } from '../../components/feedback';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ExternalLink, KeyRound, Unplug } from 'lucide-react';
 import type { AiModelConfiguration, AiProviderView, OAuthSessionView } from '@sanxing/contracts';
@@ -7,6 +8,7 @@ import { useApp } from '../../components/store';
 import { Badge, Card, Heading } from '../../components/ui';
 import { TokenHeatmap } from './token-heatmap';
 import { ModelConfiguration } from './model-configuration';
+import { Skills } from './skills';
 import { ConnectionTest } from './connection-test';
 import { isWaiting, useOAuth } from './use-oauth';
 import styles from './ai-access.module.css';
@@ -81,15 +83,14 @@ function AuthorizationFlow({ provider, actions, onComplete }: { provider: AiProv
       onClick={() => { void actions.perform(provider.id, `/ai/oauth/${encodeURIComponent(provider.id)}/start`); }}><KeyRound size={15} />{provider.connected ? '开始重新授权' : '开始授权'}</button>}
     {!provider.oauthAvailable && <p className="small muted">此 Provider 当前不支持发起 OAuth 授权。</p>}
     {actions.busy === provider.id && <p role="status" className="small muted">正在提交授权操作…</p>}
-    {actions.actionError?.providerId === provider.id && <p role="alert" className={styles.error}>{actions.actionError.message} 请核对状态后重试。</p>}
+    {actions.actionError?.providerId === provider.id && <Feedback title="操作提示" tone="error" className={styles.error}>{actions.actionError.message} 请核对状态后重试。</Feedback>}
     {session && session.status !== 'succeeded' && <div className={styles.session}>
-      <p role="status"><strong>{expired ? '授权会话已到期，请取消后重新授权' : statuses[session.status]}</strong></p>
-      {session.error && <p role="alert" className={styles.error}>{session.error}</p>}
+      {waiting && !expired ? <p role="status"><strong>{statuses[session.status]}</strong></p> : <Feedback title={expired ? '授权会话已到期' : statuses[session.status]} tone={session.status === 'failed' ? 'error' : 'info'}>{session.error || (expired ? '请取消本次流程后重新授权。' : statuses[session.status])}</Feedback>}
       {waiting && !expired && <>
         <p className="small muted">会话到期：{timestamp(session.expiresAt)}（本地时间）</p>
         {session.instructions && <p className={styles.instructions}>{session.instructions}</p>}
         {url && <a className="button" href={url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"><ExternalLink size={15} />打开厂商授权页（新窗口）</a>}
-        {session.url && !url && <p role="alert" className={styles.error}>授权链接格式无效，请取消后重试。</p>}
+        {session.url && !url && <Feedback title="操作提示" tone="error" className={styles.error}>授权链接格式无效，请取消后重试。</Feedback>}
         {session.input && <SessionInput key={`${session.id}:${session.input.id}`} session={session} disabled={disabled}
           submit={(promptId, value) => actions.perform(provider.id, `/ai/oauth/sessions/${encodeURIComponent(session.id)}/input`, { promptId, value })} />}
       </>}
@@ -107,6 +108,7 @@ function AuthenticatedAccess() {
   const actions = useOAuth(api);
   const overview = actions.overview;
   const [configuration, setConfiguration] = useState<AiModelConfiguration | null>(null);
+  const [notice, setNotice] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
   const onTestComplete = useCallback(() => { setRefreshKey(value => value + 1); actions.retry(); }, [actions.retry]);
   const [adding, setAdding] = useState(false);
@@ -119,16 +121,19 @@ function AuthenticatedAccess() {
   const closeFlow = useCallback(() => { setAdding(false); setSelectedId(''); }, []);
   return <div className={styles.page}>
     <Heading eyebrow="AI CONFIGURATION" title="AI 配置" description="自行选择模型，明确授权，按需调用。" />
+    <Card title="模型与授权" caption="在这里选择模型、连接 Provider，并保存本次配置。" className={styles.modelAccess}>
+    <div className={styles.modelAccessGrid}>
     <ModelConfiguration connectionKey={connectionKey} onConfigurationChange={setConfiguration} />
     <section className={styles.providers} aria-labelledby="ai-providers-title">
-      <div className={styles.row}>
-        <h2 id="ai-providers-title">Provider 授权</h2>
+      <div className={styles.sectionHeading}>
+        <div><h3 id="ai-providers-title">Provider 授权</h3><p>{overview ? `${overview.providers.filter(provider => provider.connected).length} 个已连接账号 · ` : ''}管理账号连接与授权状态</p></div>
         <button type="button" className="button subtle" disabled={!!actions.busy || actions.loading} onClick={actions.retry}>刷新授权状态</button>
       </div>
-      {actions.error && <div role="alert" className={styles.failure}><p>{actions.error}{overview ? ' 下方保留上次读取的状态。' : ''}</p>
-        <button type="button" className="button" disabled={!!actions.busy || actions.loading} onClick={actions.retry}>重试读取授权状态</button></div>}
+      {actions.error && <Feedback title="操作提示" tone="error" className={styles.failure}><p>{actions.error}{overview ? ' 下方保留上次读取的状态。' : ''}</p>
+        <button type="button" className="button" disabled={!!actions.busy || actions.loading} onClick={actions.retry}>重试读取授权状态</button></Feedback>}
       {actions.loading && !overview && <p role="status" className="muted">正在读取授权状态…</p>}
       {overview && <>
+        <div className={styles.providerList}>
         {overview.providers.filter(provider => provider.connected).map(provider => {
           const tokenExpired = !!provider.expiresAt && Date.parse(provider.expiresAt) <= Date.now();
           return <Card key={provider.id} className={styles.provider}>
@@ -141,13 +146,14 @@ function AuthenticatedAccess() {
                 onClick={() => { setAdding(false); setSelectedId(provider.id); }}>{isWaiting(provider.session) ? '继续授权' : '重新授权'}</button>
               <button type="button" className="button" aria-label={`断开 ${provider.name} 连接`} disabled={!!actions.busy || isWaiting(provider.session)} onClick={async () => {
                 if (await confirm({ title: `断开 ${provider.name}`, message: '仅移除本应用保存的凭据，不代表在厂商处撤销授权，也不能保证已开始的请求停止。如需撤销，请前往厂商账号设置。', confirmLabel: '断开连接', tone: 'danger' })) {
-                  void actions.perform(provider.id, `/ai/providers/${encodeURIComponent(provider.id)}/disconnect`);
+                  if (await actions.perform(provider.id, `/ai/providers/${encodeURIComponent(provider.id)}/disconnect`)) setNotice(`${provider.name} 已断开连接。`);
                 }
               }}><Unplug size={15} />断开连接</button>
             </div>
-            {actions.actionError?.providerId === provider.id && selectedId !== provider.id && <p role="alert" className={styles.error}>{actions.actionError.message}</p>}
+            {actions.actionError?.providerId === provider.id && selectedId !== provider.id && <Feedback title="操作提示" tone="error" className={styles.error}>{actions.actionError.message}</Feedback>}
           </Card>;
         })}
+        </div>
         {!overview.providers.some(provider => provider.connected) && <p className="small muted">尚无已连接的 Provider，可展开“添加授权”。</p>}
         <div className={styles.authorization}>
           <button type="button" className="button" aria-expanded={adding} aria-controls="ai-add-authorization" onClick={() => {
@@ -163,12 +169,16 @@ function AuthenticatedAccess() {
             {!disconnected.length && <p className="small muted">当前没有未连接的 Provider。</p>}
           </div>}
           {selected && <>
-            <AuthorizationFlow key={selected.id} provider={selected} actions={actions} onComplete={closeFlow} />
+            <AuthorizationFlow key={selected.id} provider={selected} actions={actions} onComplete={() => { setNotice(`${selected.name} 授权成功。`); closeFlow(); }} />
             <button type="button" className="button subtle" onClick={closeFlow}>收起授权流程</button>
           </>}
         </div>
       </>}
     </section>
+    </div>
+    </Card>
+    <Skills />
+    {notice && <Feedback title="授权状态已更新" tone="success" onDismiss={() => setNotice('')}>{notice}</Feedback>}
     {overview && <TokenHeatmap api={api} mode={overview.mode} refreshKey={refreshKey} />}
   </div>;
 }

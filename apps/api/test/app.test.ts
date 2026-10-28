@@ -121,3 +121,74 @@ describe('self-hosted HTTP integration with real Pi faux Provider', () => {
     expect((await instance.app.inject({ url: '/api/state', headers: { cookie } })).statusCode).toBe(401);
   });
 });
+
+describe('assessment corrections and knowledge lifecycle', () => {
+  async function submittedShort() {
+    const { quizId } = await createQuiz();
+    let quiz = (await repository.read()).quizzes[quizId]!;
+    for (const question of quiz.questions) {
+      const response = await write('POST', `/api/questions/${question.id}/answers`, { version: quiz.version, action: question.kind === 'short' ? 'answer' : 'skip', text: question.kind === 'short' ? '缓存空值，并设置适当 TTL。' : '', selectedIndex: null, assisted: false });
+      expect(response.statusCode).toBeLessThan(300); await instance.worker.tick(); quiz = (await repository.read()).quizzes[quizId]!;
+    }
+    expect((await write('POST', `/api/quizzes/${quizId}/submit`, { version: quiz.version, confirmSkip: true })).statusCode).toBe(200);
+    quiz = (await repository.read()).quizzes[quizId]!;
+    return { quiz, question: quiz.questions.find(question => question.kind === 'short')! };
+  }
+  it('persists fixed-answer detail and hides rubrics before submission', async () => {
+    const { quizId } = await createQuiz(); let quiz = (await repository.read()).quizzes[quizId]!;
+    const question = quiz.questions[0]!;
+    expect((await state()).quizzes.find(item => item.id === quizId)!.questions[0]).not.toHaveProperty('rubric');
+    await write('POST', `/api/questions/${question.id}/answers`, { version: quiz.version, action: 'answer', selectedIndex: question.correctIndex, assisted: false });
+    quiz = (await repository.read()).quizzes[quizId]!;
+    expect(quiz.answers[question.id]!.assessment.scores?.map(item => item.score)).toEqual(question.rubric.map(item => item.maxScore));
+  });
+  it('keeps immutable answers, versioned manual corrections, disputes and schedules through persistence', async () => {
+    const { quiz, question } = await submittedShort(); const original = structuredClone(quiz.answers[question.id]!);
+    const schedules = (await repository.read()).cards;
+    let response = await write('POST', `/api/questions/${question.id}/disputes`, { version: quiz.version, assessmentVersion: original.assessment.version, reason: '需要按原评分标准核对' });
+    expect(response.statusCode).toBe(200);
+    let current = (await repository.read()).quizzes[quiz.id]!;
+    const body = { version: current.version, assessmentVersion: original.assessment.version, method: 'manual', reason: '逐项核对原文', feedback: '人工确认关键点完整', scores: question.rubric.map(row => ({ rubricId: row.id, score: row.maxScore, evidence: '答案提到了空值及 TTL' })) };
+    response = await write('POST', `/api/questions/${question.id}/assessment-revisions`, body, 'manual-revision-idempotent'); expect(response.statusCode).toBe(200);
+    expect((await write('POST', `/api/questions/${question.id}/assessment-revisions`, body, 'manual-revision-idempotent')).statusCode).toBe(200);
+    const data = await repository.read(); current = data.quizzes[quiz.id]!;
+    const answer = current.answers[question.id]!;
+    expect(answer.text).toBe(original.text); expect(answer.submittedAt).toBe(original.submittedAt);
+    expect(answer.assessmentHistory).toEqual([original.assessment]); expect(answer.assessment.source).toBe('manual');
+    expect(answer.assessment.scores?.length).toBe(question.rubric.length); expect(answer.dispute?.resolvedAt).not.toBeNull();
+    expect(data.cards).toEqual(schedules); expect(data.reviewEvents).toEqual({});
+    expect(data.evidence[`${quiz.id}:${question.id}`]!.answer).toEqual(answer);
+    // The same validation used by backup restore must retain all new fields.
+    await repository.replace(JSON.parse(JSON.stringify(data))); expect((await repository.read()).quizzes[quiz.id]!.answers[question.id]).toEqual(answer);
+    expect((await write('POST', `/api/questions/${question.id}/assessment-revisions`, body)).statusCode).toBe(409);
+  });
+  it('re-evaluates submitted answers without reopening sessions or losing the prior assessment', async () => {
+    const { quiz, question } = await submittedShort(); const answer = quiz.answers[question.id]!;
+    const response = await write('POST', `/api/questions/${question.id}/assessment-revisions`, { version: quiz.version, assessmentVersion: answer.assessment.version, method: 'model', reason: '再次核对' }, 'model-revision-idempotent');
+    expect(response.statusCode).toBe(202); await instance.worker.tick();
+    const data = await repository.read(); const current = data.quizzes[quiz.id]!.answers[question.id]!;
+    expect(current.assessmentHistory).toEqual([answer.assessment]); expect(current.assessment.source).toBe('model');
+    expect(current.assessment.status).toBe('needs_verification'); expect(data.sessions[quiz.sessionId!]!.status).toBe('COMPLETED');
+    const runId = response.json<CommandResult>().runId!;
+    expect(data.runs[runId]!.status).toBe('succeeded');
+    expect((await write('POST', `/api/runs/${runId}/retry`, {})).statusCode).toBe(409);
+  });
+  it('rejects malformed manual scores and excludes archived knowledge from search and new reviews', async () => {
+    const { quiz, question } = await submittedShort(); const answer = quiz.answers[question.id]!;
+    expect((await write('POST', `/api/questions/${question.id}/assessment-revisions`, { version: quiz.version, assessmentVersion: answer.assessment.version, method: 'manual', reason: '核对', feedback: '不合法', scores: question.rubric.map(row => ({ rubricId: row.id, score: row.maxScore + 1, evidence: '超分' })) })).statusCode).toBe(409);
+    let data = await repository.read(); let point = data.knowledge[question.knowledgeId]!;
+    const oldContent = structuredClone(point.contentHistory); const oldQuestion = structuredClone(question);
+    expect((await write('PUT', `/api/knowledge-points/${point.id}/content`, { version: point.version, title: '独特归档主题', description: '人工修订的描述', tags: ['缓存', '缓存'] })).statusCode).toBe(200);
+    data = await repository.read(); point = data.knowledge[point.id]!;
+    expect(point.contentHistory?.slice(0, -1)).toEqual(oldContent); expect(point.tags).toEqual(['缓存']);
+    expect(data.quizzes[quiz.id]!.questions.find(item => item.id === question.id)).toEqual(oldQuestion);
+    expect((await write('PUT', `/api/knowledge-points/${point.id}/archive`, { version: point.version, archived: true })).statusCode).toBe(200);
+    const search = await write('POST', '/api/library/search', { query: '独特归档主题', kind: 'knowledge' }); expect(search.json().hits).toEqual([]);
+    const card = Object.values(data.cards).find(card => card.knowledgeId === point.id)!;
+    expect((await write('POST', `/api/reviews/${card.id}/start`, {})).statusCode).toBe(409);
+    point = (await repository.read()).knowledge[point.id]!;
+    expect((await write('PUT', `/api/knowledge-points/${point.id}/archive`, { version: point.version, archived: false })).statusCode).toBe(200);
+    expect((await write('POST', `/api/library/search`, { query: '独特归档主题', kind: 'knowledge' })).json().hits).toHaveLength(1);
+    expect((await write('POST', `/api/reviews/${card.id}/start`, {})).statusCode).toBe(200);
+  });
+});

@@ -1,81 +1,123 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { Feedback } from './feedback';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ArrowUpRight, BookOpen, CalendarDays, ChevronRight, Feather, History, KeyRound, Layers3, LogOut, Search, ShieldCheck, Sparkles } from 'lucide-react';
-import { useApp, dateLabel } from './store';
-import { Action, Badge, Card, Go } from './ui';
+import { ArrowUpRight, Command, LogOut, Moon, Search, ShieldCheck, Sun } from 'lucide-react';
+import { useApp } from './store';
+import { Action, Card } from './ui';
 import { useConfirm } from './confirm';
-import aiAccessStyles from '../features/ai-access/ai-access.module.css';
-
-const navigation = [
-  { href: '/recite', title: '今日复述', icon: Feather, sub: '从回忆开始' },
-  { href: '/review', title: '复习计划', icon: CalendarDays, sub: '让记忆更长久' },
-  { href: '/knowledge', title: '我的知识库', icon: Layers3, sub: '连接每一次理解' },
-  { href: '/history', title: '学习足迹', icon: History, sub: '看见自己的积累' },
-  { href: '/library', title: '本地资料库', icon: Search, sub: '找回资料与旧知识' },
-  { href: '/ai-access', title: 'AI 配置', icon: KeyRound, sub: '模型选择、OAuth 与用量' },
-];
+import { Composer } from './composer';
+import { HomePage } from './home';
+import { learningModules, ModuleMenu } from './module-menu';
+import { activityModuleSchema } from '@sanxing/contracts';
+import { parseLearningRoute } from '../lib/routes';
 
 const logoutPrompt = { title: '退出登录', message: '退出后将清除本地会话缓存。请先保存需要保留的输入。', confirmLabel: '退出' };
 const leavePrompt = { title: '离开当前页面', message: '仍有未保存的输入。建议先保存草稿；确定离开当前页面？', confirmLabel: '仍然离开', cancelLabel: '留在此页', tone: 'danger' } as const;
 
 function Login() {
-  const { login, error, busy } = useApp();
+  const { login, register, storageMode, registrationEnabled, busy } = useApp();
   const [password, setPassword] = useState('');
-  return <div className="login-page"><div className="login-decoration" aria-hidden="true"><div /><div /><div /></div><form className="login-card" onSubmit={async event => { event.preventDefault(); try { await login(password); setPassword(''); } catch { /* Preserve password for a deliberate retry. */ } }}>
+  const [username, setUsername] = useState('');
+  const [creating, setCreating] = useState(false);
+  return <div className="login-page"><div className="login-decoration" aria-hidden="true"><div /><div /><div /></div><form className="login-card" onSubmit={async event => { event.preventDefault(); try { if (creating) await register(username, password); else await login(password, storageMode === 'browser' ? username : undefined); setPassword(''); } catch { /* Preserve input for a deliberate retry. */ } }}>
     <span className="brand-mark large">省</span><p className="eyebrow">A LITTLE REFLECTION, EVERY DAY</p><h1>欢迎回到，每日三省。</h1><p className="muted">这是只属于你的学习空间。<br />让今天的所学，成为明天的所得。</p>
-    <label className="field-label" htmlFor="password">访问密码</label><input id="password" type="password" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} required autoFocus placeholder="输入你的访问密码" />
-    {error && <p role="alert" className="danger-text">{error}</p>}<button className="button primary full" type="submit" disabled={busy || !password}>{busy ? '正在进入…' : '进入我的学习空间'}<ArrowUpRight size={18} /></button>
-    <p className="small muted privacy"><ShieldCheck size={14} />单用户私密访问 · 不开放注册</p>
+    {storageMode === 'browser' && <><label className="field-label" htmlFor="username">用户名</label><input id="username" autoComplete="username" autoCapitalize="none" value={username} onChange={event => setUsername(event.target.value)} minLength={3} maxLength={32} pattern="[a-zA-Z0-9_.\-]+" required autoFocus placeholder="3–32 位字母、数字或 ._-" /></>}
+    <label className="field-label" htmlFor="password">访问密码</label><input id="password" type="password" autoComplete={creating ? 'new-password' : 'current-password'} value={password} onChange={event => setPassword(event.target.value)} required minLength={storageMode === 'browser' ? 12 : undefined} autoFocus={storageMode !== 'browser'} placeholder={creating ? '至少 12 位密码' : '输入你的访问密码'} />
+    <button className="button primary full" type="submit" disabled={busy || !password || (storageMode === 'browser' && !username)}>{busy ? '正在进入…' : creating ? '创建账号并进入' : '进入我的学习空间'}<ArrowUpRight size={18} /></button>
+    {storageMode === 'browser' && registrationEnabled && <button className="text-button" type="button" disabled={busy} onClick={() => setCreating(value => !value)}>{creating ? '已有账号，去登录' : '首次使用，创建账号'}</button>}
+    <p className="small muted privacy"><ShieldCheck size={14} />{storageMode === 'browser' ? '账号保存在云端 · 学习数据保存在此浏览器' : '单用户私密访问 · 不开放注册'}</p>
   </form></div>;
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { state, loading, authenticated, error, setError, reload, logout } = useApp();
+  const { state, loading, authenticated, error, setError, reload, logout, user, storageMode, api } = useApp();
   const path = usePathname();
   const router = useRouter();
   const confirm = useConfirm();
-  const [search, setSearch] = useState('');
-  const due = state?.cards.filter(card => new Date(card.schedule.due).getTime() <= Date.now()) ?? [];
+  const [menu, setMenu] = useState(false);
+  const [opener, setOpener] = useState<HTMLElement | null>(null);
+  const [scrolled, setScrolled] = useState(false);
+  const [atEnd, setAtEnd] = useState(false);
+  const [dark, setDark] = useState(false);
+  const [trail, setTrail] = useState<{ href: string; title: string }[]>([]);
+  const trailUser = useRef(false);
+  const home = path === '/';
   const canEdit = authenticated && path !== '/login';
-  const confirmLogout = async () => { if (await confirm(logoutPrompt)) await logout(); };
-  // In-app navigation away from unsaved input waits for the dialog, then replays.
+  const modules = learningModules(state, user?.role === 'admin');
+  useEffect(() => {
+    if (!authenticated || storageMode !== 'browser' || path === '/login') return;
+    const route = parseLearningRoute(path); const parsed = activityModuleSchema.safeParse(route.page);
+    const module = parsed.success ? parsed.data : 'other';
+    const controller = new AbortController();
+    const send = () => { if (document.visibilityState === 'visible') void api('/activity/heartbeat', { method: 'POST', body: { module }, signal: controller.signal }).catch(() => undefined); };
+    send(); const timer = setInterval(send, 45000); document.addEventListener('visibilitychange', send);
+    return () => { clearInterval(timer); controller.abort(); document.removeEventListener('visibilitychange', send); };
+  }, [authenticated, storageMode, path, api]);
+  const routeTitle = modules.find(item => item.href === path)?.title
+    ?? (path.startsWith('/sessions/') ? state?.sessions.find(item => path.includes(item.id))?.status === 'CONFIRMING' ? '确认知识点' : 'AI 追问'
+      : path.startsWith('/recite/') ? '继续复述'
+      : path.startsWith('/quizzes/') ? path.endsWith('/result') ? '测验结果' : '每日测验'
+      : path.startsWith('/knowledge/') ? '知识点详情' : path.startsWith('/review-sessions/') ? '单项复习' : '');
+  useEffect(() => {
+    if (!authenticated) { trailUser.current = false; setTrail([]); return; }
+    if (!trailUser.current) { trailUser.current = true; setTrail([]); }
+    if (home || !routeTitle || path === '/login') return;
+    setTrail(items => items.some(item => item.href === path && item.title === routeTitle) ? items : [...items.filter(item => item.href !== path), { href: path, title: routeTitle }].slice(-7));
+  }, [authenticated, path, home, routeTitle]);
+  useEffect(() => {
+    const scroll = () => { setScrolled(window.scrollY > 4); setAtEnd(window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4); };
+    scroll(); window.addEventListener('scroll', scroll, { passive: true }); window.addEventListener('resize', scroll);
+    const observer = new ResizeObserver(scroll); observer.observe(document.body);
+    return () => { window.removeEventListener('scroll', scroll); window.removeEventListener('resize', scroll); observer.disconnect(); };
+  }, []);
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    let preference: string | null = null;
+    try { preference = localStorage.getItem('sanxing-theme'); } catch { /* System theme remains available without storage. */ }
+    const apply = () => { const enabled = preference ? preference === 'dark' : media.matches; setDark(enabled); document.documentElement.dataset.theme = enabled ? 'dark' : 'light'; };
+    apply(); media.addEventListener('change', apply);
+    return () => media.removeEventListener('change', apply);
+  }, []);
+  useEffect(() => {
+    if (!canEdit) return;
+    const keydown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setOpener(document.activeElement as HTMLElement); setMenu(value => !value); }
+    };
+    document.addEventListener('keydown', keydown);
+    return () => document.removeEventListener('keydown', keydown);
+  }, [canEdit]);
   const leave = (go: () => void) => {
     if (!document.querySelector('[data-unsaved="true"]')) { go(); return; }
     void confirm(leavePrompt).then(ok => { if (ok) go(); });
   };
+  const navigate = (href: string) => leave(() => router.push(href));
+  function toggleTheme() {
+    const next = !dark; setDark(next); document.documentElement.dataset.theme = next ? 'dark' : 'light';
+    try { localStorage.setItem('sanxing-theme', next ? 'dark' : 'light'); } catch { /* Theme remains usable for this visit. */ }
+  }
   if (loading) return <div className="boot"><span className="brand-mark large">省</span><h1>每日三省</h1><p className="muted">正在打开你的学习空间…</p></div>;
-  // Authentication can finish before the return navigation commits. Retain the
-  // editor, but never let input target a page which that navigation will replace.
-  return <>{!authenticated && <Login />}{authenticated && !canEdit && <div className="boot" role="status">正在返回学习空间…</div>}<div hidden={!canEdit} inert={!canEdit} className="app-shell" onClickCapture={event => {
-    const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
-    // New tabs, downloads and in-page anchors keep this page's input; let the browser handle them.
-    if (!(link instanceof HTMLAnchorElement) || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
-      || link.target === '_blank' || link.hasAttribute('download') || !document.querySelector('[data-unsaved="true"]')) return;
-    const url = new URL(link.href, window.location.href);
-    if (url.origin === window.location.origin && url.pathname === window.location.pathname && url.search === window.location.search && url.hash) return;
-    event.preventDefault(); event.stopPropagation();
-    leave(() => { if (url.origin === window.location.origin) router.push(url.pathname + url.search + url.hash); else window.location.assign(url.href); });
-  }}>
-    <a className="skip-link" href="#main-content">跳至主要内容</a>
-    <aside className="sidebar"><Link href="/recite" className="brand"><span className="brand-mark">省</span><div><strong>每日三省</strong><span>吾日三省吾身</span></div></Link>
-      <div className="nav-caption">我的学习空间</div><nav aria-label="主导航" className={aiAccessStyles.navigation}>{navigation.map(item => {
-        const selected = item.href === '/recite' ? path === '/' || path.startsWith('/recite') || path.startsWith('/sessions') || path.startsWith('/quizzes') : path.startsWith(item.href);
-        return <Link key={item.href} href={item.href} className={`nav-item ${selected ? 'active' : ''}`} aria-current={selected ? 'page' : undefined}><item.icon size={20} strokeWidth={1.7} /><span>{item.title}</span>{item.href === '/review' && due.length > 0 && <span className="nav-count">{due.length}</span>}</Link>;
-      })}</nav>
-      <div className="sidebar-bottom"><div className="quiet-note"><Sparkles size={21} /><p>不急于记住一切，<br />只让每一天有所沉淀。</p><span>日拱一卒，功不唐捐。</span></div><div className="profile"><span className="avatar">我</span><div><strong>我的学习空间</strong><span>保持好奇，慢慢生长</span></div><Action variant="icon-button" title="退出登录" onClick={confirmLogout}><LogOut size={17} /><span className="sr-only">退出登录</span></Action></div></div>
-    </aside>
-    <div className="workspace"><header className="topbar"><div className="breadcrumb"><BookOpen size={16} /><span>学习空间</span><ChevronRight size={14} /><strong>{navigation.find(item => path.startsWith(item.href))?.title ?? '学习进行中'}</strong></div><form className="search" role="search" onSubmit={event => { event.preventDefault(); leave(() => router.push(`/knowledge?q=${encodeURIComponent(search)}`)); }}><Search size={16} /><input aria-label="搜索知识点" placeholder="搜索你的知识…" value={search} onChange={event => setSearch(event.target.value)} /><button aria-label="搜索" type="submit"><ArrowUpRight size={15} /></button></form><span className="top-date">{state ? dateLabel(new Date().toISOString(), state.timezone) : ''}</span><span className="mobile-logout"><Action variant="icon-button" title="退出登录" onClick={confirmLogout}><LogOut size={16} /><span className="sr-only">退出登录</span></Action></span></header>
-      {state?.mode === 'mock' && <div className="demo-banner" role="status"><ShieldCheck size={16} /><strong>演示模式 · 脚本化回答，不代表真实学习评价</strong><span>仅用于验证学习流程</span></div>}
-      {error && <div className="error-banner" role="alert"><span>{error}</span><div><Action variant="subtle" onClick={async () => { await reload(); setError(null); }}>刷新状态</Action><button className="text-button" onClick={() => setError(null)}>收起</button></div></div>}
-      <div className="content-layout"><main id="main-content" className="main-content">{state ? children : <Card title="还没能连接学习空间"><p className="muted">请确认 API 服务正在运行，然后重试。不会创建任何模拟学习记录。</p><Action onClick={reload}>重新连接</Action></Card>}</main>{state && <aside className="overview" aria-label="学习概览">
-        <Card className="today-card"><div className="section-title"><span className="icon-tile"><CalendarDays size={19} /></span><h2>记忆，值得再见</h2></div><div className="big-stat"><strong>{due.length}</strong><span>个知识点等待复习</span></div><p className="muted small">先试着回忆，再翻开答案。<br />每一次提取，都让理解更扎实。</p>{due.slice(0, 3).map(card => <Link key={card.id} href={`/knowledge/${card.knowledgeId}`} className="due-item"><span className="dot" /><span>{state.knowledge.find(point => point.id === card.knowledgeId)?.title ?? '知识点'}</span><ChevronRight size={14} /></Link>)}<Go href="/review">{due.length ? '查看今日复习' : '查看复习计划'}</Go></Card>
-        <Card title="让学习形成一个小闭环"><ol className="journey"><li><span>01</span><div><strong>用自己的话复述</strong><p>不照抄笔记，先找回记忆</p></div></li><li><span>02</span><div><strong>确认与追问</strong><p>让模糊的地方，逐渐清楚</p></div></li><li><span>03</span><div><strong>独立检验，再次回忆</strong><p>让理解留下可核对的证据</p></div></li></ol></Card>
-        <Card className="evidence-card"><div className="section-title"><ShieldCheck size={18} /><h2>真实的积累</h2></div><div className="overview-stat"><span>知识点</span><strong>{state.knowledge.length}<small> 个</small></strong></div><div className="overview-stat"><span>已提交测验</span><strong>{state.quizzes.filter(quiz => quiz.submittedAt).length}<small> 次</small></strong></div><div className="overview-stat"><span>复习记录</span><strong>{state.reviewEvents.length}<small> 次</small></strong></div><p className="small muted">没有足够证据时，掌握情况显示为 <Badge>待评估</Badge>，而不是一个猜测的百分比。</p></Card>
-        <p className="aside-footer">复述是起点，理解是过程。<br />今天，也向前一点。</p>
-      </aside>}</div><footer className="page-footer"><span>每日三省 · 把所学变成所得</span><span>独立回忆 / 有据评价 / 长期积累</span></footer>
+  return <>{!authenticated && <Login />}{authenticated && !canEdit && <div className="boot" role="status">正在返回学习空间…</div>}
+    {error && <Feedback title={authenticated ? '操作未完成' : '登录提示'} tone="error" dedupeKey={error} onDismiss={() => setError(null)}><p>{error}</p>{authenticated && <Action variant="subtle" onClick={async () => { await reload(); setError(null); }}>刷新状态</Action>}</Feedback>}
+    <div hidden={!canEdit} inert={!canEdit} className={`app-shell journal-shell ${home ? 'is-home' : 'is-module'} ${atEnd ? 'at-end' : ''}`} onClickCapture={event => {
+      const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+      if (!(link instanceof HTMLAnchorElement) || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || link.target === '_blank' || link.hasAttribute('download') || !document.querySelector('[data-unsaved="true"]')) return;
+      const url = new URL(link.href, window.location.href);
+      if (url.origin === window.location.origin && url.pathname === window.location.pathname && url.search === window.location.search && url.hash) return;
+      event.preventDefault(); event.stopPropagation();
+      leave(() => { if (url.origin === window.location.origin) router.push(url.pathname + url.search + url.hash); else window.location.assign(url.href); });
+    }}>
+      <a className="skip-link" href="#main-content">跳至主要内容</a>
+      <header className={`journal-topbar ${scrolled ? 'scrolled' : ''}`}><Link href="/" className="journal-brand" aria-label="每日三省首页"><span className="brand-mark">省</span><span className="text-brand">每日三省</span></Link>
+        <nav className="journal-trail" aria-label="今日轨迹"><span className="trail-label">今日轨迹</span>{trail.map(item => <Link href={item.href} key={item.href} aria-current={item.href === path ? 'page' : undefined}>{item.title}</Link>)}</nav>
+        <div className="journal-tools"><button type="button" className="module-trigger" aria-label="全部模块" title="全部模块" onClick={event => { setOpener(event.currentTarget); setMenu(true); }}><Search size={16} strokeWidth={1.6} /><span>全部模块</span><kbd><Command size={11} /> K</kbd></button><span className="tool-divider" /><button type="button" className="quiet-icon" aria-label={dark ? '切换浅色模式' : '切换深色模式'} title={dark ? '切换浅色模式' : '切换深色模式'} onClick={toggleTheme}>{dark ? <Sun size={17} /> : <Moon size={17} />}</button><button type="button" className="quiet-icon logout-trigger" aria-label="退出登录" title="退出登录" onClick={() => { void (async () => { if (await confirm(logoutPrompt)) await logout(); })(); }}><LogOut size={16} /></button></div>
+      </header>
+      {state?.mode === 'mock' && <div className="journal-demo" role="status"><span className="status-dot amber">演示模式 · 脚本化回答，不代表真实学习评价</span></div>}
+      <main id="main-content" className={`journal-stage ${home ? 'journal-home-stage' : ''} ${path === '/ai-access' ? 'journal-settings-stage' : ''} ${path === '/admin' ? 'journal-admin-stage' : ''}`} aria-label={home ? '今日三省' : routeTitle || '学习页面'}>{state ? home ? <HomePage input={<Composer home navigate={navigate} />} /> : <div key={path} className="module-enter">{children}</div> : <Card title="还没能连接学习空间"><p className="muted">请确认 API 服务正在运行，然后重试。</p><Action onClick={reload}>重新连接</Action></Card>}</main>
+      <footer className="journal-footer" aria-hidden="true" />
     </div>
-  </div></>;
+    {menu && canEdit && <ModuleMenu opener={opener} close={() => setMenu(false)} navigate={navigate} />}
+  </>;
 }

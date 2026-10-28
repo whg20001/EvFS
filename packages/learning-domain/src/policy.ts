@@ -1,5 +1,5 @@
 import { DEFAULT_CODE_LANGUAGES } from '@sanxing/contracts';
-import { createHash } from 'node:crypto';
+import { hashBytes } from './runtime.ts';
 import { createEmptyCard, fsrs } from 'ts-fsrs';
 import type { Card, Grade, State } from 'ts-fsrs';
 import type { AppData, LearningPreferences, Mode, PublicQuiz, PublicState, Quiz, SerializedCard } from '@sanxing/contracts';
@@ -18,13 +18,20 @@ export function expectVersion(entity: { version: number }, version: number) {
   requireThat(entity.version === version, 'VERSION_CONFLICT', '内容已发生变化，请刷新后重试');
 }
 export function learningDate(date: Date, timezone: string): string {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
-  const part = (type: string) => parts.find(p => p.type === type)?.value ?? '';
-  return `${part('year')}-${part('month')}-${part('day')}`;
+  return learningDateFormatter(timezone)(date);
+}
+/** Per-operation formatter: reuse within a report without a global timezone cache. */
+export function learningDateFormatter(timezone: string): (date: Date) => string {
+  const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' });
+  return date => {
+    const parts = formatter.formatToParts(date);
+    const part = (type: string) => parts.find(p => p.type === type)?.value ?? '';
+    return `${part('year')}-${part('month')}-${part('day')}`;
+  };
 }
 export function fingerprint(value: unknown): string {
   const canonical = (input: unknown): unknown => Array.isArray(input) ? input.map(canonical) : input && typeof input === 'object' ? Object.fromEntries(Object.entries(input).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([key, val]) => [key, canonical(val)])) : input;
-  return createHash('sha256').update(JSON.stringify(canonical(value))).digest('hex');
+  return hashBytes(JSON.stringify(canonical(value)));
 }
 export function normalizeTitle(title: string) { return title.normalize('NFKC').toLowerCase().replace(/[\s\p{P}\p{S}]/gu, ''); }
 export function serializeCard(card: Card): SerializedCard { return { ...card, due: card.due.toISOString(), ...(card.last_review ? { last_review: card.last_review.toISOString() } : { last_review: undefined }) }; }
@@ -41,21 +48,23 @@ export function currentQuestionIndex(quiz: Quiz): number {
 export function publicQuiz(quiz: Quiz): PublicQuiz {
   const currentIndex = currentQuestionIndex(quiz);
   return { id: quiz.id, sessionId: quiz.sessionId, reviewSessionId: quiz.reviewSessionId, version: quiz.version, questionCount: quiz.questions.length, currentIndex, submittedAt: quiz.submittedAt,
-    questions: quiz.questions.filter((q, index) => quiz.answers[q.id] || index === currentIndex).map(q => ({ id: q.id, knowledgeId: q.knowledgeId, kind: q.kind, prompt: q.prompt, options: q.options, ...(q.code ? { code: q.code } : {}), draft: quiz.drafts[q.id] ?? '', hasDraft: Object.hasOwn(quiz.drafts, q.id), answer: quiz.answers[q.id] ?? null, explanation: quiz.answers[q.id] ? q.referenceAnswer : null })) };
+    questions: quiz.questions.filter((q, index) => quiz.answers[q.id] || index === currentIndex).map(q => ({ id: q.id, knowledgeId: q.knowledgeId, kind: q.kind, prompt: q.prompt, options: q.options, ...(q.code ? { code: q.code } : {}), draft: quiz.drafts[q.id] ?? '', hasDraft: Object.hasOwn(quiz.drafts, q.id), answer: quiz.answers[q.id] ?? null, explanation: quiz.answers[q.id] ? q.referenceAnswer : null, ...(quiz.submittedAt ? { rubric: q.rubric } : {}) })) };
 }
 export interface DomainConfig {
   mode: Mode; timezone: string; maxUploadBytes: number; maxDocuments: number; maxFollowups: number; quizCount: number;
   schedulingEnabled: boolean; maxCallsPerSession: number; dailyBudgetUsd: number | null; requestReservationUsd: number; runTimeoutMs: number;
+  quizTimeoutMs?: number; firstResponseTimeoutMs?: number; streamIdleTimeoutMs?: number;
 }
-export function effectiveLearningPreferences(data: AppData, config: Pick<DomainConfig, 'schedulingEnabled'>): Required<LearningPreferences> {
+export function effectiveLearningPreferences(data: Pick<AppData, 'learningPreferences'>, config: Pick<DomainConfig, 'schedulingEnabled'>): Required<LearningPreferences> {
   const saved = data.learningPreferences;
   return { schedulingEnabled: saved?.schedulingEnabled ?? config.schedulingEnabled, promptCacheRetention: saved?.promptCacheRetention ?? 'none', associationEnabled: saved?.associationEnabled ?? false,
+    reviewOrder: saved?.reviewOrder ?? 'due', reviewBatchSize: saved?.reviewBatchSize ?? null,
     codeExercisesEnabled: saved?.codeExercisesEnabled ?? false, codeLanguages: saved?.codeLanguages ?? [...DEFAULT_CODE_LANGUAGES] };
 }
-export function projectState(data: AppData, config: DomainConfig, csrfToken: string): PublicState {
+export function projectState(data: AppData, config: DomainConfig, csrfToken: string, compact = false): PublicState {
   return { mode: data.mode, timezone: config.timezone, revision: data.revision, csrfToken,
-    capabilities: { maxUploadBytes: config.maxUploadBytes, maxDocuments: config.maxDocuments, maxFollowups: config.maxFollowups, quizCount: config.quizCount, schedulingEnabled: effectiveLearningPreferences(data, config).schedulingEnabled },
-    recitations: Object.values(data.recitations), documents: Object.values(data.documents).map(d => ({ id: d.id, recitationId: d.recitationId, name: d.name, textLength: d.text.length, lineCount: d.lineCount, createdAt: d.createdAt })),
-    sessions: Object.values(data.sessions), knowledge: Object.values(data.knowledge), quizzes: Object.values(data.quizzes).map(publicQuiz), cards: Object.values(data.cards), reviewSessions: Object.values(data.reviewSessions), reviewEvents: Object.values(data.reviewEvents), evidence: Object.values(data.evidence),
-    runs: Object.values(data.runs).map(r => ({ id: r.id, status: r.status, kind: r.task.kind, sessionId: r.sessionId, reviewSessionId: r.reviewSessionId, error: r.error, createdAt: r.createdAt })) };
+    capabilities: { maxUploadBytes: config.maxUploadBytes, maxDocuments: config.maxDocuments, maxFollowups: config.maxFollowups, quizCount: config.quizCount, schedulingEnabled: effectiveLearningPreferences(data, config).schedulingEnabled, ...(compact ? { historyDetails: 'on-demand' as const } : {}) },
+    recitations: Object.values(data.recitations), documents: Object.values(data.documents).map(d => ({ id: d.id, recitationId: d.recitationId, name: d.name, textLength: d.text.length, lineCount: d.lineCount, createdAt: d.createdAt, ...(d.import ? { import: d.import } : {}) })),
+    sessions: Object.values(data.sessions), knowledge: Object.values(data.knowledge), quizzes: Object.values(data.quizzes).map(quiz => compact && quiz.submittedAt ? { id: quiz.id, sessionId: quiz.sessionId, reviewSessionId: quiz.reviewSessionId, version: quiz.version, questionCount: quiz.questions.length, currentIndex: currentQuestionIndex(quiz), submittedAt: quiz.submittedAt, questions: [], detailsOmitted: true as const } : publicQuiz(quiz)), cards: Object.values(data.cards), reviewSessions: Object.values(data.reviewSessions), reviewEvents: Object.values(data.reviewEvents), evidence: Object.values(data.evidence).map(item => compact ? { id: item.id, knowledgeId: item.knowledgeId, simulated: item.simulated, summary: { graded: item.answer.assessment.status === 'graded' } } : item),
+    runs: Object.values(data.runs).map(r => ({ id: r.id, status: r.status, kind: r.task.kind, sessionId: r.sessionId, reviewSessionId: r.reviewSessionId, error: r.error, ...(r.errorCode ? { errorCode: r.errorCode } : {}), ...(r.progress ? { progress: r.progress } : {}), createdAt: r.createdAt, quizId: r.quizId, questionId: r.questionId, assessmentRevision: Boolean(r.assessmentRevision) })) };
 }

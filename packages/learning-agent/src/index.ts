@@ -4,10 +4,14 @@ import { createModels } from '@earendil-works/pi-ai/models';
 import { InMemoryCredentialStore, type AssistantMessage, type CredentialStore } from '@earendil-works/pi-ai';
 import { fauxProvider, fauxAssistantMessage } from '@earendil-works/pi-ai/providers/faux';
 import { createExplicitProvider, isolatedAuthContext, LIVE_PROVIDER_IDS, providerPolicy, unsafeEnvironmentKeys, type LiveProviderId } from '@sanxing/ai-access/providers';
-import { LEARNING_PROMPT_VERSION, LIMITS, aiModelSelectionSchema, aiOutputSchema, codeExecutionSchema, codeOptionSchema, generatedQuestionSchema, recitationInputSchema, type AiTask, type AiOutput, type AiResponse, type LearningEngine, type Mode, type Usage } from '@sanxing/contracts';
+import { LIMITS, aiOutputSchema, modelAiTaskSchema, type AiTask, type AiOutput, type AiResponse, type LearningEngine, type LearningProgressEvent, type Mode, type Usage } from '@sanxing/contracts';
 import { scriptOutput } from './mock.ts';
-import { checkLearningRequest, LearningEngineError } from './request.ts';
-export { prepareLearningRequest, inspectLearningRequest, checkLearningRequest, fitsLearningRequest, INPUT_SAFETY_MARGIN_TOKENS, CONNECTION_TEST_OUTPUT_TOKENS, LearningEngineError, type LearningRequestOptions, type PreparedLearningRequest } from './request.ts';
+import { connectionPolicySchema, type ConnectionPolicy } from '@sanxing/contracts';
+import { LearningTransport, RequestTransport } from './transport.ts';
+export { LearningTransport } from './transport.ts';
+import { RequestFailureObserver } from './failure.ts';
+import { assertLearningPrompt, checkLearningRequest, LearningEngineError } from './request.ts';
+export { describeLearningPrompt, assertLearningPrompt, prepareLearningRequest, inspectLearningRequest, checkLearningRequest, fitsLearningRequest, INPUT_SAFETY_MARGIN_TOKENS, CONNECTION_TEST_OUTPUT_TOKENS, LearningEngineError, type LearningRequestOptions, type PreparedLearningRequest } from './request.ts';
 
 export interface EngineConfig {
   mode: Mode;
@@ -18,6 +22,9 @@ export interface EngineConfig {
   allowUnboundedOAuthOutput?: boolean;
   maxOutputTokens?: number;
   timeoutMs?: number;
+  firstResponseTimeoutMs?: number;
+  streamIdleTimeoutMs?: number;
+  connectionPolicy?: ConnectionPolicy;
   cacheRetention?: 'none' | 'short';
 }
 
@@ -29,24 +36,11 @@ const configSchema = z.object({
   authMethod: z.enum(['api_key', 'oauth']).default('api_key'), allowUnboundedOAuthOutput: z.boolean().default(false),
   maxOutputTokens: z.number().int().min(1).max(16_384).default(4096),
   timeoutMs: z.number().int().min(1).max(120_000).default(30_000),
+  firstResponseTimeoutMs: z.number().int().min(1).max(120_000).default(60_000),
+  streamIdleTimeoutMs: z.number().int().min(1).max(120_000).default(45_000),
+  connectionPolicy: connectionPolicySchema.default('pooled'),
   cacheRetention: z.enum(['none', 'short']).default('none'),
 }).strict();
-const id = z.string().min(1).max(200);
-const sources = z.array(z.object({ id, name: z.string().max(500), text: z.string().max(LIMITS.modelInputChars) })).max(LIMITS.modelSourcesMaximum);
-// Stored-field limits are checked by the domain. Model excerpts add visible markers, so
-// mutable content uses the model's aggregate ceiling rather than its archival field limit.
-const excerptText = z.string().max(LIMITS.modelInputChars);
-const modelRecitation = recitationInputSchema.extend({ learned: excerptText, unclear: excerptText, application: excerptText });
-const points = z.array(z.object({ id, title: z.string().min(1).max(200), description: excerptText.min(1), sourceIds: z.array(id).max(LIMITS.modelSourcesMaximum), knowledgeVersion: z.number().int().positive().nullable().optional() })).min(1).max(50);
-const related = z.array(z.object({ id, title: z.string().min(1).max(200), description: excerptText.min(1), knowledgeVersion: z.number().int().positive() })).max(LIMITS.relatedKnowledgeMaximum).optional();
-const turns = z.array(z.object({ id, question: excerptText, answer: excerptText.nullable(), feedback: excerptText.nullable(), assisted: z.boolean(), scopeVersion: z.number().int().positive() })).max(50);
-const taskSchema = z.discriminatedUnion('kind', [
-  z.strictObject({ kind: z.literal('connection_test'), selection: aiModelSelectionSchema }),
-  z.object({ kind: z.literal('extract'), recitation: modelRecitation, sources }),
-  z.object({ kind: z.literal('followup'), points, turns, sources, related }),
-  z.object({ kind: z.literal('quiz'), points, sources, count: z.number().int().min(1).max(LIMITS.quizQuestionsMaximum), recall: excerptText.optional(), related, code: codeOptionSchema.optional() }),
-  z.object({ kind: z.literal('grade'), question: generatedQuestionSchema, answer: z.string().max(LIMITS.answerChars), execution: z.optional(codeExecutionSchema) }),
-]);
 
 function fail(code: string, message: string): never { throw new LearningEngineError(code, message); }
 
@@ -137,7 +131,7 @@ function usageOf(message: AssistantMessage, mode: Mode): Usage | null {
     cost: mode === 'mock' ? 0 : Number.isFinite(cost) && cost > 0 ? cost : null };
 }
 
-export function createLearningEngine(input: EngineConfig = { mode: 'mock' }, dependencies: { credentials?: CredentialStore } = {}): LearningEngine {
+export function createLearningEngine(input: EngineConfig = { mode: 'mock' }, dependencies: { credentials?: CredentialStore; transport?: LearningTransport } = {}): LearningEngine {
   const parsed = configSchema.safeParse(input);
   if (!parsed.success) fail('INVALID_CONFIG', '学习引擎配置无效');
   const config = parsed.data;
@@ -155,13 +149,16 @@ export function createLearningEngine(input: EngineConfig = { mode: 'mock' }, dep
   const liveModel = liveProvider?.getModels().find(m => m.id === config.model);
   if (liveProvider && !liveModel) fail('MODEL_NOT_CONFIGURED', '所选 Provider 中不存在指定聊天模型');
   if (liveModel && (!Number.isSafeInteger(liveModel.contextWindow) || liveModel.contextWindow < 1)) fail('INVALID_CONFIG', '模型目录的上下文窗口无效');
+  const transport = dependencies.transport ?? new LearningTransport();
   return {
     mode: config.mode,
-    async execute(inputTask, { signal, onUsage, cacheScope }): Promise<AiResponse> {
+    close: async () => { if (!dependencies.transport) await transport.close(); },
+    async execute(inputTask, { signal, onUsage, onProgress, onRequest, onTransport, connectionPolicy, cacheScope, expectedPrompt }): Promise<AiResponse> {
       if (signal.aborted) fail('CANCELLED', '任务已取消');
-      const parsedTask = taskSchema.safeParse(inputTask);
+      const parsedTask = modelAiTaskSchema.safeParse(inputTask);
       if (!parsedTask.success) fail('INVALID_TASK', '任务输入不符合契约或范围限额');
       const task = parsedTask.data;
+      assertLearningPrompt(task, expectedPrompt);
       const cacheRetention = task.kind === 'connection_test' ? 'none' : config.cacheRetention;
       // The host supplies an opaque, purpose-scoped identity, never a credential or raw user data.
       // This is routing affinity only: every task still sends its own prompt and obtains a new answer.
@@ -171,17 +168,29 @@ export function createLearningEngine(input: EngineConfig = { mode: 'mock' }, dep
       }
       // Final validation only: never silently change the persisted prepared task at execution.
       // Complete system/schema/user budget checks precede credentials, stream, and usage.
-      const { blocks, systemPrompt, outputReserveTokens: maxOutputTokens } = checkLearningRequest(task, {
+      const prepared = checkLearningRequest(task, {
         ...(liveModel ? { contextWindow: liveModel.contextWindow } : {}), maxOutputTokens: config.maxOutputTokens,
       });
+      const { blocks, systemPrompt, outputReserveTokens: maxOutputTokens } = prepared;
       const timeoutMs = task.kind === 'connection_test' ? Math.min(config.timeoutMs, 30_000) : config.timeoutMs;
       if (liveModel && !liveModel.input.includes('text')) fail('MODEL_NOT_CONFIGURED', '模型不支持文本任务');
       if (liveModel && (!Number.isSafeInteger(liveModel.maxTokens) || liveModel.maxTokens < maxOutputTokens)) fail('INVALID_CONFIG', '输出限额超过模型目录上限');
       if ('sources' in task && new Set(task.sources.map(s => s.id)).size !== task.sources.length) fail('INVALID_TASK', '资料 ID 重复');
       if ('points' in task && new Set(task.points.map(p => p.id)).size !== task.points.length) fail('INVALID_TASK', '知识点 ID 重复');
       if (config.mode === 'live') assertLiveEnvironment();
-      const credentials = config.mode === 'live' && config.authMethod === 'oauth' ? dependencies.credentials! : new InMemoryCredentialStore();
-      if (config.mode === 'live' && config.authMethod === 'oauth' && (await credentials.read(config.provider!, { signal }))?.type !== 'oauth') fail('MODEL_NOT_AUTHORIZED', '请先在 AI 授权页面连接所选 Provider');
+      const policy = connectionPolicySchema.safeParse(connectionPolicy ?? config.connectionPolicy);
+      if (!policy.success) fail('INVALID_CONFIG', '模型连接策略无效');
+      let closed = false;
+      const controller = new AbortController();
+      const requestTransport = new RequestTransport(transport, policy.data, () => !closed && !signal.aborted && !controller.signal.aborted, onTransport);
+      const failure = new RequestFailureObserver(() => !closed && !signal.aborted, liveModel?.api === 'openai-codex-responses', requestTransport.fetch, controller.signal);
+      const credentials = failure.credentials(config.mode === 'live' && config.authMethod === 'oauth' ? dependencies.credentials! : new InMemoryCredentialStore());
+      if (config.mode === 'live' && config.authMethod === 'oauth') {
+        let credential;
+        try { credential = await credentials.read(config.provider!, { signal }); }
+        catch { fail(signal.aborted ? 'CANCELLED' : 'MODEL_AUTH_FAILED', '读取模型授权失败'); }
+        if (credential?.type !== 'oauth') fail('MODEL_NOT_AUTHORIZED', '请先在 AI 授权页面连接所选 Provider');
+      }
       const models = createModels({ credentials, authContext: isolatedAuthContext });
       const faux = liveProvider ? undefined : fauxProvider({ api: 'learning-faux', provider: 'learning-mock', tokenSize: { min: 4, max: 4 } });
       const provider = liveProvider ?? faux!.provider;
@@ -190,11 +199,25 @@ export function createLearningEngine(input: EngineConfig = { mode: 'mock' }, dep
       if (!model || !model.input.includes('text')) fail('MODEL_NOT_CONFIGURED', '模型不支持文本任务');
       if (maxOutputTokens > model.maxTokens) fail('INVALID_CONFIG', '输出限额超过模型目录上限');
       faux?.setResponses([fauxAssistantMessage(JSON.stringify(scriptOutput(task)))]);
-      const controller = new AbortController();
       let requestCount = 0;
       let streamedChars = 0;
       let observedUsage: Usage | null = null;
       let usageDelivery = Promise.resolve();
+      let generated = false;
+      let responded = false;
+      let firstResponseTimer: ReturnType<typeof setTimeout> | undefined;
+      let idleTimer: ReturnType<typeof setTimeout> | undefined;
+      const progress = (event: LearningProgressEvent) => {
+        if (closed || controller.signal.aborted) return;
+        try { onProgress?.(event); } catch { /* Telemetry must not interrupt a model task. */ }
+      };
+      const clearStreamTimers = () => { clearTimeout(firstResponseTimer); clearTimeout(idleTimer); };
+      const responseActivity = () => {
+        if (closed || generated || controller.signal.aborted) return;
+        if (!responded) { responded = true; clearTimeout(firstResponseTimer); progress('response'); }
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => stop('STREAM_IDLE_TIMEOUT', '模型响应流长时间没有新内容；上游可能仍有费用'), Math.min(config.streamIdleTimeoutMs, timeoutMs));
+      };
       const stream = models.streamSimple.bind(models);
       // Only follow-ups and the session quiz reuse a scope prefix; a review quiz (with recall) is one-off.
       const cacheable = cacheRetention === 'short' && (task.kind === 'followup' || (task.kind === 'quiz' && task.recall === undefined));
@@ -204,11 +227,28 @@ export function createLearningEngine(input: EngineConfig = { mode: 'mock' }, dep
         finishTurn: async () => ({ action: 'end' }),
         streamFn: (requestModel, context, options) => {
           if (++requestCount > 1) fail('REQUEST_LIMIT', '每个任务最多一次模型请求，不自动修复或重试');
+          if (!closed && !controller.signal.aborted) {
+            try { onRequest?.({ provider: model.provider, model: model.id, authMethod: config.mode === 'mock' ? 'mock' : config.authMethod,
+              cacheRetention, inputChars: systemPrompt.length + prepared.prompt.length,
+              inputBytes: Buffer.byteLength(systemPrompt, 'utf8') + Buffer.byteLength(prepared.prompt, 'utf8'),
+              estimatedInputTokens: prepared.estimatedInputTokens, contextWindow: prepared.contextWindow,
+              maxOutputTokens, timeoutMs, firstResponseTimeoutMs: Math.min(config.firstResponseTimeoutMs, timeoutMs),
+              streamIdleTimeoutMs: Math.min(config.streamIdleTimeoutMs, timeoutMs),
+            }); } catch { /* Diagnostics cannot alter a learning request. */ }
+          }
+          progress('request');
+          firstResponseTimer = setTimeout(() => stop('FIRST_RESPONSE_TIMEOUT', '等待模型首响应超时；上游可能仍有费用'), Math.min(config.firstResponseTimeoutMs, timeoutMs));
           return stream(requestModel, context, { ...options,
             signal: AbortSignal.any([controller.signal, ...(options?.signal ? [options.signal] : [])]),
             apiKey: config.apiKey, maxTokens: maxOutputTokens, timeoutMs, maxRetries: 0,
             reasoning: undefined, cacheRetention, sessionId, transport: 'sse',
             headers: { 'OpenAI-Organization': null, 'OpenAI-Project': null },
+            fetch: failure.fetch,
+            onProviderStreamEvent: event => failure.event(event),
+            onResponse: response => {
+              failure.response(response.status);
+              responseActivity();
+            },
             onPayload: (payload, payloadModel) => payloadModel.api === 'anthropic-messages' ? anthropicCacheMarks(payload, cacheable) : undefined,
           });
         },
@@ -216,6 +256,8 @@ export function createLearningEngine(input: EngineConfig = { mode: 'mock' }, dep
       let rejectStopped!: (error: LearningEngineError) => void;
       const stopped = new Promise<never>((_, reject) => { rejectStopped = reject; });
       const stop = (code: string, message: string) => {
+        if (closed || controller.signal.aborted) return;
+        clearStreamTimers();
         controller.abort();
         agent.abort();
         rejectStopped(new LearningEngineError(code, message, observedUsage));
@@ -224,7 +266,10 @@ export function createLearningEngine(input: EngineConfig = { mode: 'mock' }, dep
       signal.addEventListener('abort', onAbort, { once: true });
       const timer = setTimeout(() => stop('TIMEOUT', '任务超时；上游可能仍有费用'), timeoutMs);
       const unsubscribe = agent.subscribe(event => {
+        if (closed) return;
         if (event.type === 'message_end' && event.message.role === 'assistant') {
+          generated = true; clearStreamTimers();
+          if (event.message.stopReason === 'stop' && !failure.code(event.message)) progress('generated');
           observedUsage = usageOf(event.message, config.mode);
           if (observedUsage && onUsage) {
             const snapshot = structuredClone(observedUsage);
@@ -232,32 +277,41 @@ export function createLearningEngine(input: EngineConfig = { mode: 'mock' }, dep
             void usageDelivery.catch(() => undefined);
           }
         }
-        if (event.type === 'message_update') {
+        if (event.type === 'message_update' && !controller.signal.aborted) {
           const update = event.assistantMessageEvent;
+          // Start events and empty chunks/keepalives do not prove generation is progressing.
+          if ((update.type === 'text_delta' || update.type === 'thinking_delta') && update.delta.length > 0) {
+            responseActivity(); progress(update.type === 'text_delta' ? 'text' : 'thinking');
+          }
           if (update.type === 'text_delta' || update.type === 'thinking_delta' || update.type === 'toolcall_delta') streamedChars += update.delta.length;
           if (streamedChars > 100_000) stop('OUTPUT_LIMIT', '模型输出超出字符限额');
           if (update.type === 'toolcall_start') stop('INVALID_OUTPUT', '固定任务不允许模型调用工具');
         }
       });
       try {
-        if (signal.aborted) onAbort();
+        if (signal.aborted) { onAbort(); await stopped; }
         // Separate text blocks keep the stable scope context as an exact, reusable prefix.
         const message = { role: 'user' as const, content: blocks.map(text => ({ type: 'text' as const, text })), timestamp: Date.now() };
-        await Promise.race([agent.prompt(message).then(() => usageDelivery), stopped]);
+        await Promise.race([agent.prompt(message), stopped]);
         if (signal.aborted || controller.signal.aborted) fail('CANCELLED', '任务已取消');
         const last = agent.state.messages.at(-1);
         if (!last || last.role !== 'assistant') fail('INVALID_OUTPUT', '模型未返回最终消息');
-        if (last.stopReason !== 'stop') throw new LearningEngineError(last.stopReason === 'aborted' ? 'CANCELLED' : 'MODEL_FAILED', `模型终态不可接受：${last.stopReason}`, observedUsage);
+        const observedFailure = failure.code(last);
+        if (observedFailure || last.stopReason !== 'stop') throw new LearningEngineError(observedFailure ?? (last.stopReason === 'aborted' ? 'CANCELLED' : 'MODEL_FAILED'), '模型未完成可接受的响应', observedUsage);
         if (last.content.some(c => c.type !== 'text' && c.type !== 'thinking')) fail('INVALID_OUTPUT', '模型返回了非文本任务结果');
         const text = last.content.filter(c => c.type === 'text').map(c => c.text).join('');
         if (text.length > 100_000 || (last.usage?.output ?? 0) > maxOutputTokens) fail('OUTPUT_LIMIT', '模型输出超出限额');
         const output = validateOutput(text, task);
+        clearTimeout(timer); clearStreamTimers(); progress('validated');
+        // Persistence latency is observable as saving, not charged to model time.
+        await Promise.race([usageDelivery, stopped]);
         return { output, usage: observedUsage };
       } catch (error) {
         if (error instanceof LearningEngineError) throw new LearningEngineError(error.code, error.message, error.usage ?? observedUsage);
-        throw new LearningEngineError('MODEL_FAILED', '模型执行失败；未提交任何学习结果', observedUsage);
+        throw new LearningEngineError(failure.code() ?? 'MODEL_FAILED', '模型执行失败；未提交任何学习结果', observedUsage);
       } finally {
-        clearTimeout(timer);
+        requestTransport.close();
+        closed = true; clearTimeout(timer); clearStreamTimers();
         signal.removeEventListener('abort', onAbort);
         unsubscribe();
         controller.abort();

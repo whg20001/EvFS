@@ -4,6 +4,22 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 const focusableSelector = 'a[href],area[href],button,input,select,textarea,summary,[tabindex],[contenteditable="true"],audio[controls],video[controls]';
+const stack: HTMLElement[] = [];
+const originalInert = new Map<HTMLElement, boolean>();
+let originalOverflow = '';
+function synchronizeModals() {
+  const top = stack.at(-1);
+  if (!top) {
+    document.body.style.overflow = originalOverflow;
+    for (const [node, inert] of originalInert) if (node.isConnected) node.inert = inert;
+    originalInert.clear(); return;
+  }
+  document.body.style.overflow = 'hidden';
+  for (const node of document.body.children) if (node instanceof HTMLElement) {
+    if (!originalInert.has(node)) originalInert.set(node, node.inert);
+    node.inert = !node.contains(top);
+  }
+}
 
 export function ModalShell({ children, close, opener, initialFocus, className, backdropClass = '', role = 'dialog', labelledBy, describedBy }: {
   children: ReactNode; close: () => void; opener: HTMLElement | null; initialFocus: string; className: string;
@@ -12,20 +28,18 @@ export function ModalShell({ children, close, opener, initialFocus, className, b
   const dialog = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const root = dialog.current!;
-    const overflow = document.body.style.overflow;
-    const background = [...document.body.children].filter((node): node is HTMLElement => node instanceof HTMLElement && !node.contains(root)).map(node => ({ node, inert: node.inert }));
-    background.forEach(({ node }) => { node.inert = true; });
-    document.body.style.overflow = 'hidden';
-    (root.querySelector<HTMLElement>(initialFocus) ?? root).focus();
+    if (!stack.length) originalOverflow = document.body.style.overflow;
+    stack.push(root); synchronizeModals();
+    (root.querySelector<HTMLElement>(initialFocus) ?? root).focus({ preventScroll: true });
     return () => {
-      document.body.style.overflow = overflow;
-      background.forEach(({ node, inert }) => { node.inert = inert; });
+      const index = stack.indexOf(root); if (index >= 0) stack.splice(index, 1);
+      synchronizeModals();
       // An Action opener may stay disabled until its async handler settles.
       let frames = 0;
       const restore = () => {
         if (!opener?.isConnected || document.activeElement === opener || frames++ >= 30) return;
         if (document.activeElement !== document.body) return;
-        opener.focus();
+        opener.focus({ preventScroll: true });
         if (document.activeElement !== opener) requestAnimationFrame(restore);
       };
       requestAnimationFrame(restore);

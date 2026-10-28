@@ -1,0 +1,261 @@
+{
+  "batchId": "58147384-5d06-413c-8eb6-bda99ad1ccd7",
+  "inFlight": {
+    "caseId": "cache-grade-correct",
+    "key": "b5e4e87e-c6ce-4ab0-ac72-e2349664f3dc",
+    "runId": "4956d7c3-3db5-4719-9951-d677319d9779"
+  },
+  "suite": "learning-quality-v1",
+  "promptVersion": "learning-v6",
+  "mode": "live",
+  "auth": "oauth",
+  "provider": "openai-codex",
+  "model": "gpt-6.1-sol",
+  "createdAt": "2026-10-21T14:33:53.716Z",
+  "casesHash": "a2476e661f2439e134363c8aa5965f2b1e44334455728c05cfa14b9dbea72d8e",
+  "offset": 1,
+  "limit": 29,
+  "maxOutputTokens": 4096,
+  "allowUnboundedOAuthOutput": true,
+  "costStopThresholdUsd": null,
+  "knownCostUsd": 0.012108,
+  "unknownUsageAttempts": 1,
+  "stopped": "request_failed",
+  "results": [
+    {
+      "topic": "空值缓存",
+      "reference": "对不存在的键也缓存空结果，可以减少重复查询数据库。空结果必须设置有限 TTL；新增数据后若不失效旧空值，可能暂时读不到新数据。",
+      "id": "cache-followup",
+      "task": {
+        "kind": "followup",
+        "points": [
+          {
+            "id": "point-cache",
+            "title": "空值缓存",
+            "description": "对不存在的键也缓存空结果，可以减少重复查询数据库。空结果必须设置有限 TTL；新增数据后若不失效旧空值，可能暂时读不到新数据。",
+            "sourceIds": [
+              "source-cache"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "turns": [
+          {
+            "id": "turn-1",
+            "question": "空值缓存解决什么问题，有什么限制？",
+            "answer": "缓存空结果能减少数据库查询。",
+            "feedback": null,
+            "assisted": false,
+            "scopeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-cache",
+            "name": "空值缓存.txt",
+            "text": "对不存在的键也缓存空结果，可以减少重复查询数据库。空结果必须设置有限 TTL；新增数据后若不失效旧空值，可能暂时读不到新数据。"
+          }
+        ]
+      },
+      "checks": [
+        "针对回答中的遗漏或错误反馈",
+        "一次提出一个可回答的追问",
+        "不把未提及内容直接判为不会"
+      ],
+      "response": {
+        "output": {
+          "kind": "followup",
+          "question": "某个键已缓存为空结果，随后数据库新增了对应数据：如果不处理旧的空值缓存，读取时可能出现什么情况？你会如何处理？",
+          "feedback": "你已说明缓存空结果能减少数据库查询；空结果的有效期及新增数据后的处理方式尚待澄清。"
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 2000,
+          "outputTokens": 80,
+          "cost": 0.0048000000000000004,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 2000,
+        "outputTokens": 80,
+        "cost": 0.0048000000000000004,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "163c6cfdfd71d7db92a759bf46433944a345828fb67674aa1d730f385e494409",
+      "error": null,
+      "durationMs": 6057,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "空值缓存",
+      "reference": "对不存在的键也缓存空结果，可以减少重复查询数据库。空结果必须设置有限 TTL；新增数据后若不失效旧空值，可能暂时读不到新数据。",
+      "id": "cache-quiz",
+      "task": {
+        "kind": "quiz",
+        "points": [
+          {
+            "id": "point-cache",
+            "title": "空值缓存",
+            "description": "对不存在的键也缓存空结果，可以减少重复查询数据库。空结果必须设置有限 TTL；新增数据后若不失效旧空值，可能暂时读不到新数据。",
+            "sourceIds": [
+              "source-cache"
+            ],
+            "knowledgeVersion": 1
+          }
+        ],
+        "sources": [
+          {
+            "id": "source-cache",
+            "name": "空值缓存.txt",
+            "text": "对不存在的键也缓存空结果，可以减少重复查询数据库。空结果必须设置有限 TTL；新增数据后若不失效旧空值，可能暂时读不到新数据。"
+          }
+        ],
+        "count": 2
+      },
+      "checks": [
+        "两道题均在给定范围内",
+        "参考答案和评分细则正确",
+        "题目有明确可判定答案"
+      ],
+      "response": {
+        "output": {
+          "kind": "quiz",
+          "questions": [
+            {
+              "knowledgeId": "point-cache",
+              "kind": "single",
+              "prompt": "某个不存在的键被频繁查询。缓存该键的空结果，主要能带来什么效果？",
+              "options": [
+                "减少对数据库的重复查询",
+                "使该键对应的数据自动创建",
+                "保证新增数据后立即可读",
+                "使数据库永远不再接收任何查询"
+              ],
+              "correctIndex": 0,
+              "referenceAnswer": "减少对数据库的重复查询。对不存在的键缓存空结果，可以避免后续相同查询反复访问数据库。",
+              "rubric": [
+                {
+                  "id": "r1",
+                  "description": "选择“减少对数据库的重复查询”。",
+                  "maxScore": 1
+                }
+              ],
+              "sourceIds": [
+                "source-cache"
+              ]
+            },
+            {
+              "knowledgeId": "point-cache",
+              "kind": "short",
+              "prompt": "某键不存在时，系统缓存了空结果；随后数据库新增了该键的数据，但旧空值缓存未失效。此时可能出现什么读取现象？空结果的 TTL 应满足什么要求？",
+              "options": [],
+              "correctIndex": null,
+              "referenceAnswer": "可能仍命中旧空值，暂时读不到新增数据。空结果必须设置有限 TTL，不能无限期保留；新增数据后使旧空值缓存失效，可避免其继续遮蔽新数据。",
+              "rubric": [
+                {
+                  "id": "r1",
+                  "description": "指出旧空值未失效可能导致暂时读不到新增数据。",
+                  "maxScore": 2
+                },
+                {
+                  "id": "r2",
+                  "description": "指出空结果必须设置有限 TTL，不能永久缓存。",
+                  "maxScore": 2
+                }
+              ],
+              "sourceIds": [
+                "source-cache"
+              ]
+            }
+          ]
+        },
+        "usage": {
+          "provider": "openai-codex",
+          "model": "gpt-6.1-sol",
+          "inputTokens": 1954,
+          "outputTokens": 340,
+          "cost": 0.007308,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        }
+      },
+      "usage": {
+        "provider": "openai-codex",
+        "model": "gpt-6.1-sol",
+        "inputTokens": 1954,
+        "outputTokens": 340,
+        "cost": 0.007308,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "promptHash": "ca4f542c47c3b5999d8407c211efd2c6823977e3ba7aabce6d9b4b78e6b0e377",
+      "error": null,
+      "durationMs": 14081,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    },
+    {
+      "topic": "空值缓存",
+      "reference": "对不存在的键也缓存空结果，可以减少重复查询数据库。空结果必须设置有限 TTL；新增数据后若不失效旧空值，可能暂时读不到新数据。",
+      "id": "cache-grade-correct",
+      "task": {
+        "kind": "grade",
+        "question": {
+          "knowledgeId": "point-cache",
+          "kind": "short",
+          "prompt": "空值缓存解决什么问题，有什么限制？",
+          "options": [],
+          "correctIndex": null,
+          "referenceAnswer": "缓存不存在键的空结果，减少数据库查询；设置有限 TTL，新增数据时使旧空值失效，避免短期读取不到新数据。",
+          "rubric": [
+            {
+              "id": "r1",
+              "description": "说明缓存不存在键的空结果",
+              "maxScore": 1
+            },
+            {
+              "id": "r2",
+              "description": "说明有限 TTL 和新增数据后的失效问题",
+              "maxScore": 1
+            }
+          ],
+          "sourceIds": [
+            "source-cache"
+          ]
+        },
+        "answer": "缓存不存在键的空结果，减少数据库查询；设置有限 TTL，新增数据时使旧空值失效，避免短期读取不到新数据。"
+      },
+      "checks": [
+        "完整正确回答应得满分",
+        "每项依据来自答案内容"
+      ],
+      "expectedScore": {
+        "min": 2,
+        "max": 2
+      },
+      "response": null,
+      "usage": null,
+      "promptHash": "91cd5960da2a4d9451910f64068010f48a09b880bcfe649cc6992407dd64fdde",
+      "error": "MODEL_FAILED",
+      "durationMs": 2035,
+      "scoreMatchesReference": null,
+      "humanReview": {
+        "verdict": "pending",
+        "notes": ""
+      }
+    }
+  ]
+}

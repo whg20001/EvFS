@@ -72,7 +72,7 @@ test('上传 Markdown 经真实 mock 学习流程在知识详情排版，原文�
   await expect(page).toHaveURL(/\/recite$/);
   await page.getByRole('button', { name: '开始今天的三省' }).click();
   await page.getByRole('textbox', { name: '今天学了什么', exact: true }).fill('原始笔记标题。');
-  await page.getByLabel('上传 TXT 或 Markdown 笔记').setInputFiles({ name: '排版验收.md', mimeType: 'text/markdown', buffer: Buffer.from(markdown) });
+  await page.getByLabel('上传笔记、PDF 或图片').setInputFiles({ name: '排版验收.md', mimeType: 'text/markdown', buffer: Buffer.from(markdown) });
   await expect(source(page, '排版验收.md')).toBeVisible();
   await page.getByRole('button', { name: '提交复述', exact: true }).click();
   await expect(page.getByRole('checkbox', { name: /纳入这个知识点/ }).first()).toBeVisible();

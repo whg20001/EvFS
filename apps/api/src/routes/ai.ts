@@ -46,7 +46,7 @@ export function registerAiRoutes(app: FastifyInstance, options: {
     return { id: run.id, providerId, modelId: run.task.selection.modelId, mode: data.mode, status: run.status,
       createdAt: run.createdAt, startedAt: run.startedAt, finishedAt: run.finishedAt,
       durationMs: run.startedAt && run.finishedAt ? Math.max(0, Date.parse(run.finishedAt) - Date.parse(run.startedAt)) : null,
-      usage: run.usage, error: run.error };
+      usage: run.usage, error: run.error, ...(run.errorCode ? { errorCode: run.errorCode } : {}) };
   }
   app.get('/api/ai/providers/:providerId/test', async request => ({ test: await testView(z.enum(LIVE_PROVIDER_IDS).parse(param(request, 'providerId'))) }));
   app.post('/api/ai/providers/:providerId/test', async (request, reply) => {

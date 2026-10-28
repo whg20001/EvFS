@@ -3,9 +3,23 @@ import { AiModelRuntime } from './ai-runtime.ts';
 import { openAiAccess, type AiAccessController } from '@sanxing/ai-access';
 import { createApp } from './app.ts';
 import { loadEnvironment, readConfig } from './config.ts';
+import { openAccounts } from './accounts.ts';
+import { createGatewayApp } from './gateway-app.ts';
 
 loadEnvironment();
 const config = readConfig();
+if (config.storageMode === 'local-first') {
+  const accounts = await openAccounts(config.accountDataDir);
+  let gateway: Awaited<ReturnType<typeof createGatewayApp>> | undefined;
+  let closing: Promise<void> | undefined;
+  const shutdown = () => closing ??= (async () => { try { await gateway?.app.close(); } finally { await accounts.close(); } })();
+  try {
+    gateway = await createGatewayApp({ config, accounts });
+    process.once('SIGINT', () => { void shutdown(); }); process.once('SIGTERM', () => { void shutdown(); });
+    await gateway.app.listen({ port: config.port, host: config.host });
+    console.log(`Sanxing: ${config.mode} | browser learning storage | account and AI gateway ready`);
+  } catch (error) { await shutdown(); throw error; }
+} else {
 const repository = await openRepository(config.dataDir, config.mode);
 let access: AiAccessController | undefined;
 let application: Awaited<ReturnType<typeof createApp>> | undefined;
@@ -31,3 +45,4 @@ try {
     if (!status.budget.enabled) console.log('应用预算：未设置。实际费用和订阅额度仍受厂商规则约束。');
   }
 } catch (error) { await shutdown(); throw error; }
+}

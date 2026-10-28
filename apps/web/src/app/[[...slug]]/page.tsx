@@ -1,3 +1,3 @@
-import { Suspense } from 'react';
-import { RouteScreen } from '../../components/screens';
-export default function Page() { return <Suspense fallback={<p>正在打开学习记录…</p>}><RouteScreen /></Suspense>; }
+// The shared layout owns the screen so /login can overlay a mounted editor.
+// A catch-all page is still needed for Next's route resolution and navigation.
+export default function Page() { return null; }

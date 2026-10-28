@@ -1,50 +1,37 @@
-import { randomUUID, createHash } from 'node:crypto';
+import { applyKnowledgeMerge, contentBaseline, previewKnowledgeMerge } from './knowledge-merge.ts';
+import { bindLearningSkills } from './skills.ts';
+import { currentKnowledgeId, taskPromptVersion, skillSelectionSchema, type PromptBinding, type RunErrorCode } from '@sanxing/contracts';
+import { REVIEW_ALGORITHM, reviewRating } from './review-policy.ts';
+import { recentWeaknessCues } from './review-evidence.ts';
+import { randomUUID, hashBytes, encodeBase64 } from './runtime.ts';
 import { z } from 'zod';
-import { CODE_LANGUAGES, DEFAULT_CODE_LANGUAGES, IDEMPOTENCY_KEY_PATTERN, LEARNING_PROMPT_VERSION, LIMITS, aiOutputSchema, answerInputSchema, codeExecutionSchema, executionFitsQuestion, isDocumentFilename, learningPreferencesSchema, isActiveRun, prepareTaskContext, recitationInputSchema, recitationSourceText, usageSchema } from '@sanxing/contracts';
-import type { AgentRun, AiModelSelection, AiResponse, AiTask, AppData, Assessment, CodeExecution, CodeLanguage, CommandResult, KnowledgePoint, LearningSession, PointInput, Question, Quiz, RelatedPoint, SourceInput } from '@sanxing/contracts';
-import { DomainError, currentQuestionIndex, effectiveLearningPreferences, expectVersion, fingerprint, learningDate, newSchedule, nextSchedule, normalizeTitle, projectState, record, requireThat } from './policy.ts';
+import { CODE_LANGUAGES, DEFAULT_CODE_LANGUAGES, LIMITS, aiOutputSchema, answerInputSchema, codeExecutionSchema, executionFitsQuestion, documentUploadLimit, isUploadFilename, isPdfFilename, isImageFilename, imageMediaType, imageImportInputSchema, learningPreferencesSchema, isActiveRun, prepareTaskContext, recitationInputSchema, recitationSourceText, usageSchema } from '@sanxing/contracts';
+import type { AgentRun, AiModelSelection, AiResponse, AiTask, AppData, Assessment, CodeExecution, CodeLanguage, CommandResult, KnowledgePoint, LearningSession, DocumentImport, PointInput, Question, Quiz, RelatedPoint, SourceInput } from '@sanxing/contracts';
+import { DomainError, currentQuestionIndex, effectiveLearningPreferences, expectVersion, learningDate, newSchedule, nextSchedule, normalizeTitle, projectState, record, requireThat } from './policy.ts';
 import type { DomainConfig } from './policy.ts';
 import { findRelatedKnowledge, selectRelevantSources } from './retrieval.ts';
 
-export interface StateRepository {
-  read(): Promise<AppData>;
-  transact<T>(fn: (data: AppData) => T | Promise<T>): Promise<T>;
-}
-const versionBody = z.object({ version: z.number().int().positive() });
-const noteInput = z.object({ recitationId: z.string(), name: z.string().min(1).max(120), text: z.string() });
-const confirmInput = z.object({ version: z.number().int().positive(), decisions: z.array(z.object({ candidateId: z.string(), decision: z.enum(['accepted', 'rejected']), title: z.string().min(1).max(100).optional(), description: z.string().min(1).max(2000).optional(), existingKnowledgeId: z.string().nullable().optional() })).min(1).max(LIMITS.quizQuestionsMaximum) });
+import type { StateRepository } from './repository.ts';
+export type { StateRepository } from './repository.ts';
+import { executeCommand } from './commands.ts';
+import { RunLifecycle } from './run-lifecycle.ts';
 
-// Only known, non-billable, CAS-protected autosaves are transient. Unknown operations stay durable.
-const transientReceipt = /^PUT:\/api\/(?:recitations\/[^/:]+\/draft|questions\/[^/:]+\/draft|knowledge-points\/[^/:]+\/understanding|review-sessions\/[^/:]+\/recall):/;
+const versionBody = z.object({ version: z.number().int().positive() });
+const taskVersionBody = versionBody.extend({ skillSelections: skillSelectionSchema.optional() });
+const noteInput = z.object({ recitationId: z.string(), name: z.string().min(1).max(120), text: z.string() });
+const confirmInput = z.object({ skillSelections: skillSelectionSchema.optional(), version: z.number().int().positive(), decisions: z.array(z.object({ candidateId: z.string(), decision: z.enum(['accepted', 'rejected']), title: z.string().min(1).max(100).optional(), description: z.string().min(1).max(2000).optional(), existingKnowledgeId: z.string().nullable().optional() })).min(1).max(LIMITS.quizQuestionsMaximum) });
 
 export class LearningService {
+  private readonly runs: RunLifecycle;
   constructor(readonly repository: StateRepository, readonly config: DomainConfig, readonly now: () => Date = () => new Date(),
-    private readonly prepareInput: (task: AiTask, data: AppData) => AiTask = task => prepareTaskContext(task).task) {}
+    private readonly prepareInput: (task: AiTask, data: AppData) => AiTask = task => prepareTaskContext(task).task,
+    describePrompt: (task: AiTask) => PromptBinding = task => ({ version: taskPromptVersion(task.kind) })) {
+    this.runs = new RunLifecycle(repository, config, now, prepareInput, describePrompt);
+  }
   async state(csrfToken: string) { return projectState(await this.repository.read(), this.config, csrfToken); }
   private stamp() { return this.now().toISOString(); }
-  async command(operation: string, key: string, body: unknown, action: (state: AppData) => CommandResult | Promise<CommandResult>): Promise<CommandResult> {
-    requireThat(IDEMPOTENCY_KEY_PATTERN.test(key), 'IDEMPOTENCY_KEY_REQUIRED', '写入请求需要有效的幂等标识', 400);
-    const receiptId = `${operation}:${key}`;
-    const hash = fingerprint(body);
-    return this.repository.transact(async data => {
-      const previous = data.receipts[receiptId];
-      if (previous) {
-        requireThat(previous.hash === hash, 'IDEMPOTENCY_CONFLICT', '同一请求标识不能用于不同内容');
-        return previous.result as CommandResult;
-      }
-      const result = await action(data);
-      data.receipts[receiptId] = { hash, result, createdAt: this.stamp() };
-      const cutoff = this.now().getTime() - LIMITS.transientReceiptTtlMs;
-      const transient = Object.entries(data.receipts).filter(([id, receipt]) => transientReceipt.test(id) && !(receipt.result && typeof receipt.result === 'object' && 'runId' in receipt.result));
-      const remaining: typeof transient = [];
-      for (const entry of transient) {
-        if (Date.parse(entry[1].createdAt) < cutoff) delete data.receipts[entry[0]];
-        else remaining.push(entry);
-      }
-      remaining.sort(([a, x], [b, y]) => Date.parse(x.createdAt) - Date.parse(y.createdAt) || (a < b ? -1 : a > b ? 1 : 0));
-      for (const [id] of remaining.slice(0, Math.max(0, remaining.length - LIMITS.transientReceiptMaximum))) delete data.receipts[id];
-      return result;
-    });
+  command(operation: string, key: string, body: unknown, action: (state: AppData) => CommandResult | Promise<CommandResult>): Promise<CommandResult> {
+    return executeCommand(this.repository, this.now, operation, key, body, action);
   }
   private session(data: AppData, id: string, version: number): LearningSession {
     const session = record(data.sessions, id);
@@ -73,12 +60,7 @@ export class LearningService {
     return null;
   }
   private contentBaseline(point: KnowledgePoint) {
-    point.contentVersion ??= 1;
-    point.contentHistory ??= [];
-    if (!point.contentHistory.some(snapshot => snapshot.version === point.contentVersion)) {
-      // A legacy baseline is observed now; no historical content or old evidence versions are invented.
-      point.contentHistory.push({ version: point.contentVersion, title: point.title, description: point.description, sourceIds: [...point.sourceIds], createdAt: this.stamp() });
-    }
+    contentBaseline(point, this.stamp());
   }
   private points(session: LearningSession): PointInput[] {
     return session.candidates.filter(c => c.decision === 'accepted' && c.knowledgeId).map(c => ({ id: c.knowledgeId!, title: c.title, description: c.description, sourceIds: [...c.sourceIds], knowledgeVersion: c.knowledgeVersion ?? null }));
@@ -105,48 +87,17 @@ export class LearningService {
     for (const point of related) this.contentBaseline(point);
     return related;
   }
-  private queue(data: AppData, task: AiTask, owner: { sessionId?: string; reviewSessionId?: string; quizId?: string; questionId?: string }, alreadyPrepared = false): AgentRun {
-    let contextError: string | null = null;
-    let inputPrepared = alreadyPrepared;
-    try { if (!alreadyPrepared) task = this.prepareInput(task, data); inputPrepared = true; }
-    catch (error) {
-      if (!(error instanceof Error) || !('code' in error) || error.code !== 'MODEL_INPUT_TOO_LARGE') throw error;
-      contextError = error.message;
-    }
-    const session = owner.sessionId ? record(data.sessions, owner.sessionId) : null;
-    const review = owner.reviewSessionId ? record(data.reviewSessions, owner.reviewSessionId) : null;
-    const quiz = owner.quizId ? record(data.quizzes, owner.quizId) : null;
-    requireThat(!session?.activeRunId && !review?.activeRunId, 'RUN_IN_PROGRESS', '已有活动任务');
-    const previous = Object.values(data.runs);
-    const dailyBudget = this.config.mode === 'live' ? this.config.dailyBudgetUsd : null;
-    const owned = (run: AgentRun) => run.task.kind !== 'connection_test' && (owner.sessionId ? run.sessionId === owner.sessionId : Boolean(owner.reviewSessionId && run.reviewSessionId === owner.reviewSessionId));
-    // startedAt stays null when admission fails before a model call. Those refusals must not burn the session cap.
-    const calls = previous.filter(run => owned(run) && run.startedAt !== null).length;
-    let error: string | null = null;
-    if (task.kind !== 'connection_test' && calls >= this.config.maxCallsPerSession) error = '本次会话已达到模型调用上限，请结束或稍后再学习。';
-    else if ('points' in task && new Set(task.points.map(point => point.id)).size !== task.points.length) error = '多个候选归入了同一个知识点。请重新确认范围，每项只绑定一个知识点。';
-    else if (contextError) error = contextError;
-    else if (dailyBudget !== null) {
-      const today = learningDate(this.now(), this.config.timezone);
-      const dailyRuns = previous.filter(run => learningDate(new Date(run.createdAt), this.config.timezone) === today);
-      const spent = dailyRuns.reduce((sum, run) => sum + (run.usage?.cost ?? run.reservationUsd), 0);
-      if (dailyRuns.some(run => run.startedAt !== null && run.usage?.cost == null && run.reservationUsd === 0)) error = '今日存在未预留的未知费用，不能按零计入预算；请核对预算策略或等待下一个预算日。';
-      else if (spent + this.config.requestReservationUsd > dailyBudget) error = '今日模型预算不足，输入已保存，未发起模型请求。';
-    }
-    const run: AgentRun = {
-      id: randomUUID(), status: error ? 'failed' : 'pending', task: structuredClone(task), sessionId: session?.id ?? null, reviewSessionId: review?.id ?? null,
-      quizId: quiz?.id ?? null, questionId: owner.questionId ?? null, attempt: 0, attemptId: null,
-      expectedVersion: task.kind === 'connection_test' ? 0 : task.kind === 'grade' ? quiz!.version : (session?.version ?? review!.version),
-      createdAt: this.stamp(), startedAt: null, finishedAt: error ? this.stamp() : null, error, usage: null,
-      reservationUsd: error || dailyBudget === null ? 0 : this.config.requestReservationUsd, promptVersion: task.kind === 'connection_test' ? 'connection-v1' : LEARNING_PROMPT_VERSION, inputPrepared
-    };
-    data.runs[run.id] = run;
-    if (!error) { if (session) session.activeRunId = run.id; if (review) review.activeRunId = run.id; }
-    if (error && quiz && owner.questionId) {
-      const answer = record(quiz.answers, owner.questionId);
-      answer.assessment = { ...answer.assessment, status: 'needs_verification', feedback: error };
-    }
-    return run;
+  evaluate(data: AppData, task: AiTask, metadata: NonNullable<AgentRun['evaluation']>): CommandResult {
+    requireThat(data.mode === 'live', 'LIVE_MODE_REQUIRED', '真实样例评估需要 live 模式');
+    requireThat(!Object.values(data.runs).some(isActiveRun), 'RUN_IN_PROGRESS', '请等待当前任务完成后再开始样例评估');
+    const batch = Object.values(data.runs).filter(run => run.evaluation?.batchId === metadata.batchId);
+    requireThat(batch.length < 30, 'EVALUATION_LIMIT', '单批评估最多 30 次请求');
+    requireThat(!batch.some(run => run.evaluation?.caseId === metadata.caseId), 'EVALUATION_DUPLICATE', '本批样例已请求，不自动重放');
+    requireThat(batch.every(run => JSON.stringify(run.evaluation!.selection) === JSON.stringify(metadata.selection) && run.evaluation!.suite === metadata.suite), 'EVALUATION_MODEL_CHANGED', '同一批评估的模型与样例版本必须一致');
+    // Baseline evaluation must never include personal imported instructions.
+    const run = this.runs.queue(data, task.kind === 'connection_test' ? task : { ...task, skills: [] }, {});
+    run.evaluation = structuredClone(metadata);
+    return { runId: run.id };
   }
   connectionTest(data: AppData, selection: AiModelSelection): CommandResult {
     requireThat(this.config.mode === 'live', 'LIVE_MODE_REQUIRED', '连接测试仅适用于真实模型模式');
@@ -154,7 +105,7 @@ export class LearningService {
     requireThat(!runs.some(isActiveRun), 'RUN_IN_PROGRESS', '已有活动任务，请等待完成或取消后再测试连接');
     const latest = runs.filter(run => run.task.kind === 'connection_test').reduce((time, run) => Math.max(time, Date.parse(run.createdAt)), -Infinity);
     requireThat(this.now().getTime() - latest >= 30_000, 'CONNECTION_TEST_COOLDOWN', '连接测试需间隔至少 30 秒，请稍后到 Provider 授权重新点击确认测试', 429);
-    const run = this.queue(data, { kind: 'connection_test', selection }, {});
+    const run = this.runs.queue(data, { kind: 'connection_test', selection }, {});
     return { runId: run.id };
   }
   createRecitation(data: AppData, input: unknown): CommandResult {
@@ -176,21 +127,31 @@ export class LearningService {
     Object.assign(draft, { learned: body.learned, unclear: body.unclear, application: body.application, topic: body.topic, updatedAt: this.stamp(), version: draft.version + 1 });
     return { id, version: draft.version };
   }
-  addDocument(data: AppData, input: unknown, original?: Uint8Array): CommandResult {
+  addDocument(data: AppData, input: unknown, original?: Uint8Array, parsedDocument?: { text: string; import: DocumentImport }): CommandResult {
     const body = noteInput.parse(input); const draft = record(data.recitations, body.recitationId);
     const bytes = original ?? new TextEncoder().encode(body.text);
-    requireThat(isDocumentFilename(body.name) && !/[\\/\u0000-\u001f]/.test(body.name), 'UNSUPPORTED_FILE', '只接受 TXT / Markdown 文本文件', 400);
-    requireThat(bytes.byteLength <= this.config.maxUploadBytes, 'FILE_TOO_LARGE', '文件超过当前大小限制', 413);
+    requireThat(isUploadFilename(body.name) && !/[\\/\u0000-\u001f]/.test(body.name), 'UNSUPPORTED_FILE', '只接受 TXT / Markdown、文本型 PDF 或 PNG / JPEG / WebP 图片', 400);
+    requireThat(bytes.byteLength <= documentUploadLimit(body.name, this.config.maxUploadBytes), 'FILE_TOO_LARGE', '文件超过当前大小限制', 413);
     requireThat(draft.documentIds.length < this.config.maxDocuments, 'DOCUMENT_LIMIT', '这份复述的笔记数量已达上限', 400);
     let text: string;
-    try { text = new TextDecoder('utf-8', { fatal: true }).decode(bytes).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n'); }
+    const pdf = isPdfFilename(body.name); const image = isImageFilename(body.name);
+    requireThat(!pdf || (original && parsedDocument?.import.format === 'pdf'), 'PDF_FILE_REQUIRED', 'PDF 必须上传原文件进行本地解析，不能粘贴文本冒充 PDF', 400);
+    if (pdf) {
+      text = parsedDocument!.text;
+      requireThat(text.length <= LIMITS.pdfTextChars && parsedDocument!.import.format === 'pdf' && parsedDocument!.import.pages.length <= LIMITS.pdfPages, 'PDF_TEXT_LIMIT', 'PDF 解析内容超过限制', 400);
+    } else if (image) {
+      requireThat(original && parsedDocument?.import.format === 'image', 'IMAGE_OCR_REQUIRED', '图片需要先完成 OCR 并确认文字后导入。', 400);
+      const parsed = imageImportInputSchema.parse(parsedDocument);
+      requireThat(imageMediaType(bytes) === parsed.import.mediaType && parsed.import.width * parsed.import.height <= LIMITS.imagePixels, 'IMAGE_INVALID', '图片格式或像素信息无效。', 400);
+      text = parsed.text.replace(/\r\n?/g, '\n').trim();
+    } else try { text = new TextDecoder('utf-8', { fatal: true }).decode(bytes).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n'); }
     catch { throw new DomainError('INVALID_ENCODING', '请先将文件转换为 UTF-8 编码'); }
     requireThat(text.trim().length > 0 && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(text), 'INVALID_TEXT', '笔记为空或包含二进制控制字符', 400);
-    const hash = createHash('sha256').update(bytes).digest('hex');
+    const hash = hashBytes(bytes);
     const existing = draft.documentIds.map(docId => record(data.documents, docId)).find(doc => doc.hash === hash);
     if (existing) return { id: existing.id, version: draft.version };
     const id = randomUUID();
-    data.documents[id] = { id, recitationId: draft.id, name: body.name, text, hash, lineCount: text.split('\n').length, originalBase64: Buffer.from(bytes).toString('base64'), createdAt: this.stamp() };
+    data.documents[id] = { id, recitationId: draft.id, name: body.name, text, hash, lineCount: text.split('\n').length, originalBase64: encodeBase64(bytes), createdAt: this.stamp(), ...(pdf || image ? { import: parsedDocument!.import } : {}) };
     draft.documentIds.push(id); draft.version++; draft.updatedAt = this.stamp();
     return { id, version: draft.version };
   }
@@ -212,18 +173,19 @@ export class LearningService {
   /** Read-only preview uses the same source assembly, with a UUID-sized provisional session ID. */
   previewRecitationTask(data: AppData, id: string, input: unknown): Extract<AiTask, { kind: 'extract' }> {
     const draft = record(data.recitations, id);
+    const { skillSelections } = z.object({ skillSelections: skillSelectionSchema.optional() }).parse(input);
     const snapshot = recitationInputSchema.parse(input);
     const session = { id: '00000000-0000-0000-0000-000000000000', snapshot, documentIds: draft.documentIds };
-    return { kind: 'extract', recitation: snapshot, sources: this.sources(data, session) };
+    return bindLearningSkills(data, { kind: 'extract', recitation: snapshot, sources: this.sources(data, session) }, skillSelections);
   }
   submitRecitation(data: AppData, id: string, input: unknown): CommandResult {
-    const body = versionBody.parse(input); const draft = record(data.recitations, id); expectVersion(draft, body.version);
+    const body = taskVersionBody.parse(input); const draft = record(data.recitations, id); expectVersion(draft, body.version);
     requireThat(draft.learned.trim().length > 0, 'EMPTY_RECITATION', '请先写下今天学到了什么', 400);
     const active = Object.values(data.sessions).find(s => s.recitationId === id && s.status !== 'COMPLETED');
     requireThat(!active, 'SESSION_IN_PROGRESS', '这份复述还有未结束的学习，请先继续或结束原会话');
     const session: LearningSession = { id: randomUUID(), recitationId: id, snapshot: { learned: draft.learned, unclear: draft.unclear, application: draft.application, topic: draft.topic }, documentIds: [...draft.documentIds], scopeVersion: 1, version: 1, status: 'CONFIRMING', candidates: [], turns: [], quizId: null, activeRunId: null, completionReason: null, createdAt: this.stamp(), completedAt: null };
     data.sessions[session.id] = session;
-    const run = this.queue(data, { kind: 'extract', recitation: session.snapshot, sources: this.sources(data, session) }, { sessionId: session.id });
+    const run = this.runs.queue(data, bindLearningSkills(data, { kind: 'extract', recitation: session.snapshot, sources: this.sources(data, session) }, body.skillSelections), { sessionId: session.id });
     return { sessionId: session.id, runId: run.id };
   }
   confirm(data: AppData, id: string, input: unknown): CommandResult {
@@ -245,6 +207,7 @@ export class LearningService {
       const existingId = decision.existingKnowledgeId === undefined ? candidate.existingKnowledgeId : decision.existingKnowledgeId;
       if (existingId) {
         const point = record(data.knowledge, existingId);
+        requireThat(!point.archivedAt, 'KNOWLEDGE_ARCHIVED', '请先恢复已归档知识点，再复用');
         this.contentBaseline(point);
         candidate.knowledgeId = point.id;
         const sourceIds = [...new Set([...point.sourceIds, ...candidate.sourceIds])];
@@ -268,11 +231,11 @@ export class LearningService {
     const query = [...points.map(point => `${point.title}\n${point.description}`), session.snapshot.learned].join('\n');
     session.relatedKnowledge = this.associate(data, query, new Set(points.map(point => point.id)))
       .map(point => ({ id: point.id, title: point.title, description: point.description, sourceIds: [...point.sourceIds], knowledgeVersion: point.contentVersion! }));
-    const run = this.queue(data, { kind: 'followup', points, turns: session.turns.filter(turn => turn.scopeVersion === session.scopeVersion), sources: this.sources(data, session, points), ...this.related(session.relatedKnowledge) }, { sessionId: id });
+    const run = this.runs.queue(data, bindLearningSkills(data, { kind: 'followup', points, turns: session.turns.filter(turn => turn.scopeVersion === session.scopeVersion), sources: this.sources(data, session, points), ...this.related(session.relatedKnowledge) }, body.skillSelections), { sessionId: id });
     return { sessionId: id, runId: run.id, version: session.version };
   }
   changeScope(data: AppData, id: string, input: unknown): CommandResult {
-    const body = z.object({ version: z.number().int().positive(), documentIds: z.array(z.string()).max(this.config.maxDocuments) }).parse(input);
+    const body = z.object({ version: z.number().int().positive(), documentIds: z.array(z.string()).max(this.config.maxDocuments), skillSelections: skillSelectionSchema.optional() }).parse(input);
     const session = this.session(data, id, body.version);
     requireThat(!session.quizId, 'SCOPE_FROZEN', '题集已固定，请结束后创建新的学习会话');
     const draft = record(data.recitations, session.recitationId);
@@ -281,26 +244,27 @@ export class LearningService {
       record(data.documents, documentId);
     }
     session.documentIds = [...new Set(body.documentIds)]; session.candidates = []; session.relatedKnowledge = []; session.scopeVersion++; session.version++; session.status = 'CONFIRMING';
-    const run = this.queue(data, { kind: 'extract', recitation: session.snapshot, sources: this.sources(data, session) }, { sessionId: id });
+    const run = this.runs.queue(data, bindLearningSkills(data, { kind: 'extract', recitation: session.snapshot, sources: this.sources(data, session) }, body.skillSelections), { sessionId: id });
     return { sessionId: id, runId: run.id };
   }
   followupAnswer(data: AppData, id: string, input: unknown): CommandResult {
-    const body = z.object({ version: z.number().int().positive(), text: z.string().trim().min(1).max(LIMITS.answerChars), assisted: z.boolean().default(false) }).parse(input);
+    const body = z.object({ version: z.number().int().positive(), text: z.string().trim().min(1).max(LIMITS.answerChars), assisted: z.boolean().default(false), skillSelections: skillSelectionSchema.optional() }).parse(input);
     const session = this.session(data, id, body.version);
     requireThat(session.status === 'CLARIFYING', 'INVALID_STATE', '当前不在追问步骤');
     const turn = session.turns.at(-1);
     requireThat(turn && turn.answer === null && turn.scopeVersion === session.scopeVersion, 'NO_ACTIVE_QUESTION', '当前没有等待回答的问题');
     turn.answer = body.text; turn.assisted = body.assisted; session.version++;
     const points = this.points(session);
-    const run = this.queue(data, { kind: 'followup', points, turns: session.turns.filter(turn => turn.scopeVersion === session.scopeVersion), sources: this.sources(data, session, points), ...this.related(session.relatedKnowledge ?? []) }, { sessionId: id });
+    const run = this.runs.queue(data, bindLearningSkills(data, { kind: 'followup', points, turns: session.turns.filter(turn => turn.scopeVersion === session.scopeVersion), sources: this.sources(data, session, points), ...this.related(session.relatedKnowledge ?? []) }, body.skillSelections), { sessionId: id });
     return { sessionId: id, runId: run.id };
   }
   finishFollowup(data: AppData, id: string, input: unknown): CommandResult {
-    const body = versionBody.parse(input); const session = this.session(data, id, body.version);
+    const body = taskVersionBody.parse(input); const session = this.session(data, id, body.version);
     requireThat(session.status === 'CLARIFYING' && !session.quizId, 'INVALID_STATE', '请先完成学习范围确认');
     const points = this.points(session); requireThat(points.length, 'EMPTY_SCOPE', '没有可考核的已确认知识点');
     session.version++;
-    const run = this.queue(data, { kind: 'quiz', points, sources: this.sources(data, session, points), count: this.config.quizCount, ...this.related(session.relatedKnowledge ?? []), ...this.codeOption(data) }, { sessionId: id });
+    const turns = session.turns.filter(turn => turn.scopeVersion === session.scopeVersion);
+    const run = this.runs.queue(data, bindLearningSkills(data, { kind: 'quiz', points, turns, sources: this.sources(data, session, points), count: this.config.quizCount, ...this.related(session.relatedKnowledge ?? []), ...this.codeOption(data) }, body.skillSelections), { sessionId: id });
     return { sessionId: id, runId: run.id };
   }
   endSession(data: AppData, id: string, input: unknown): CommandResult {
@@ -326,11 +290,11 @@ export class LearningService {
   }
   /** Private rubric stays on the server; the caller may expose only numeric preflight metadata. */
   previewAnswerTask(data: AppData, questionId: string, input: unknown): Extract<AiTask, { kind: 'grade' }> {
-    const body = z.object({ text: z.string().max(LIMITS.answerChars), execution: z.optional(codeExecutionSchema) }).parse(input);
+    const body = z.object({ text: z.string().max(LIMITS.answerChars), execution: z.optional(codeExecutionSchema), skillSelections: skillSelectionSchema.optional() }).parse(input);
     const { quiz, question } = this.findQuestion(data, questionId);
     this.assertCurrentQuestion(quiz, questionId, '预检');
     requireThat(question.kind !== 'single', 'INVALID_QUESTION', '只有简答题与代码题需要模型输入预检', 400);
-    return { kind: 'grade', question, answer: body.text, ...this.codeEvidence(question, body.execution) };
+    return bindLearningSkills(data, { kind: 'grade', question, answer: body.text, ...this.codeEvidence(question, body.execution) }, body.skillSelections);
   }
   saveAnswerDraft(data: AppData, questionId: string, input: unknown): CommandResult {
     const body = z.object({ version: z.number().int().positive(), text: z.string().max(LIMITS.answerChars) }).parse(input);
@@ -352,7 +316,7 @@ export class LearningService {
     const evidence = skippedEvidence ?? this.codeEvidence(question, body.execution);
     let grade: AiTask | null = modelGraded ? { kind: 'grade', question, answer: body.text, ...evidence } : null;
     if (grade) {
-      try { grade = this.prepareInput(grade, data); }
+      try { grade = this.prepareInput(bindLearningSkills(data, grade, body.skillSelections), data); }
       catch (error) {
         if (!(error instanceof Error) || !('code' in error) || error.code !== 'MODEL_INPUT_TOO_LARGE') throw error;
         throw new DomainError('MODEL_INPUT_TOO_LARGE', '固定评分标准与正式答案超过当前模型输入预算；答案尚未提交，请精简答案、选择更大上下文模型或明确跳过。', 413);
@@ -362,6 +326,7 @@ export class LearningService {
     const maxScore = question.rubric.reduce((sum, item) => sum + item.maxScore, 0);
     const correct = question.kind === 'single' && body.selectedIndex === question.correctIndex;
     const assessment: Assessment = { status: skipped ? 'skipped' : modelGraded ? 'pending' : 'graded', score: skipped || modelGraded ? null : correct ? maxScore : 0, maxScore, feedback: skipped ? '本题已跳过，不计入正确率。' : modelGraded ? '答案已保存，等待评价。' : correct ? '本次选择正确。' : '本次选择有误，请对照讲解核对。', assessedAt: modelGraded ? null : this.stamp(), version: 1 };
+    if (!modelGraded) { assessment.source = 'automatic'; assessment.scores = skipped ? [] : question.rubric.map(row => ({ rubricId: row.id, description: row.description, maxScore: row.maxScore, score: correct ? row.maxScore : 0, evidence: `所选答案：${question.options[body.selectedIndex!]}` })); }
     quiz.answers[questionId] = { text: body.text, selectedIndex: body.selectedIndex, assisted: body.assisted || exposed, skipped, submittedAt: this.stamp(), assessment, ...evidence };
     delete quiz.drafts[questionId]; quiz.version++;
     if (quiz.sessionId) {
@@ -373,7 +338,7 @@ export class LearningService {
       if (review.status === 'QUIZ_READY') { review.status = 'QUIZZING'; review.version++; }
     }
     if (grade) {
-      const run = this.queue(data, grade, { quizId: quiz.id, questionId, ...(quiz.sessionId ? { sessionId: quiz.sessionId } : {}), ...(quiz.reviewSessionId ? { reviewSessionId: quiz.reviewSessionId } : {}) }, true);
+      const run = this.runs.queue(data, grade, { quizId: quiz.id, questionId, ...(quiz.sessionId ? { sessionId: quiz.sessionId } : {}), ...(quiz.reviewSessionId ? { reviewSessionId: quiz.reviewSessionId } : {}) }, true);
       return { quizId: quiz.id, runId: run.id, version: quiz.version };
     }
     this.addEvidence(data, quiz, questionId);
@@ -391,7 +356,7 @@ export class LearningService {
     quiz.submittedAt = this.stamp(); quiz.version++;
     if (quiz.sessionId) {
       const session = record(data.sessions, quiz.sessionId); session.status = 'COMPLETED'; session.completionReason = 'assessed'; session.completedAt = this.stamp(); session.version++;
-      if (effectiveLearningPreferences(data, this.config).schedulingEnabled) for (const point of this.points(session)) if (!Object.values(data.cards).some(card => card.knowledgeId === point.id)) {
+      if (effectiveLearningPreferences(data, this.config).schedulingEnabled) for (const point of this.points(session)) if (!data.knowledge[point.id]?.archivedAt && !Object.values(data.cards).some(card => !card.retiredAt && currentKnowledgeId(card) === point.id)) {
         const id = randomUUID(); data.cards[id] = { id, knowledgeId: point.id, version: 1, schedule: newSchedule(this.now()), createdAt: this.stamp() };
       }
     }
@@ -404,20 +369,32 @@ export class LearningService {
   }
   startReview(data: AppData, cardId: string): CommandResult {
     const card = record(data.cards, cardId);
+    requireThat(!card.retiredAt, 'CARD_RETIRED', '此卡片已在知识合并时停用，请使用保留的复习卡');
+    requireThat(!card.pausedAt, 'CARD_PAUSED', '请先恢复这张卡片，再开始复习');
+    requireThat(!record(data.knowledge, currentKnowledgeId(card)).archivedAt, 'KNOWLEDGE_ARCHIVED', '请先恢复知识点，再开始复习');
     const active = Object.values(data.reviewSessions).find(s => s.cardId === cardId && !['COMPLETED', 'ABANDONED'].includes(s.status));
     if (active) return { reviewSessionId: active.id };
     const id = randomUUID(); data.reviewSessions[id] = { id, cardId, expectedCardVersion: card.version, version: 1, status: 'RECALLING', recall: '', recallSubmittedAt: null, quizId: null, activeRunId: null, createdAt: this.stamp(), completedAt: null };
     return { reviewSessionId: id };
   }
+  pauseReviewCard(data: AppData, id: string, input: unknown): CommandResult {
+    const body = versionBody.extend({ paused: z.boolean() }).strict().parse(input);
+    const card = record(data.cards, id); expectVersion(card, body.version);
+    requireThat(!card.retiredAt, 'CARD_RETIRED', '合并时停用的卡片不能恢复');
+    requireThat(!Object.values(data.reviewSessions).some(review => review.cardId === id && !['COMPLETED', 'ABANDONED'].includes(review.status)), 'REVIEW_IN_PROGRESS', '请先完成或放弃这张卡片正在进行的复习');
+    if (Boolean(card.pausedAt) === body.paused) return { id, version: card.version };
+    card.pausedAt = body.paused ? this.stamp() : null; card.version++;
+    return { id, version: card.version };
+  }
   reviewRecall(data: AppData, id: string, input: unknown): CommandResult {
-    const body = z.object({ version: z.number().int().positive(), text: z.string().max(LIMITS.answerChars), action: z.enum(['draft', 'submitted']) }).parse(input);
+    const body = z.object({ version: z.number().int().positive(), text: z.string().max(LIMITS.answerChars), action: z.enum(['draft', 'submitted']), skillSelections: skillSelectionSchema.optional() }).parse(input);
     const review = record(data.reviewSessions, id); expectVersion(review, body.version);
     requireThat(review.status === 'RECALLING' && !review.activeRunId && !review.recallSubmittedAt, 'INVALID_STATE', '回忆已提交或任务正在处理');
     requireThat(body.action === 'draft' || body.text.trim().length > 0, 'EMPTY_RECALL', '请先写下回忆内容，再开始定向测验', 400);
     review.recall = body.text; review.version++;
     if (body.action === 'draft') return { reviewSessionId: id, version: review.version };
     review.recallSubmittedAt = this.stamp();
-    const card = record(data.cards, review.cardId); const point = record(data.knowledge, card.knowledgeId);
+    const card = record(data.cards, review.cardId); const point = record(data.knowledge, currentKnowledgeId(card));
     this.contentBaseline(point);
     const source: SourceInput = { id: `knowledge:${point.id}:v${point.contentVersion}`, name: '此前确认的知识点（仍可能有误）', text: point.description };
     const available = [...new Set(point.sourceIds)].flatMap(sourceId => {
@@ -428,7 +405,8 @@ export class LearningService {
     const sources = [source, ...originals];
     // Combination only: related points are not shown beforehand, not assessed alone, and never scheduled here.
     const related = this.associate(data, `${point.title}\n${point.description}\n${body.text}`, new Set([point.id]));
-    const run = this.queue(data, { kind: 'quiz', points: [{ id: point.id, title: point.title, description: point.description, sourceIds: sources.map(item => item.id), knowledgeVersion: point.contentVersion! }], sources, recall: body.text, count: Math.min(LIMITS.quizQuestions, this.config.quizCount), ...this.related(related), ...this.codeOption(data) }, { reviewSessionId: id });
+    const weaknesses = recentWeaknessCues(data, point.id, this.now());
+    const run = this.runs.queue(data, bindLearningSkills(data, { kind: 'quiz', points: [{ id: point.id, title: point.title, description: point.description, sourceIds: sources.map(item => item.id), knowledgeVersion: point.contentVersion! }], sources, recall: body.text, ...(weaknesses.length ? { weaknesses } : {}), count: Math.min(LIMITS.quizQuestions, this.config.quizCount), ...this.related(related), ...this.codeOption(data) }, body.skillSelections), { reviewSessionId: id });
     return { reviewSessionId: id, runId: run.id };
   }
   completeReview(data: AppData, id: string, input: unknown): CommandResult {
@@ -438,13 +416,12 @@ export class LearningService {
     const card = record(data.cards, review.cardId);
     requireThat(card.version === review.expectedCardVersion && body.expectedCardVersion === card.version, 'CARD_VERSION_CONFLICT', '卡片已被更新，请放弃旧会话后重新复习');
     const quiz = record(data.quizzes, review.quizId);
-    const independent = Object.values(quiz.answers).filter(a => a.assessment.status === 'graded' && !a.assisted && !a.skipped);
-    if (effectiveLearningPreferences(data, this.config).schedulingEnabled && independent.length) {
-      const rating = independent.some(a => (a.assessment.score ?? 0) < a.assessment.maxScore) ? 1 : body.rating;
-      const reviewedAt = independent.map(a => a.submittedAt).sort().at(-1)!;
+    const decision = reviewRating(Object.values(quiz.answers), body.rating);
+    if (!card.retiredAt && !card.pausedAt && !record(data.knowledge, currentKnowledgeId(card)).archivedAt && effectiveLearningPreferences(data, this.config).schedulingEnabled && decision) {
+      const { rating, reviewedAt } = decision;
       requireThat(!Object.values(data.reviewEvents).some(e => e.reviewSessionId === id), 'REVIEW_ALREADY_APPLIED', '这次复习已生效');
       const before = structuredClone(card.schedule); const after = nextSchedule(before, new Date(reviewedAt), rating);
-      const eventId = randomUUID(); data.reviewEvents[eventId] = { id: eventId, reviewSessionId: id, cardId: card.id, rating, reviewedAt, before, after, algorithm: 'ts-fsrs@5.4.2/default-retention-0.9/no-fuzz/no-short-term/mapping-v1', simulated: data.mode === 'mock' };
+      const eventId = randomUUID(); data.reviewEvents[eventId] = { id: eventId, reviewSessionId: id, cardId: card.id, rating, reviewedAt, before, after, algorithm: REVIEW_ALGORITHM, simulated: data.mode === 'mock' };
       card.schedule = after; card.version++;
     }
     review.status = 'COMPLETED'; review.completedAt = this.stamp(); review.version++;
@@ -463,6 +440,8 @@ export class LearningService {
     // Older clients omit the association switch: keep the saved choice rather than silently turning it off/on.
     const saved = data.learningPreferences;
     data.learningPreferences = { schedulingEnabled: body.schedulingEnabled, promptCacheRetention: body.promptCacheRetention, associationEnabled: body.associationEnabled ?? saved?.associationEnabled ?? false,
+      reviewOrder: body.reviewOrder ?? saved?.reviewOrder ?? 'due',
+      reviewBatchSize: body.reviewBatchSize === undefined ? saved?.reviewBatchSize ?? null : body.reviewBatchSize,
       codeExercisesEnabled: body.codeExercisesEnabled ?? saved?.codeExercisesEnabled ?? false,
       // Canonical order and no duplicates, so an unchanged choice compares equal.
       codeLanguages: CODE_LANGUAGES.filter(language => (body.codeLanguages ?? saved?.codeLanguages ?? DEFAULT_CODE_LANGUAGES).includes(language)) };
@@ -472,81 +451,124 @@ export class LearningService {
     const body = versionBody.extend({ confirm: z.literal(true) }).parse(input);
     requireThat(effectiveLearningPreferences(data, this.config).schedulingEnabled, 'SCHEDULING_NOT_ENABLED', '请先启用复习排期');
     const point = record(data.knowledge, knowledgeId); expectVersion(point, body.version);
-    const existing = Object.values(data.cards).find(card => card.knowledgeId === knowledgeId);
+    requireThat(!point.archivedAt, 'KNOWLEDGE_ARCHIVED', '请先恢复知识点，再加入复习');
+    const existing = Object.values(data.cards).find(card => !card.retiredAt && currentKnowledgeId(card) === knowledgeId);
     if (existing) return { id: existing.id, version: existing.version };
     const id = randomUUID();
     data.cards[id] = { id, knowledgeId, version: 1, schedule: newSchedule(this.now()), createdAt: this.stamp() };
     return { id, version: 1 };
   }
+  saveKnowledge(data: AppData, id: string, input: unknown): CommandResult {
+    const body = versionBody.extend({ title: z.string().trim().min(1).max(LIMITS.knowledgeTitleChars), description: z.string().trim().min(1).max(LIMITS.knowledgeDescriptionChars), tags: z.array(z.string().trim().min(1).max(LIMITS.knowledgeTagChars)).max(LIMITS.knowledgeTagsMaximum) }).strict().parse(input);
+    const point = record(data.knowledge, id); expectVersion(point, body.version);
+    requireThat(!point.merge, 'KNOWLEDGE_MERGED', '此记录已合并，请前往当前知识点修改');
+    this.contentBaseline(point);
+    if (point.title !== body.title || point.description !== body.description) {
+      point.title = body.title; point.description = body.description; point.contentVersion!++;
+      this.contentBaseline(point);
+    }
+    point.tags = [...new Set(body.tags)]; point.version++; point.updatedAt = this.stamp();
+    return { id, version: point.version };
+  }
+  archiveKnowledge(data: AppData, id: string, input: unknown): CommandResult {
+    const body = versionBody.extend({ archived: z.boolean() }).strict().parse(input);
+    const point = record(data.knowledge, id); expectVersion(point, body.version);
+    requireThat(!point.merge, 'KNOWLEDGE_MERGED', '此记录已合并，请前往当前知识点修改');
+    point.archivedAt = body.archived ? this.stamp() : null; point.version++; point.updatedAt = this.stamp();
+    return { id, version: point.version };
+  }
+  mergeKnowledge(data: AppData, id: string, input: unknown): CommandResult {
+    const body = z.object({ targetId: z.string().min(1), expectedRevision: z.number().int().nonnegative(), retainedCardId: z.string().min(1).nullable(), confirm: z.literal(true) }).strict().parse(input);
+    expectVersion({ version: data.revision }, body.expectedRevision);
+    const preview = previewKnowledgeMerge(data, id, body.targetId);
+    return applyKnowledgeMerge(data, preview, body.retainedCardId, this.stamp());
+  }
+  private correctionTarget(data: AppData, id: string, version: number, assessmentVersion: number) {
+    const { quiz, question } = this.findQuestion(data, id); expectVersion(quiz, version);
+    requireThat(quiz.submittedAt, 'QUIZ_NOT_SUBMITTED', '请先交卷，再核对评价');
+    const answer = record(quiz.answers, id); expectVersion(answer.assessment, assessmentVersion);
+    requireThat(!answer.skipped && answer.assessment.status !== 'pending', 'INVALID_ASSESSMENT', '跳过或正在评分的答案不能核对');
+    requireThat(!Object.values(data.runs).some(run => run.quizId === quiz.id && isActiveRun(run)), 'RUN_IN_PROGRESS', '请等待或取消本测验的评价任务');
+    return { quiz, question, answer };
+  }
+  disputeAssessment(data: AppData, id: string, input: unknown): CommandResult {
+    const body = versionBody.extend({ assessmentVersion: z.number().int().positive(), reason: z.string().trim().min(1).max(LIMITS.assessmentReasonChars) }).strict().parse(input);
+    const { quiz, answer } = this.correctionTarget(data, id, body.version, body.assessmentVersion);
+    requireThat(!answer.dispute || answer.dispute.resolvedAt, 'DISPUTE_OPEN', '此评价已有待核对标记');
+    answer.dispute = { reason: body.reason, createdAt: this.stamp(), resolvedAt: null }; quiz.version++;
+    this.addEvidence(data, quiz, id);
+    return { quizId: quiz.id, version: quiz.version };
+  }
+  reviseAssessment(data: AppData, id: string, input: unknown): CommandResult {
+    const body = versionBody.extend({ assessmentVersion: z.number().int().positive(), reason: z.string().trim().min(1).max(LIMITS.assessmentReasonChars), method: z.enum(['manual', 'model']), skillSelections: skillSelectionSchema.optional(), feedback: z.string().trim().min(1).max(4000).optional(), scores: z.array(z.object({ rubricId: z.string(), score: z.number().nonnegative(), evidence: z.string().trim().min(1).max(2000) }).strict()).max(5).optional() }).strict().parse(input);
+    const { quiz, question, answer } = this.correctionTarget(data, id, body.version, body.assessmentVersion);
+    if (body.method === 'model') {
+      requireThat(question.kind !== 'single', 'INVALID_ASSESSMENT', '单选题按固定答案判定，请使用人工核对');
+      const task: AiTask = { kind: 'grade', question: structuredClone(question), answer: answer.text, ...(answer.execution ? { execution: structuredClone(answer.execution) } : {}) };
+      const run = this.runs.queue(data, bindLearningSkills(data, task, body.skillSelections), { quizId: quiz.id, questionId: id, assessmentRevision: true });
+      run.assessmentRevision = { expectedVersion: answer.assessment.version, reason: body.reason };
+      return { quizId: quiz.id, runId: run.id };
+    }
+    requireThat(body.scores && body.feedback, 'INVALID_ASSESSMENT', '请填写每项得分、依据和核对结论', 400);
+    const next = this.assessmentResult(question, { kind: 'grade', status: 'graded', scores: body.scores, feedback: body.feedback }, answer.assessment, 'manual', body.reason);
+    this.commitAssessment(data, quiz, id, next, true);
+    return { quizId: quiz.id, version: quiz.version };
+  }
+  private assessmentResult(question: Question, output: Extract<AiResponse['output'], { kind: 'grade' }>, previous: Assessment, source: 'model' | 'manual', reason?: string): Assessment {
+    const rubric = question.rubric;
+    requireThat(output.status === 'graded' || output.scores.length === 0, 'INVALID_SCORE', '待核对评价不能携带分数');
+    if (output.status === 'graded') requireThat(output.scores.length === rubric.length && new Set(output.scores.map(s => s.rubricId)).size === rubric.length && output.scores.every(s => { const row = rubric.find(r => r.id === s.rubricId); return row && Number.isFinite(s.score) && s.score >= 0 && s.score <= row.maxScore && s.evidence.trim().length > 0; }), 'INVALID_SCORE', '评分不符合固定评分标准');
+    return { status: output.status, score: output.status === 'graded' ? output.scores.reduce((sum, row) => sum + row.score, 0) : null,
+      maxScore: previous.maxScore, feedback: output.feedback, assessedAt: this.stamp(), version: previous.version + 1, source,
+      scores: output.scores.map(item => { const row = rubric.find(row => row.id === item.rubricId)!; return { ...item, description: row.description, maxScore: row.maxScore }; }), ...(reason ? { reason } : {}) };
+  }
+  private commitAssessment(data: AppData, quiz: Quiz, id: string, next: Assessment, revision: boolean) {
+    const answer = record(quiz.answers, id);
+    if (revision) (answer.assessmentHistory ??= []).push(structuredClone(answer.assessment));
+    answer.assessment = next;
+    if (answer.dispute && next.status === 'graded') answer.dispute.resolvedAt = this.stamp();
+    quiz.version++;
+    // Evidence is the latest projection, with its full prior assessment history attached.
+    delete data.evidence[`${quiz.id}:${id}`];
+    this.addEvidence(data, quiz, id);
+  }
   saveUnderstanding(data: AppData, id: string, input: unknown): CommandResult {
     const body = z.object({ version: z.number().int().positive(), text: z.string().max(LIMITS.answerChars) }).parse(input);
-    const point = record(data.knowledge, id); expectVersion(point, body.version); this.contentBaseline(point); point.understanding = body.text; point.version++; point.updatedAt = this.stamp(); return { id, version: point.version };
+    const point = record(data.knowledge, id); expectVersion(point, body.version);
+    requireThat(!point.merge, 'KNOWLEDGE_MERGED', '此记录已合并，请前往当前知识点修改'); this.contentBaseline(point); point.understanding = body.text; point.version++; point.updatedAt = this.stamp(); return { id, version: point.version };
   }
-  cancelRun(data: AppData, id: string): CommandResult {
-    const run = record(data.runs, id);
-    if (!['pending', 'running'].includes(run.status)) return { runId: id };
-    run.status = 'cancelled'; run.error = '任务已取消，已提交的输入仍然保留。'; run.finishedAt = this.stamp(); run.attemptId = null;
-    this.releaseRun(data, run); return { runId: id };
+  cancelRun(data: AppData, id: string) { return this.runs.cancelRun(data, id); }
+  retryRun(data: AppData, id: string) { return this.runs.retryRun(data, id); }
+  claimRun() { return this.runs.claimRun(); }
+  recoverRuns() { return this.runs.recoverRuns(); }
+  recordUsage(id: string, attempt: number, value: unknown) { return this.runs.recordUsage(id, attempt, value); }
+  recordRunProgress(id: string, attempt: number, value: unknown, requestValue?: unknown, transportValue?: unknown) {
+    return this.runs.recordRunProgress(id, attempt, value, requestValue, transportValue);
   }
-  private releaseRun(data: AppData, run: AgentRun) {
-    if (run.sessionId) { const session = record(data.sessions, run.sessionId); if (session.activeRunId === run.id) session.activeRunId = null; }
-    if (run.reviewSessionId) { const review = record(data.reviewSessions, run.reviewSessionId); if (review.activeRunId === run.id) review.activeRunId = null; }
-    if (run.task.kind === 'grade' && run.quizId && run.questionId) {
-      const quiz = record(data.quizzes, run.quizId); const answer = record(quiz.answers, run.questionId);
-      if (answer.assessment.status === 'pending' && ['failed', 'cancelled'].includes(run.status)) { answer.assessment.status = 'needs_verification'; answer.assessment.feedback = run.error ?? '评价待核对'; quiz.version++; run.expectedVersion = quiz.version; }
-    }
-  }
-  retryRun(data: AppData, id: string): CommandResult {
-    const old = record(data.runs, id);
-    requireThat(old.task.kind !== 'connection_test', 'CONNECTION_TEST_CONFIRMATION_REQUIRED', '请到 Provider 授权重新点击确认测试；连接测试不能直接重试');
-    requireThat(['failed', 'cancelled'].includes(old.status), 'INVALID_STATE', '只能重试失败或取消的任务');
-    if (old.sessionId) { const session = record(data.sessions, old.sessionId); requireThat(session.status !== 'COMPLETED' && !session.activeRunId, 'SESSION_CLOSED', '会话已结束或正在处理'); if (old.task.kind !== 'grade') expectVersion(session, old.expectedVersion); }
-    if (old.reviewSessionId) { const review = record(data.reviewSessions, old.reviewSessionId); requireThat(!['COMPLETED', 'ABANDONED'].includes(review.status) && !review.activeRunId, 'SESSION_CLOSED', '复习会话已结束或正在处理'); if (old.task.kind !== 'grade') expectVersion(review, old.expectedVersion); }
-    if (old.quizId && old.questionId) { const quiz = record(data.quizzes, old.quizId); requireThat(!quiz.submittedAt, 'QUIZ_CLOSED', '已交卷的评价需要人工核对，不自动重评'); expectVersion(quiz, old.expectedVersion); quiz.answers[old.questionId]!.assessment.status = 'pending'; quiz.version++; }
-    const run = this.queue(data, structuredClone(old.task), { ...(old.sessionId ? { sessionId: old.sessionId } : {}), ...(old.reviewSessionId ? { reviewSessionId: old.reviewSessionId } : {}), ...(old.quizId ? { quizId: old.quizId } : {}), ...(old.questionId ? { questionId: old.questionId } : {}) }, old.inputPrepared !== false);
-    return { runId: run.id };
-  }
-  async claimRun(): Promise<AgentRun | null> {
-    return this.repository.transact(data => {
-      const run = Object.values(data.runs).find(r => r.status === 'pending');
-      if (!run) return null;
-      run.status = 'running'; run.attempt++; run.attemptId = randomUUID(); run.startedAt = this.stamp();
-      return structuredClone(run);
-    });
-  }
-  async recoverRuns() {
-    await this.repository.transact(data => {
-      for (const run of Object.values(data.runs)) if (run.status === 'running' || (run.status === 'pending' && run.task.kind === 'connection_test')) {
-        // Never replay a diagnostic after restart, even if it had not started yet.
-        run.status = 'failed'; run.error = run.task.kind === 'connection_test' ? '服务重启已中断连接测试；如请求已发出则可能已计费。请到 Provider 授权重新点击确认测试。' : '上次服务在运行中停止。输入已保留，请明确重试；原请求可能已计费。'; run.attemptId = null; run.finishedAt = this.stamp(); this.releaseRun(data, run);
-      }
-    });
-  }
-  async recordUsage(id: string, attempt: number, value: unknown) {
-    const usage = usageSchema.parse(value);
-    await this.repository.transact(data => {
-      const run = data.runs[id];
-      // Accounting is independent of business-result acceptance. Cancellation cannot
-      // erase already incurred usage, but an older attempt may never overwrite it.
-      if (!run || attempt < 1 || run.attempt !== attempt || run.usage !== null) return;
-      run.usage = usage;
-    });
-  }
-  async failRun(id: string, attemptId: string, message = 'AI 任务未完成，输入已保存。可以重试或结束本次学习。') {
-    await this.repository.transact(data => {
-      const run = record(data.runs, id); if (run.status !== 'running' || run.attemptId !== attemptId) return;
-      run.status = 'failed'; run.error = message; run.finishedAt = this.stamp(); this.releaseRun(data, run);
-    });
-  }
+  failRun(id: string, attemptId: string, message?: string, code?: RunErrorCode) { return this.runs.failRun(id, attemptId, message, code); }
   async finishRun(id: string, attemptId: string, response: AiResponse) {
     await this.repository.transact(data => {
       const run = record(data.runs, id);
       if (run.status !== 'running' || run.attemptId !== attemptId) return;
       const parsed = aiOutputSchema.safeParse(response.output);
-      if (run.task.kind === 'connection_test') requireThat(parsed.success, 'INVALID_MODEL_OUTPUT', '连接测试响应校验失败');
-      const output = parsed.success ? parsed.data : aiOutputSchema.parse(response.output);
+      requireThat(parsed.success, 'INVALID_MODEL_OUTPUT', '模型响应校验失败');
+      const output = parsed.data;
       requireThat(run.task.kind === output.kind, 'INVALID_MODEL_OUTPUT', '模型返回了错误的任务类型');
+      if (run.evaluation) {
+        run.evaluation.output = structuredClone(output);
+        run.status = 'succeeded'; run.finishedAt = this.stamp(); if (response.usage != null) run.usage ??= usageSchema.parse(response.usage); run.error = null;
+        return;
+      }
       if (output.kind === 'connection_test') {
+        run.status = 'succeeded'; run.finishedAt = this.stamp(); if (response.usage != null) run.usage ??= usageSchema.parse(response.usage); run.error = null;
+        return;
+      }
+      if (run.assessmentRevision) {
+        requireThat(output.kind === 'grade' && run.task.kind === 'grade' && run.quizId && run.questionId, 'INVALID_MODEL_OUTPUT', '无效复评任务');
+        const quiz = record(data.quizzes, run.quizId); const answer = record(quiz.answers, run.questionId);
+        requireThat(quiz.submittedAt, 'QUIZ_NOT_SUBMITTED', '复评需要已交卷测验');
+        expectVersion(answer.assessment, run.assessmentRevision.expectedVersion);
+        this.commitAssessment(data, quiz, run.questionId, this.assessmentResult(run.task.question as Question, output, answer.assessment, 'model', run.assessmentRevision.reason), true);
         run.status = 'succeeded'; run.finishedAt = this.stamp(); if (response.usage != null) run.usage ??= usageSchema.parse(response.usage); run.error = null;
         return;
       }
@@ -558,7 +580,7 @@ export class LearningService {
       if (output.kind === 'extract' && run.task.kind === 'extract' && session) {
         const allowed = new Set(run.task.sources.map(s => s.id));
         requireThat(output.candidates.every(c => c.sourceIds.length > 0 && c.sourceIds.every(source => allowed.has(source))), 'INVALID_REFERENCE', '模型引用了未授权资料');
-        session.candidates = output.candidates.map(c => ({ ...c, id: randomUUID(), decision: 'pending', knowledgeId: null, existingKnowledgeId: Object.values(data.knowledge).find(k => normalizeTitle(k.title) === normalizeTitle(c.title))?.id ?? null }));
+        session.candidates = output.candidates.map(c => ({ ...c, id: randomUUID(), decision: 'pending', knowledgeId: null, existingKnowledgeId: Object.values(data.knowledge).find(k => !k.archivedAt && normalizeTitle(k.title) === normalizeTitle(c.title))?.id ?? null }));
         session.version++;
       } else if (output.kind === 'followup' && session) {
         const previous = [...session.turns].reverse().find(turn => turn.scopeVersion === session.scopeVersion);
@@ -578,16 +600,10 @@ export class LearningService {
         if (review) { review.quizId = quiz.id; review.status = 'QUIZ_READY'; review.version++; }
       } else if (output.kind === 'grade' && run.task.kind === 'grade' && run.quizId && run.questionId) {
         const quiz = record(data.quizzes, run.quizId); expectVersion(quiz, run.expectedVersion); requireThat(!quiz.submittedAt, 'QUIZ_CLOSED', '测验已经结束');
-        const answer = record(quiz.answers, run.questionId); const rubric = run.task.question.rubric;
-        let score: number | null = null;
-        if (output.status === 'graded') {
-          requireThat(output.scores.length === rubric.length && new Set(output.scores.map(s => s.rubricId)).size === rubric.length && output.scores.every(s => { const row = rubric.find(r => r.id === s.rubricId); return row && s.score <= row.maxScore && s.evidence.trim().length > 0; }), 'INVALID_SCORE', '模型评分不符合固定评分标准');
-          score = output.scores.reduce((sum, row) => sum + row.score, 0);
-        }
-        answer.assessment = { ...answer.assessment, status: output.status, score, feedback: output.feedback, assessedAt: this.stamp(), version: answer.assessment.version + 1 }; quiz.version++;
-        this.addEvidence(data, quiz, run.questionId);
+        const answer = record(quiz.answers, run.questionId);
+        this.commitAssessment(data, quiz, run.questionId, this.assessmentResult(run.task.question as Question, output, answer.assessment, 'model'), false);
       } else throw new DomainError('INVALID_MODEL_OUTPUT', '任务结果缺少有效的业务关联');
-      run.status = 'succeeded'; run.finishedAt = this.stamp(); if (response.usage != null) run.usage ??= usageSchema.parse(response.usage); run.error = null; this.releaseRun(data, run);
+      run.status = 'succeeded'; run.finishedAt = this.stamp(); if (response.usage != null) run.usage ??= usageSchema.parse(response.usage); run.error = null; this.runs.releaseRun(data, run);
     });
   }
 }
