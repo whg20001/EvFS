@@ -239,9 +239,9 @@ test('stops a single synchronization attempt after two delta collisions and one 
   });
   await page.goto('/recite');
   await page.getByLabel('今日主题').fill('同步失败也保留');
-  await page.removeLocatorHandler(page.getByRole('alertdialog'));
-  await page.getByRole('button', { name: '保存草稿', exact: true }).click();
-  await acknowledgeFeedback(page, ['状态同步版本不一致']);
+  // Let one autosave drive the failed synchronization. A manual click can race
+  // that timer and its error dialog, accidentally starting a second attempt.
+  await expect(page.locator('.save-state')).toContainText('未保存 · 自动保存已暂停');
   await expect(page.getByRole('button', { name: '保存草稿', exact: true })).toBeEnabled();
   await expect(page.getByLabel('今日主题')).toHaveValue('同步失败也保留');
   expect(queries).toEqual([null, '1', '1', null]); expect(errors).toEqual([]);

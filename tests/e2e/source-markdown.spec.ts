@@ -172,7 +172,9 @@ test('内联加载中最大化复用请求，失败关闭后可重试', async ({
   const dialog = page.getByRole('dialog'); await expect(dialog.getByRole('status')).toHaveText('正在加载原文…');
   await observed.pending!.fulfill({ status: 503, json: { error: { code: 'UNAVAILABLE', message: '离线临时失败' } } });
   await acknowledgeFeedback(page, ['离线临时失败']); expect(observed.reads).toBe(1);
-  await page.keyboard.press('Escape'); await note.locator('summary>span').first().click();
+  await expect(dialog.getByRole('button', { name: '退出最大化' })).toBeFocused();
+  await page.keyboard.press('Escape'); await expect(dialog).toHaveCount(0);
+  await note.locator('summary>span').first().click();
   await note.getByRole('button', { name: '最大化查看 阅读笔记.md' }).click(); await expect.poll(() => observed.reads).toBe(2);
   await observed.pending!.fulfill({ json: { ...input.data.documents[0], text: markdown } });
   await expect(dialog.locator('.source-markdown h1')).toHaveText('原始笔记标题');
