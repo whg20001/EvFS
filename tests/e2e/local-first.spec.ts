@@ -379,7 +379,8 @@ test('deduplicates matching errors and queues different masked notices without b
   await page.getByRole('button', { name: '全部模块', exact: true }).click(); await expect(page.getByRole('dialog', { name: '全部模块', exact: true })).toBeVisible();
 });
 
-test('shows the matching admin dashboard, manages users, and blocks ordinary accounts', async ({ page, browser }) => {
+test('shows the matching admin dashboard, manages users, and blocks ordinary accounts', async ({ page, browser }, info) => {
+  const managedUsername = `managed-user-${info.repeatEachIndex}`;
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await login(page, 'admin');
   await page.getByRole('button', { name: '全部模块', exact: true }).click();
@@ -390,29 +391,33 @@ test('shows the matching admin dashboard, manages users, and blocks ordinary acc
   await page.getByRole('button', { name: '用户管理', exact: true }).click();
   await page.getByRole('button', { name: '创建用户', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '创建用户', exact: true });
-  await dialog.getByLabel('用户名', { exact: true }).fill('managed-user');
+  await dialog.getByLabel('用户名', { exact: true }).fill(managedUsername);
   await dialog.getByLabel('初始密码').fill(password);
   await dialog.getByRole('button', { name: '创建用户', exact: true }).click();
-  await expect(page.getByRole('button', { name: '管理 managed-user', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: `管理 ${managedUsername}`, exact: true })).toBeVisible();
   await acknowledgeFeedback(page, ['用户已保存']);
-  await page.getByRole('button', { name: '管理 managed-user', exact: true }).click();
-  const edit = page.getByRole('dialog', { name: '管理 managed-user', exact: true });
+  await page.getByRole('button', { name: `管理 ${managedUsername}`, exact: true }).click();
+  const edit = page.getByRole('dialog', { name: `管理 ${managedUsername}`, exact: true });
   await edit.getByLabel('每日网关调用上限').fill('8');
   await edit.getByLabel('允许使用平台 AI').uncheck();
   await edit.getByRole('button', { name: '保存用户设置', exact: true }).click();
   await expect(edit).toHaveCount(0);
   await acknowledgeFeedback(page, ['用户已保存']);
-  await expect(page.getByRole('row').filter({ hasText: 'managed-user' })).toContainText('上限 8');
+  await expect(page.getByRole('row').filter({ hasText: managedUsername })).toContainText('上限 8');
   await page.getByRole('button', { name: '服务器', exact: true }).click();
   await expect(page.getByRole('heading', { name: '服务运行指标' })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   await page.screenshot({ path: 'test-results/admin-server-mobile.png', fullPage: true });
   await page.getByRole('button', { name: '用户管理', exact: true }).click();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+  const users = page.getByRole('region', { name: '用户列表', exact: true });
+  await expect(users).toBeVisible();
+  await expect(users.getByRole('row').filter({ hasText: managedUsername })).toContainText('上限 8');
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+  expect(await users.evaluate(node => node.scrollWidth > node.clientWidth)).toBe(true);
   const other = await browser.newContext({ baseURL: new URL(page.url()).origin });
   try {
-    const normal = await other.newPage(); await login(normal, 'managed-user');
+    const normal = await other.newPage(); await login(normal, managedUsername);
     expect((await normal.request.get('/api/admin/users')).status()).toBe(403);
     await normal.goto('/admin'); await expect(normal.getByRole('heading', { name: '此页面仅对管理员开放' })).toBeVisible();
     await normal.getByRole('button', { name: '全部模块', exact: true }).click();

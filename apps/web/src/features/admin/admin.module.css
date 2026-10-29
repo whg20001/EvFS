@@ -59,7 +59,7 @@
 .admin .search input { border: 0; box-shadow: none; background: transparent; padding: 10px 10px 10px 0; min-height: 38px; width: 100%; font-size: 12px; }
 .admin select, .admin input { background-color: var(--color-bg-surface); color: var(--color-label-primary); border: 1px solid var(--color-line-default); border-radius: 6px; font: inherit; font-size: 12px; padding: 10px 12px; min-width: 0; max-width: 100%; min-height: 40px; }
 .filters > select { width: auto; }
-.tableWrap { overflow-x: auto; scrollbar-width: thin; }
+.tableWrap { position: relative; overflow-x: auto; scrollbar-width: thin; }
 .admin table { border-collapse: collapse; width: 100%; font-size: 11px; text-align: left; white-space: nowrap; }
 .admin th { padding: 12px 12px; font-weight: 400; color: var(--color-label-tertiary); border-bottom: 1px solid var(--color-line-default); background: var(--color-fill-default); }
 .admin td { padding: 18px 12px; border-bottom: 1px solid var(--color-line-default); vertical-align: middle; }
