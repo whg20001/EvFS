@@ -1,4 +1,4 @@
-import { expect, test, type Page, type Route } from '@playwright/test';
+import { expect, test, type Page, type Route } from './test.ts';
 import { LIMITS, type PublicState, type TaskInputPreview } from '@sanxing/contracts';
 import { acknowledgeFeedback, answerDialog } from './dialog.ts';
 

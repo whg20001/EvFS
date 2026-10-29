@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './test.ts';
 import type { CommandResult, PublicState } from '@sanxing/contracts';
 import { password, webOrigin } from './settings.ts';
 import { acknowledgeFeedback, answerDialog, autoAcceptDialogs, openModule } from './dialog.ts';

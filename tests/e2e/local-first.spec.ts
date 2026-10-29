@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, newApplicationContext, type Page } from './test.ts';
 import { readFile } from 'node:fs/promises';
 import { LIMITS, type AppData } from '@sanxing/contracts';
 import { password } from './settings.ts';
@@ -117,6 +117,7 @@ test('keeps the open editor across midnight, saves it before switching days and 
   await page.clock.setFixedTime(new Date('2026-10-27T15:59:00Z'));
   await register(page, 'midnight-draft');
   await page.getByRole('button', { name: '开始今天的三省', exact: true }).click();
+  await expect(page.getByRole('textbox', { name: '今天学了什么', exact: true })).toBeVisible();
   const original = Object.values((await state(page)).recitations)[0]!;
   await page.getByRole('textbox', { name: '今天学了什么', exact: true }).fill('MIDNIGHT_DRAFT 我还在继续编辑。');
   await page.clock.setFixedTime(new Date('2026-10-27T16:01:00Z'));
@@ -192,7 +193,7 @@ test('isolates accounts on one device and keeps the same cloud account empty on 
   await expect(page.getByText(/ALICE_PRIVATE_LOCAL/)).toHaveCount(0);
   await logout(page); await login(page, 'device-alice');
   await expect(page.getByRole('textbox', { name: '今天学了什么', exact: true })).toHaveValue('ALICE_PRIVATE_LOCAL 学习数据');
-  const other = await browser.newContext({ baseURL: new URL(page.url()).origin });
+  const other = await newApplicationContext(browser, { baseURL: new URL(page.url()).origin });
   try { const device = await other.newPage(); await login(device, 'device-alice'); expect(Object.keys((await state(device)).recitations)).toHaveLength(0); }
   finally { await other.close(); }
 });
@@ -415,7 +416,7 @@ test('shows the matching admin dashboard, manages users, and blocks ordinary acc
   await expect(users.getByRole('row').filter({ hasText: managedUsername })).toContainText('上限 8');
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   expect(await users.evaluate(node => node.scrollWidth > node.clientWidth)).toBe(true);
-  const other = await browser.newContext({ baseURL: new URL(page.url()).origin });
+  const other = await newApplicationContext(browser, { baseURL: new URL(page.url()).origin });
   try {
     const normal = await other.newPage(); await login(normal, managedUsername);
     expect((await normal.request.get('/api/admin/users')).status()).toBe(403);
@@ -443,7 +444,7 @@ test('configures platform AI once and lets a user explicitly select it for a loc
   await page.screenshot({ path: 'test-results/admin-platform-ai-desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
-  const other = await browser.newContext({ baseURL: new URL(page.url()).origin });
+  const other = await newApplicationContext(browser, { baseURL: new URL(page.url()).origin });
   try {
     const normal = await other.newPage(); await register(normal, 'platform-learner'); await normal.goto('/ai-access');
     await normal.getByRole('radio', { name: /使用平台 AI/ }).check();

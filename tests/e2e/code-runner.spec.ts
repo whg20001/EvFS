@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './test.ts';
 import { build } from 'esbuild';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';

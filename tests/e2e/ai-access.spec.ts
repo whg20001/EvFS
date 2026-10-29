@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './test.ts';
 import { tokenUsageHeatmap } from '@sanxing/ai-usage';
 import type { AiAccessOverview, AiConnectionTestView, AiModelConfiguration, AiModelSelection, TokenUsageHeatmap } from '@sanxing/contracts';
 import { password } from './settings.ts';

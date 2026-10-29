@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './test.ts';
 import { LIMITS, type PublicState } from '@sanxing/contracts';
 import { emptyData } from '@sanxing/database';
 import { learningStatistics } from '../../packages/learning-domain/src/statistics.ts';

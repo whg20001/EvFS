@@ -1,5 +1,5 @@
-import { expect, test, type Page, type Route } from '@playwright/test';
-import { LIMITS, type PublicDocument, type PublicState, type PublicStateUpdate } from '@sanxing/contracts';
+import { expect, test, type Page, type Route } from './test.ts';
+import { LIMITS, type PublicDocument, type PublicState, type PublicStateUpdate, type TaskInputPreview } from '@sanxing/contracts';
 import { acknowledgeFeedback, autoAcceptDialogs, openModule } from './dialog.ts';
 
 // Every API route is intercepted: these fixtures never use a personal database/provider.
@@ -12,7 +12,7 @@ function fixture(): PublicState {
     sessions: [], knowledge: [], quizzes: [], cards: [], reviewSessions: [], reviewEvents: [], evidence: [], runs: [] };
 }
 const json = (route: Route, body: unknown, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
-async function offline(page: Page, handler: (route: Route, url: URL) => Promise<unknown>) {
+async function offline(page: Page, handler: (route: Route, url: URL) => Promise<unknown>, readRevision = () => 1) {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await autoAcceptDialogs(page);
@@ -22,8 +22,14 @@ async function offline(page: Page, handler: (route: Route, url: URL) => Promise<
     if (url.pathname === '/api/ai/skills') { await json(route, { mode: 'mock', items: [] }); return; }
     // Live progress is a separate read; these state-sync fixtures have no worker telemetry.
     if (url.pathname === '/api/runs/progress' && route.request().method() === 'GET') { await json(route, {}); return; }
-    // Budget is independent of state synchronization; fail closed without reaching a host.
-    if (url.pathname.endsWith('/input-preview')) { await json(route, { error: { code: 'OFFLINE_BUDGET', message: '此同步 fixture 未提供预算。' } }, 503); return; }
+    // Keep synchronization fixtures independent of budget errors and their dialogs.
+    // This is a read-only numeric preview; input-budget.spec.ts covers refusal and failure.
+    if (url.pathname.endsWith('/input-preview')) {
+      await json(route, { kind: 'extract', revision: readRevision(), canSubmit: true, reason: null, model: null, documentCount: 1,
+        originalChars: 100, sentChars: 100, maxChars: LIMITS.modelInputChars, contextWindow: null, estimatedInputTokens: null,
+        outputReserveTokens: 0, safetyMarginTokens: 512, remainingInputTokens: null, truncated: false, fields: [] } satisfies TaskInputPreview);
+      return;
+    }
     await handler(route, url);
   });
   return errors;
@@ -66,6 +72,7 @@ test('reconciles concurrent poll and command deltas against their exact baseline
   let saved: PublicState['recitations'][number] | undefined;
   let heldPoll: Route | undefined;
   let servedCommand = false;
+  let revision = 1;
   const queries: (string | null)[] = [];
   const errors = await offline(page, async (route, url) => {
     if (url.pathname === '/api/state') {
@@ -73,13 +80,14 @@ test('reconciles concurrent poll and command deltas against their exact baseline
       if (since === null) return json(route, initial);
       if (!heldPoll) { heldPoll = route; return; }
       if (!servedCommand && saved) {
-        servedCommand = true;
+        servedCommand = true; revision = 2;
         return json(route, { kind: 'delta', fromRevision: 1, revision: 2, csrfToken: initial.csrfToken, changes: {
           recitations: { upsert: [saved], remove: [] },
           documents: { upsert: [{ ...original, name: '中间版本.md' }, { ...original, id: 'temporary', name: '稍后删除.md' }], remove: [] },
         } } satisfies PublicStateUpdate);
       }
       expect(since).toBe('2');
+      revision = 3;
       return json(route, { kind: 'delta', fromRevision: 2, revision: 3, csrfToken: initial.csrfToken, changes: {
         documents: { upsert: [original], remove: ['temporary'] }, runs: { upsert: [], remove: ['run'] },
       } } satisfies PublicStateUpdate);
@@ -89,11 +97,12 @@ test('reconciles concurrent poll and command deltas against their exact baseline
       return json(route, { version: 2 });
     }
     errors.push(`Unexpected ${url.pathname}`); return json(route, {}, 500);
-  });
+  }, () => revision);
   await page.goto('/recite');
   await expect.poll(() => Boolean(heldPoll)).toBe(true);
   await page.getByLabel('今日主题').fill('并发保存');
-  await page.getByRole('button', { name: '保存草稿', exact: true }).click();
+  await expect(page.getByLabel('今日主题')).toHaveValue('并发保存');
+  // One autosave supplies the command; do not race it with a manual save.
   await expect(page.locator('.source summary')).toContainText(['中间版本.md', '稍后删除.md']);
   // R1 -> R3 omits document because it reverted to its R1 contents. Applying this
   // to R2 would silently retain both the intermediate edit and the deleted entity.
@@ -125,7 +134,6 @@ test('expired authentication preserves editor input but a new login forces a ful
   const input = page.getByRole('textbox', { name: '今天学了什么', exact: true });
   const originalEditor = await input.elementHandle();
   await input.fill('尚未保存的独立回忆');
-  await page.getByRole('button', { name: '保存草稿', exact: true }).click();
   await expect(page.getByLabel('访问密码')).toBeVisible();
   await page.getByLabel('访问密码').fill('offline-password');
   await page.getByRole('button', { name: '进入我的学习空间' }).click();
@@ -189,13 +197,13 @@ for (const kind of ['feature', 'command'] as const) for (const status of [200, 4
     });
     await page.goto('/recite');
     const input = page.getByRole('textbox', { name: '今天学了什么', exact: true });
-    await input.fill('跨会话保留的草稿');
     if (kind === 'feature') {
+      // Hold the feature before editing can start the autosave/authentication change.
       await page.locator('.source summary>span').first().click();
       await expect.poll(() => Boolean(held)).toBe(true);
-      await page.getByRole('button', { name: '保存草稿', exact: true }).click();
+      await input.fill('跨会话保留的草稿');
     } else {
-      await page.getByRole('button', { name: '保存草稿', exact: true }).click();
+      await input.fill('跨会话保留的草稿');
       await expect.poll(() => Boolean(held)).toBe(true);
       await page.locator('.source summary>span').first().click();
     }
@@ -278,7 +286,6 @@ test('refreshes cached source text at an equal revision after login without remo
   const input = page.getByRole('textbox', { name: '今天学了什么', exact: true });
   await input.evaluate(element => { element.setAttribute('data-retained-editor', 'yes'); });
   await input.fill('重新登录也保留这段输入');
-  await page.getByRole('button', { name: '保存草稿', exact: true }).click();
   await page.getByLabel('访问密码').fill('offline-password');
   await page.getByRole('button', { name: '进入我的学习空间' }).click();
   await expect(input).toBeVisible(); await expect(input).toHaveValue('重新登录也保留这段输入');

@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { build } from 'esbuild';
-import { expect, test } from '@playwright/test';
+import { expect, test } from './test.ts';
 import type { AiResponse } from '@sanxing/contracts';
 import type { CodeRunner } from '../../apps/web/src/lib/code-runner.ts';
 

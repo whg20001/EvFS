@@ -1,6 +1,6 @@
 import { learningStatistics } from '../../packages/learning-domain/src/statistics.ts';
 import { emptyData } from '@sanxing/database';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './test.ts';
 import { LIMITS, type TaskInputPreview, type Answer, type PublicState } from '@sanxing/contracts';
 
 // All application API requests are intercepted. No login, personal library, credentials,

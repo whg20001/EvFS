@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './test.ts';
 import type { PublicState } from '@sanxing/contracts';
 import { password } from './settings.ts';
 import { acknowledgeFeedback, answerDialog } from './dialog.ts';

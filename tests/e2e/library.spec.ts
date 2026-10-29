@@ -1,6 +1,6 @@
 import { learningStatistics } from '../../packages/learning-domain/src/statistics.ts';
 import { emptyData } from '@sanxing/database';
-import { expect, test, type Page, type Route } from '@playwright/test';
+import { expect, test, type Page, type Route } from './test.ts';
 import { LIMITS, type LearningPreferencesView, type LibrarySearchResult, type PublicState, type TaskInputPreview, type TokenUsageHeatmap } from '@sanxing/contracts';
 import { acknowledgeFeedback, answerDialog } from './dialog.ts';
 

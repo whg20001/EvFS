@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './test.ts';
 import { LearningService, previewKnowledgeMerge, projectState, publicQuiz, reviewPlan, learningStatistics, effectiveLearningPreferences, resolvedKnowledgeId } from '@sanxing/learning-domain';
 import { phaseFourData, phaseFourConfig, phaseFourNow } from '../fixtures/phase-four.ts';
 import { acknowledgeFeedback } from './dialog.ts';
