@@ -35,6 +35,8 @@ function Login() {
 export function AppShell({ children }: { children: ReactNode }) {
   const { state, loading, authenticated, error, setError, reload, logout, user, storageMode, api } = useApp();
   const path = usePathname();
+  const retainedContentPath = useRef('/recite');
+  if (path !== '/login') retainedContentPath.current = path;
   const router = useRouter();
   const confirm = useConfirm();
   const [menu, setMenu] = useState(false);
@@ -56,7 +58,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     send(); const timer = setInterval(send, 45000); document.addEventListener('visibilitychange', send);
     return () => { clearInterval(timer); controller.abort(); document.removeEventListener('visibilitychange', send); };
   }, [authenticated, storageMode, path, api]);
-  const routeTitle = modules.find(item => item.href === path)?.title
+  const routeTitle = parseLearningRoute(path).page === 'not-found' ? '' : modules.find(item => item.href === path)?.title
     ?? (path.startsWith('/sessions/') ? state?.sessions.find(item => path.includes(item.id))?.status === 'CONFIRMING' ? '确认知识点' : 'AI 追问'
       : path.startsWith('/recite/') ? '继续复述'
       : path.startsWith('/quizzes/') ? path.endsWith('/result') ? '测验结果' : '每日测验'
@@ -115,7 +117,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="journal-tools"><button type="button" className="module-trigger" aria-label="全部模块" title="全部模块" onClick={event => { setOpener(event.currentTarget); setMenu(true); }}><Search size={16} strokeWidth={1.6} /><span>全部模块</span><kbd><Command size={11} /> K</kbd></button><span className="tool-divider" /><button type="button" className="quiet-icon" aria-label={dark ? '切换浅色模式' : '切换深色模式'} title={dark ? '切换浅色模式' : '切换深色模式'} onClick={toggleTheme}>{dark ? <Sun size={17} /> : <Moon size={17} />}</button><button type="button" className="quiet-icon logout-trigger" aria-label="退出登录" title="退出登录" onClick={() => { void (async () => { if (await confirm(logoutPrompt)) await logout(); })(); }}><LogOut size={16} /></button></div>
       </header>
       {state?.mode === 'mock' && <div className="journal-demo" role="status"><span className="status-dot amber">演示模式 · 脚本化回答，不代表真实学习评价</span></div>}
-      <main id="main-content" className={`journal-stage ${home ? 'journal-home-stage' : ''} ${path === '/ai-access' ? 'journal-settings-stage' : ''} ${path === '/admin' ? 'journal-admin-stage' : ''}`} aria-label={home ? '今日三省' : routeTitle || '学习页面'}>{state ? home ? <HomePage input={<Composer home navigate={navigate} />} /> : <div key={path} className="module-enter">{children}</div> : <Card title="还没能连接学习空间"><p className="muted">请确认 API 服务正在运行，然后重试。</p><Action onClick={reload}>重新连接</Action></Card>}</main>
+      <main id="main-content" className={`journal-stage ${home ? 'journal-home-stage' : ''} ${path === '/ai-access' ? 'journal-settings-stage' : ''} ${path === '/admin' ? 'journal-admin-stage' : ''}`} aria-label={home ? '今日三省' : routeTitle || '学习页面'}>{state ? home ? <HomePage input={<Composer home navigate={navigate} />} /> : <div key={retainedContentPath.current} className="module-enter">{children}</div> : <Card title="还没能连接学习空间"><p className="muted">请确认 API 服务正在运行，然后重试。</p><Action onClick={reload}>重新连接</Action></Card>}</main>
       <footer className="journal-footer" aria-hidden="true" />
     </div>
     {menu && canEdit && <ModuleMenu opener={opener} close={() => setMenu(false)} navigate={navigate} />}

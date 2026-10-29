@@ -24,6 +24,7 @@ async function offline(page: Page) {
     const url = new URL(route.request().url());
     const json = (value: unknown, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(value) });
     if (url.pathname === '/api/auth/status') return json({ authenticated: true });
+    if (url.pathname === '/api/ai/skills') return json({ mode: state.mode, items: [] });
     if (url.pathname === '/api/state') {
       if (control.holdState) await delayedState;
       if (url.searchParams.get('since') === String(state.revision)) { control.unchanged++; return json({ kind: 'unchanged', revision: state.revision, csrfToken: state.csrfToken }); }

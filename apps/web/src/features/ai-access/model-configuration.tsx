@@ -183,13 +183,13 @@ export function ModelConfiguration({ connectionKey, onConfigurationChange }: { c
             <option value="oauth">OAuth{provider?.oauthConnected ? ' · 已连接' : ' · 尚未授权'}</option>
             <option value="api_key">API key{provider?.apiKeyAvailable ? ' · 服务端已有密钥' : ' · 服务端无可用密钥'}</option>
           </select>
-          {provider && draft.authMethod === 'oauth' && !provider.oauthConnected && <Feedback title="Provider 尚未授权" tone="info" className={styles.authHint}>
+          {dirty && provider && draft.authMethod === 'oauth' && !provider.oauthConnected && <Feedback title="Provider 尚未授权" tone="info" className={styles.authHint}>
             <p>{provider.name} 尚未 OAuth 授权，连接后才能保存。{authorizedAlternative
               ? `该模型同时由已授权的 ${authorizedAlternative.name} 提供，但不同 Provider 的授权不可互换。`
               : '请在同一模块的 Provider 授权区连接此 Provider。'}</p>
             {authorizedAlternative && <button type="button" className="button subtle" onClick={() => change({ ...draft, providerId: authorizedAlternative.id, allowUnboundedOutput: false })}>改用已授权的 {authorizedAlternative.name}</button>}
           </Feedback>}
-          {provider && draft.authMethod === 'api_key' && !provider.apiKeyAvailable && <Feedback title="API key 尚未配置" tone="info">服务端没有可用的 API key，不能保存此认证方式；本页不收集密钥。也可选择 OAuth 并在 Provider 授权区连接。</Feedback>}
+          {dirty && provider && draft.authMethod === 'api_key' && !provider.apiKeyAvailable && <Feedback title="API key 尚未配置" tone="info">服务端没有可用的 API key，不能保存此认证方式；本页不收集密钥。也可选择 OAuth 并在 Provider 授权区连接。</Feedback>}
           <label className="field-label" htmlFor="ai-model-id">模型</label>
           <select id="ai-model-id" required disabled={!provider} value={draft.modelId} onChange={event => change({ ...draft, modelId: event.target.value, allowUnboundedOutput: false })}>
             <option value="" disabled>请选择模型</option>

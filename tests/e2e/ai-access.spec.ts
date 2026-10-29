@@ -182,6 +182,25 @@ test('connected cards require confirmation for probes and show safe outcomes wit
   expect(cancelled).toBe(1); expect(submissions).toHaveLength(3);
 });
 
+test('saved unavailable authorization does not interrupt other settings, while explicit changes still explain the missing credentials', async ({ page }) => {
+  await page.route('**/api/ai/configuration', async route => {
+    const configuration = await (await route.fetch()).json() as AiModelConfiguration;
+    const provider = configuration.providers.find(item => item.models.length > 0)!;
+    await route.fulfill({ json: { ...configuration, mode: 'mock', ready: true, source: 'saved',
+      selection: { providerId: provider.id, modelId: provider.models[0]!.id, authMethod: 'oauth', allowUnboundedOutput: false },
+      providers: configuration.providers.map(item => ({ ...item, oauthConnected: false, apiKeyAvailable: false })) } satisfies AiModelConfiguration });
+  });
+  await login(page);
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
+  const skills = page.getByRole('region', { name: '学习 Skill', exact: true });
+  await skills.getByRole('tab', { name: '云 Skill', exact: true }).click();
+  await expect(skills.getByRole('tab', { name: '云 Skill', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page.getByLabel('认证方式', { exact: true }).selectOption('api_key');
+  await expect(page.getByRole('alertdialog', { name: 'API key 尚未配置', exact: true })).toBeVisible();
+  await acknowledgeFeedback(page, ['没有可用的 API key']);
+  await expect(page.getByRole('button', { name: '保存候选模型', exact: true })).toBeDisabled();
+});
+
 test('mobile heatmap supports leap days, unknown usage and year switching without page overflow', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.route('**/api/ai/usage*', async route => {

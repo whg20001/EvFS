@@ -4,7 +4,8 @@ import { apiOrigin, webOrigin, sessionSecret } from './tests/e2e/settings.ts';
 export default defineConfig({
   testDir: './tests/e2e', testMatch: '**/*.spec.ts', testIgnore: '**/local-first.spec.ts', fullyParallel: false, workers: 1, retries: 0, forbidOnly: !!process.env.CI,
   timeout: 120_000, expect: { timeout: 20_000 }, reporter: 'list',
-  use: { baseURL: webOrigin, trace: 'retain-on-failure', screenshot: 'only-on-failure',
+  maxFailures: process.env.CI ? 10 : 0,
+  use: { baseURL: webOrigin, actionTimeout: 20_000, navigationTimeout: 30_000, trace: 'retain-on-failure', screenshot: 'only-on-failure',
     launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {} },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 1000 } } }],
   webServer: [

@@ -15,6 +15,9 @@ function synchronizeModals() {
     originalInert.clear(); return;
   }
   document.body.style.overflow = 'hidden';
+  // React may reuse portal nodes in a different DOM order. Keep the visual
+  // stacking order aligned with the dialog that owns focus and interactivity.
+  stack.forEach((root, index) => { if (root.parentElement) root.parentElement.style.zIndex = String(1000 + index); });
   for (const node of document.body.children) if (node instanceof HTMLElement) {
     if (!originalInert.has(node)) originalInert.set(node, node.inert);
     node.inert = !node.contains(top);

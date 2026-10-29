@@ -1,6 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { LIMITS, type PublicDocument, type PublicState, type PublicStateUpdate } from '@sanxing/contracts';
-import { autoAcceptDialogs } from './dialog.ts';
+import { acknowledgeFeedback, autoAcceptDialogs, openModule } from './dialog.ts';
 
 // Every API route is intercepted: these fixtures never use a personal database/provider.
 function fixture(): PublicState {
@@ -19,6 +19,7 @@ async function offline(page: Page, handler: (route: Route, url: URL) => Promise<
   await page.route('**/api/**', async route => {
     const url = new URL(route.request().url());
     if (url.pathname === '/api/auth/status') { await json(route, { authenticated: true }); return; }
+    if (url.pathname === '/api/ai/skills') { await json(route, { mode: 'mock', items: [] }); return; }
     // Live progress is a separate read; these state-sync fixtures have no worker telemetry.
     if (url.pathname === '/api/runs/progress' && route.request().method() === 'GET') { await json(route, {}); return; }
     // Budget is independent of state synchronization; fail closed without reaching a host.
@@ -122,6 +123,7 @@ test('expired authentication preserves editor input but a new login forces a ful
   });
   await page.goto('/recite');
   const input = page.getByRole('textbox', { name: '今天学了什么', exact: true });
+  const originalEditor = await input.elementHandle();
   await input.fill('尚未保存的独立回忆');
   await page.getByRole('button', { name: '保存草稿', exact: true }).click();
   await expect(page.getByLabel('访问密码')).toBeVisible();
@@ -129,6 +131,7 @@ test('expired authentication preserves editor input but a new login forces a ful
   await page.getByRole('button', { name: '进入我的学习空间' }).click();
   await expect(page.locator('.source summary')).toContainText('新会话资料.md');
   await expect(input).toHaveValue('尚未保存的独立回忆');
+  expect(await originalEditor!.evaluate(node => node.isConnected)).toBe(true);
   expect(queries).toEqual([null, null]);
   expect(await page.evaluate(() => Object.keys(sessionStorage).some(key => key.startsWith('sanxing:draft:')))).toBe(true);
   await page.getByRole('button', { name: '退出登录', exact: true }).click();
@@ -151,7 +154,7 @@ test('aborts an on-demand document request when its source component unmounts', 
   await expect.poll(() => Boolean(source)).toBe(true);
   // History also renders this document in a closed source viewer; choose a page
   // without sources so we test unmount cancellation, not history's own rendering.
-  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '我的知识库' }).click();
+  await openModule(page, '我的知识库');
   await expect(page.locator('.source')).toHaveCount(0);
   // Let the intercepted response complete too: the unmounted component must have
   // cancelled its fetch, rather than retaining a request until the body arrives.
@@ -203,8 +206,10 @@ for (const kind of ['feature', 'command'] as const) for (const status of [200, 4
       await expect.poll(() => Boolean(loginRequest)).toBe(true);
       // While login is pending the editor remains mounted; this request has not
       // been aborted by a new read session, so the epoch fence itself is tested.
+      await page.removeLocatorHandler(page.getByRole('alertdialog'));
       await json(held!, status === 401 ? expired : { ...data.documents[0]!, text: '旧会话迟到原文' }, status);
-      await expect(page.locator('.source-content')).toContainText(status === 401 ? '旧会话已失效' : '登录状态已变化');
+      await acknowledgeFeedback(page, [status === 401 ? '旧会话已失效' : '登录状态已变化']);
+      await autoAcceptDialogs(page);
       loggedInAgain = true;
       await json(loginRequest!, { csrfToken: 'new-token' });
     } else {
@@ -234,8 +239,9 @@ test('stops a single synchronization attempt after two delta collisions and one 
   });
   await page.goto('/recite');
   await page.getByLabel('今日主题').fill('同步失败也保留');
+  await page.removeLocatorHandler(page.getByRole('alertdialog'));
   await page.getByRole('button', { name: '保存草稿', exact: true }).click();
-  await expect(page.locator('.error-banner')).toContainText('状态同步版本不一致');
+  await acknowledgeFeedback(page, ['状态同步版本不一致']);
   await expect(page.getByRole('button', { name: '保存草稿', exact: true })).toBeEnabled();
   await expect(page.getByLabel('今日主题')).toHaveValue('同步失败也保留');
   expect(queries).toEqual([null, '1', '1', null]); expect(errors).toEqual([]);
@@ -247,11 +253,12 @@ test('unknown route suffixes render a missing page instead of mounting a learnin
     if (url.pathname === '/api/state') return json(route, data);
     errors.push(`Unexpected ${url.pathname}`); return json(route, {}, 500);
   });
-  await page.goto('/recite/not-a-page');
+  await page.goto('/recite/not-a-page/invalid');
   await expect(page.getByRole('heading', { name: '这条小路，暂时还没有页面' })).toBeVisible();
   await expect(page.getByRole('textbox', { name: '今天学了什么', exact: true })).toHaveCount(0);
   await expect(page.locator('nav [aria-current="page"]')).toHaveCount(0);
-  await page.getByRole('link', { name: '回到今日复述' }).click();
+  await page.getByRole('link', { name: '回到今日三省' }).click();
+  await openModule(page, '今日复述');
   await expect(page.getByRole('textbox', { name: '今天学了什么', exact: true })).toHaveValue('原有复述');
   expect(errors).toEqual([]);
 });

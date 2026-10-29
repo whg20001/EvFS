@@ -90,7 +90,13 @@ export async function runSteps(steps, { cwd = root, directory, env = process.env
     item.durationMs = Math.round(performance.now() - start);
     item.status = signal?.aborted ? 'cancelled' : item.exitCode === 0 && !item.errorCode ? 'passed' : 'failed';
     await save(); announce(`${item.status.toUpperCase()} ${step.id} (${item.durationMs} ms)`);
-    if (item.status !== 'passed') break;
+    if (item.status !== 'passed') {
+      // CI's console should show the cause as well as the downloadable diagnostics.
+      const log = await readFile(join(directory, item.log), 'utf8').catch(() => '');
+      const tail = log.trimEnd().split('\n').slice(-60).join('\n');
+      if (tail) announce(`--- ${step.id}: last 60 log lines ---\n${tail}`);
+      break;
+    }
   }
   report.status = signal?.aborted ? 'cancelled' : report.steps.every(step => step.status === 'passed') ? 'passed' : 'failed';
   report.finishedAt = new Date().toISOString();

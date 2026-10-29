@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { LearningService, previewKnowledgeMerge, projectState, publicQuiz, reviewPlan, learningStatistics, effectiveLearningPreferences, resolvedKnowledgeId } from '@sanxing/learning-domain';
 import { phaseFourData, phaseFourConfig, phaseFourNow } from '../fixtures/phase-four.ts';
+import { acknowledgeFeedback } from './dialog.ts';
 
 async function fixture(page: Page) {
   const data = phaseFourData(); const errors: string[] = []; const started: string[] = [];
@@ -10,6 +11,7 @@ async function fixture(page: Page) {
     const url = new URL(route.request().url()); const path = url.pathname; const method = route.request().method(); const body = route.request().postDataJSON();
     const json = (value: unknown) => route.fulfill({ json: value });
     if (path === '/api/auth/status') return json({ authenticated: true });
+    if (path === '/api/ai/skills') return json({ mode: data.mode, items: [] });
     if (path === '/api/state') return json(projectState(data, phaseFourConfig, 'phase-four', true));
     // Synthetic pending runs have no executing worker and therefore no live progress.
     if (path === '/api/runs/progress' && method === 'GET') return json({});
@@ -68,6 +70,7 @@ test('saved preferences select one due card by eligible losses and explain its p
   await page.getByText('学习、复习与缓存设置', { exact: true }).click(); await page.getByLabel('连续复习顺序').selectOption('weakness'); await page.getByLabel('每轮最多复习卡数').fill('1');
   await page.getByRole('button', { name: '确认保存设置' }).click(); await page.getByRole('alertdialog').getByRole('button', { name: '确认保存', exact: true }).click();
   await expect(page.getByRole('button', { name: '开始连续复习（1 张）' })).toBeVisible();
+  await acknowledgeFeedback(page, ['已保存']);
   await page.getByText('查看本轮顺序依据', { exact: true }).click(); await expect(page.getByText('知识 a：近 30 天最近 5 次独立即时作答得分率 0%（演示）', { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.getByRole('button', { name: '开始连续复习（1 张）' }).click(); await expect(page.getByRole('heading', { name: '知识 a', exact: true })).toBeVisible();

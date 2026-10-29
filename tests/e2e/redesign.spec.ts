@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { PublicState } from '@sanxing/contracts';
 import { password } from './settings.ts';
-import { answerDialog } from './dialog.ts';
+import { acknowledgeFeedback, answerDialog } from './dialog.ts';
 
 async function login(page: Page) {
   await page.goto('/');
@@ -51,6 +51,7 @@ test('v3 roundel, command palette, shared input and real note attachments', asyn
 
   await page.getByLabel('上传笔记、PDF 或图片').setInputFiles({ name: 'v3-redesign-note.md', mimeType: 'text/markdown', buffer: Buffer.from('# 独立回忆\n先回忆，再核对。') });
   await expect(page.getByText('v3-redesign-note.md', { exact: true })).toBeVisible();
+  await acknowledgeFeedback(page, ['导入成功']);
   const pasted = '独立回忆需要反复提取并核对原始笔记。'.repeat(30);
   await page.getByRole('button', { name: '直接粘贴笔记', exact: true }).click();
   await page.getByLabel('资料名称', { exact: true }).fill('粘贴的笔记.md');

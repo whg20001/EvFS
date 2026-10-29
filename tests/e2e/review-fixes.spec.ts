@@ -40,6 +40,7 @@ async function offline(page: Page, data: PublicState) {
     requests.push(`${method} ${path}`);
     const json = (body: unknown) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
     if (path === '/api/auth/status') return json({ authenticated: true });
+    if (path === '/api/ai/skills') return json({ mode: data.mode, items: [] });
     if (path === '/api/state') return json(data);
     if (path === '/api/learning/statistics') return json(learningStatistics(emptyData(data.mode), new Date(), data.timezone));
     if (path === '/api/learning/preferences') return json({ revision: 0, source: 'environment', schedulingEnabled: data.capabilities.schedulingEnabled, promptCacheRetention: 'none', associationEnabled: false, codeExercisesEnabled: false, codeLanguages: ['python'] });

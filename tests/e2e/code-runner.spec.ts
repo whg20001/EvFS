@@ -122,6 +122,8 @@ test('Python 科学计算包本地校验、答案与测试 import、常驻加速
   const remote: string[] = []; let wasm = 0;
   await page.route('**/*', route => {
     const url = route.request().url();
+    // The host page's font stylesheet is unrelated to the sandbox's network policy.
+    if (route.request().frame() === page.mainFrame() && route.request().resourceType() === 'stylesheet' && new URL(url).origin === 'https://fonts.googleapis.com' && new URL(url).pathname === '/css2') return route.fulfill({ contentType: 'text/css', body: '' });
     if (!url.startsWith('http://127.0.0.1:3027/')) { remote.push(url); return route.abort(); }
     if (url.endsWith('.wasm')) wasm++;
     return route.continue();

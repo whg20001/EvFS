@@ -1,7 +1,7 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { LIMITS, type PublicState } from '@sanxing/contracts';
 import { password } from './settings.ts';
-import { autoAcceptDialogs } from './dialog.ts';
+import { acknowledgeFeedback, autoAcceptDialogs } from './dialog.ts';
 
 const markdown = [
   '# 原始笔记标题', '', '## 阅读与公式', '', '- 列表条目', '- 第二条', '', '任务进度：', '', '- [x] 已完成', '- [ ] 待完成', '',
@@ -27,6 +27,8 @@ function fixture(notes: { name: string; text: string }[]) {
 async function offline(page: Page, input = fixture([{ name: '阅读笔记.md', text: markdown }]), defer = false) {
   const observed = { reads: 0, pending: undefined as Route | undefined, errors: [] as string[], requests: [] as string[] };
   page.on('pageerror', error => observed.errors.push(error.message));
+  // Reading/security fixtures use system fonts; only the local KaTeX fonts are exercised.
+  await page.route(/^https:\/\/fonts\.googleapis\.com\/css2\?/, route => route.fulfill({ contentType: 'text/css', body: '' }));
   await page.route('**/api/**', async route => {
     const path = new URL(route.request().url()).pathname;
     observed.requests.push(path);
@@ -169,7 +171,7 @@ test('内联加载中最大化复用请求，失败关闭后可重试', async ({
   await note.getByRole('button', { name: '最大化查看 阅读笔记.md' }).click();
   const dialog = page.getByRole('dialog'); await expect(dialog.getByRole('status')).toHaveText('正在加载原文…');
   await observed.pending!.fulfill({ status: 503, json: { error: { code: 'UNAVAILABLE', message: '离线临时失败' } } });
-  await expect(dialog.getByRole('status')).toHaveText('离线临时失败'); expect(observed.reads).toBe(1);
+  await acknowledgeFeedback(page, ['离线临时失败']); expect(observed.reads).toBe(1);
   await page.keyboard.press('Escape'); await note.locator('summary>span').first().click();
   await note.getByRole('button', { name: '最大化查看 阅读笔记.md' }).click(); await expect.poll(() => observed.reads).toBe(2);
   await observed.pending!.fulfill({ json: { ...input.data.documents[0], text: markdown } });
@@ -213,7 +215,7 @@ test('390px 深色内联与全屏阅读仅表格内部横向滚动，本地 KaTe
   await note.getByRole('button', { name: '最大化查看 窄屏长笔记.md' }).click(); const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible(); await noOverflow();
   expect(await dialog.evaluate(node => Math.abs(node.getBoundingClientRect().height - innerHeight) < 2)).toBe(true);
-  expect(await dialog.evaluate(node => getComputedStyle(node).backgroundColor)).toBe('rgb(27, 35, 51)');
+  expect(await dialog.evaluate(node => getComputedStyle(node).backgroundColor)).toBe('rgb(30, 28, 23)');
   expect(await dialog.locator('.source-modal-content').evaluate(node => node.scrollHeight > node.clientHeight)).toBe(true);
   await dialog.locator('.source-modal-content').evaluate(node => { node.scrollTop = 200; });
   await page.evaluate(() => document.fonts.ready); expect(fonts.length).toBeGreaterThan(0); expect(fonts.every(url => new URL(url).hostname === '127.0.0.1')).toBe(true);
@@ -439,7 +441,7 @@ test('390px 深色大纲可折叠，键盘跳转后收起、焦点正确且不�
   await page.keyboard.press('Tab'); await expect(dialog.locator('.source-modal-content')).toBeFocused();
   await toggle.press('Enter'); await expect(nav).toBeVisible(); await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await page.keyboard.press('Tab'); await expect(nav.getByRole('button').first()).toBeFocused();
-  expect(await dialog.evaluate(node => getComputedStyle(node).backgroundColor)).toBe('rgb(27, 35, 51)'); await noOverflow();
+  expect(await dialog.evaluate(node => getComputedStyle(node).backgroundColor)).toBe('rgb(30, 28, 23)'); await noOverflow();
   await page.screenshot({ path: 'test-results/source-outline-mobile-dark.png', animations: 'disabled' });
   const target = nav.getByRole('button', { name: longTitle, exact: true }); await target.focus(); await target.press('Enter');
   await expect(toggle).toHaveAttribute('aria-expanded', 'false'); await expect(nav).toBeHidden();

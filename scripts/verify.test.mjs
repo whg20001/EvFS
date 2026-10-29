@@ -14,15 +14,17 @@ const command = (id, code) => ({ id, command: [process.execPath, '-e', code] });
 
 test('records stage exit codes and both output streams, and never reports unrun stages as passed', async t => {
   const options = await fixture(t);
+  const messages = [];
   const report = await runSteps([
     command('ok', 'console.log("stdout evidence"); console.error("stderr evidence")'),
-    command('failed', 'process.exitCode = 7'),
+    command('failed', 'console.error("specific verification failure"); process.exitCode = 7'),
     command('unrun', 'throw new Error("must never run")'),
-  ], options);
+  ], { ...options, announce: message => messages.push(message) });
   assert.equal(report.status, 'failed');
   assert.deepEqual(report.steps.map(step => step.status), ['passed', 'failed', 'not_run']);
   assert.equal(report.steps[1].exitCode, 7);
   assert.equal(typeof report.steps[0].durationMs, 'number');
+  assert.ok(messages.some(message => message.includes('specific verification failure')));
   assert.match(await readFile(join(options.directory, 'ok.log'), 'utf8'), /stdout evidence[\s\S]*stderr evidence/);
   assert.deepEqual(JSON.parse(await readFile(join(options.directory, 'summary.json'), 'utf8')), report);
 });

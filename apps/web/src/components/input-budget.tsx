@@ -21,7 +21,7 @@ export function useInputBudget(path: string, body: object, scope: unknown, enabl
   const mounted = useRef(false);
   const [result, setResult] = useState<{ key: string; preview: TaskInputPreview | null; error: string | null }>({ key: '', preview: null, error: null });
 
-  const request = useCallback(async (): Promise<TaskInputPreview | null> => {
+  const request = useCallback(async (): Promise<TaskInputPreview | null | undefined> => {
     if (timer.current) clearTimeout(timer.current);
     controller.current?.abort();
     const current = latest.current;
@@ -33,12 +33,13 @@ export function useInputBudget(path: string, body: object, scope: unknown, enabl
     const isCurrent = () => mounted.current && !abort.signal.aborted && ticket === epoch.current && current.key === latest.current.key;
     try {
       const preview = await api<TaskInputPreview>(current.path, { method: 'POST', body: JSON.parse(current.serialized), signal: abort.signal });
-      if (!isCurrent()) return null;
+      if (!isCurrent()) return undefined;
       if (preview.revision < current.revision) throw new Error('服务端预检版本已过期，请重试。');
       setResult({ key: current.key, preview, error: null });
       return preview;
     } catch (cause) {
-      if (isCurrent()) setResult({ key: current.key, preview: null, error: errorMessage(cause, '连接失败') });
+      if (!isCurrent()) return undefined;
+      setResult({ key: current.key, preview: null, error: errorMessage(cause, '连接失败') });
       return null;
     }
   }, [api]);
@@ -55,14 +56,14 @@ export function useInputBudget(path: string, body: object, scope: unknown, enabl
   }, [key, available, request]);
 
   // A draft save can commit its new revision while preflight is starting. Retry
-  // that invalidated request, but NEVER silently switch to newly edited input.
+  // that invalidated request (including same-key effect cleanup), but NEVER
+  // silently switch to newly edited input or retry a real preflight failure.
   const refresh = useCallback(async () => {
     const input = latest.current.serialized;
     for (let attempt = 0; attempt < 3; attempt++) {
-      const before = latest.current.key;
       const preview = await request();
       if (latest.current.serialized !== input || !mounted.current) return null;
-      if (preview || latest.current.key === before) return preview;
+      if (preview !== undefined) return preview;
     }
     return null;
   }, [request]);

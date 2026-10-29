@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { expect, test, type Page } from '@playwright/test';
 import type { CommandResult, PublicState } from '@sanxing/contracts';
 import { password, webOrigin } from './settings.ts';
-import { acknowledgeFeedback, answerDialog, autoAcceptDialogs } from './dialog.ts';
+import { acknowledgeFeedback, answerDialog, autoAcceptDialogs, openModule } from './dialog.ts';
 
 const state = async (page: Page): Promise<PublicState> => (await page.request.get('/api/state')).json();
 async function write(page: Page, path: string, data: unknown, method = 'POST'): Promise<CommandResult> {
@@ -26,9 +26,9 @@ test('scope draft survives navigation and refresh, and refuses a changed candida
   const title = page.getByLabel('名称', { exact: true }).first();
   await title.fill('本地修改的名称'); await page.getByRole('textbox', { name: '学习范围', exact: true }).first().fill('本地保留的范围说明');
   await page.getByRole('checkbox', { name: /纳入这个知识点/ }).first().check();
-  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '我的知识库' }).click();
+  await openModule(page, '我的知识库');
   await answerDialog(page, false, ['未保存']); await expect(title).toHaveValue('本地修改的名称');
-  await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '我的知识库' }).click();
+  await openModule(page, '我的知识库');
   await answerDialog(page, true); await expect(page).toHaveURL(/\/knowledge$/);
   await page.goto(`/sessions/${sessionId}/ask`); await expect(title).toHaveValue('本地修改的名称');
   page.on('dialog', dialog => dialog.accept()); await page.reload(); await expect(title).toHaveValue('本地修改的名称');
@@ -36,6 +36,7 @@ test('scope draft survives navigation and refresh, and refuses a changed candida
   await page.route(confirmation, route => route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ error: { code: 'UNAUTHENTICATED', message: '会话已过期' } }) }));
   await page.getByRole('button', { name: '确认学习范围' }).click();
   await expect(page.getByLabel('访问密码')).toBeVisible();
+  await acknowledgeFeedback(page, ['会话已过期']);
   await page.unroute(confirmation); await page.getByLabel('访问密码').fill(password); await page.getByRole('button', { name: '进入我的学习空间' }).click();
   await expect(title).toHaveValue('本地修改的名称');
   await expect(page.getByRole('checkbox', { name: /纳入这个知识点/ }).first()).toBeChecked();
